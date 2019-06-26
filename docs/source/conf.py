@@ -23,7 +23,8 @@ author = 'Nandor Kilyen'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'
-
+#Define the document that contains the toctree directive. 
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
