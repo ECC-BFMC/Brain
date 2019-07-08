@@ -6,7 +6,7 @@ This repository represents a tool which shows and allows you to start-up your ca
   
   
 # Architecture overview
-
+![architecture](https://github.com/NandorKilyenBosch/BFMC.Startup.Priv/blob/master/assets/docs/images/generalArchitecture.png)
 
 # How to control your car
 
