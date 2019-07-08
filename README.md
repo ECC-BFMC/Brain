@@ -50,7 +50,7 @@ The following files should be considered:
   ```
   
 # How to control your car
-Inorder to control your car, you will have to start your application onto RaspberryPi and enable from `main.py` the Remote Controller flag. Also, you will have to launch the Remote Controller Script on your PC and make sure that the
+Inorder to control your car, you will have to start your application onto RaspberryPi and enable from `main.py` the Camera Straming path. Also, you will have to launch the Camera Streamer Script on your PC and make sure that the
 After that, run the following:
 
 **Raspberry Pi**
@@ -65,3 +65,12 @@ python src/utils/RemoteControl/RemoteControlTransmitter.py
 
 
 # How to stream your camera
+**Raspberry Pi**
+```
+python3 main.py
+```
+
+**PC**
+```
+python src/utils/CameraStreamer/CameraReceiver.py
+```
