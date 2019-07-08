@@ -10,4 +10,4 @@ This repository represents a tool which shows and allows you to start-up your ca
 
 # How to control your car
 
-# How to stream what your camera is seeing
+# How to stream your camera
