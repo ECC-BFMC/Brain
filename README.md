@@ -74,3 +74,7 @@ python3 main.py
 ```
 python src/utils/CameraStreamer/CameraReceiver.py
 ```
+
+# TO DOs:
+[ ] serial handler thread should be modified in order to convert the messages received from the remote controller (modify only the serial command receiver thread)
+[ ] add requirements.txt (dependencies) for pip
