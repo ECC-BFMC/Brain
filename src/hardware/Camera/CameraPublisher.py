@@ -19,9 +19,10 @@ class CameraPublisher(Thread):
         """The purpose of this thread is to send the camera images. It is able to record
         videos and save them localy.
         
-        Arguments:
-            outPs {list(Pipes)} -- the list of pipes were the images will be sent
-
+        Parameters
+        ----------
+        outPs : list(Pipes)
+            the list of pipes were the images will be sent
         """
         Thread.__init__(self)
 
