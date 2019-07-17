@@ -2,10 +2,11 @@ Welcome to BFMC Startup Project's documentation!
 ================================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
-   
-   Cap1/Page1
+
+   readme_link
+   HardwareLayer/index
 
 Indices and tables
 ==================

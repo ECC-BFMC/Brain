@@ -31,7 +31,7 @@ master_doc = 'index'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon']
+extensions = ['m2r','sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon','sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -55,12 +55,15 @@ html_theme = "classic"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'markdown',
-    '.md': 'markdown',
-}
+source_suffix = [
+    '.rst',
+    '.md'
+]
 
 
 # sphinx.ext.autodoc configuration
+autodoc_mock_imports = ["multiprocessing","cv2","serial","django"]
+autoclass_content = "both"
+autodoc_default_flags = ["members","members","private-members","show-inheritance","undoc-members"]
+autodoc_docstring_signature = True
 
