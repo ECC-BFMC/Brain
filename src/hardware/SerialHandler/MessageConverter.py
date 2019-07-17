@@ -3,7 +3,7 @@ class MessageConverter:
 
     Allowed commands are represented in the field "command".
     Each key of the dictionary represent a command. Each command has a list of attributes ,
-    a list of atributes types and optionally if enhanced precision is to be used(send more 
+    a list of attributes types and optionally if enhanced precision is to be used(send more 
     digits after the decimal point).
 
     Example:
@@ -67,7 +67,9 @@ class MessageConverter:
                     str(MessageConverter.commands[action][1][i]) + 'instead of' + \
                     str(type(value))
 
-a = MessageConverter()
 
-com = a.get_command("MCTL", f_angle=0.0, f_vel=0.2 )
-print(com)
+if __name__ == "__main__":
+    a = MessageConverter()
+
+    com = a.get_command("MCTL", f_angle=0.0, f_vel=0.2 )
+    print(com)
