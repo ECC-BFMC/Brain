@@ -22,6 +22,7 @@ class RemoteControlTransmitter(Thread):
         """
         Thread.__init__(self)
 
+        # Can be change to a multithread.Queue.
         self.lisBrR, self.lisBrS = Pipe(duplex=False)
 
         self.rcBrain   =  RcBrain()
@@ -33,6 +34,8 @@ class RemoteControlTransmitter(Thread):
         self.threads = list()
     # ===================================== RUN ==========================================
     def run(self):
+        """Apply initializing methods and start the threads. 
+        """
         self._init_threads()
         self._init_socket()
         for th in self.threads:
@@ -43,6 +46,8 @@ class RemoteControlTransmitter(Thread):
 
     # ===================================== INIT THREADS =================================
     def _init_threads(self):
+        """Initialize the command sender thread for transmite the receiver process all commands. 
+        """
         self.threads.append(self.listener)
         
         sendTh = Thread(target = self._send_command_thread, args=(self.lisBrR, ))
@@ -50,6 +55,8 @@ class RemoteControlTransmitter(Thread):
 
     # ===================================== INIT SOCKET ==================================
     def _init_socket(self):
+        """Initialize the socket for communication with remote client.
+        """
         self.client_socket = socket.socket(
                                 family  = socket.AF_INET, 
                                 type    = socket.SOCK_DGRAM
@@ -57,6 +64,13 @@ class RemoteControlTransmitter(Thread):
 
     # ===================================== SEND COMMAND =================================
     def _send_command_thread(self, inP):
+        """Transmite the command to the remotecontrol receiver. 
+        
+        Parameters
+        ----------
+        inP : Pipe
+            Input pipe. 
+        """
         while True:
             key = inP.recv()
 

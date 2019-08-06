@@ -6,7 +6,8 @@ Welcome to BFMC Startup Project's documentation!
    :caption: Contents:
 
    readme_link
-   HardwareLayer/index
+   hardwarelayer/index
+   tools/index
 
 Indices and tables
 ==================

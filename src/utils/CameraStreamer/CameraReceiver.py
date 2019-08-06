@@ -22,9 +22,12 @@ class CameraReceiver(WorkerProcess):
         """Process used for debugging. It receives the images from the raspberry and 
         duplicates the perception pipline that is running on the raspberry.
 
-        Arguments:
-            inPs {list(Pipe)}  -- in pipes
-            outPs {list(Pipe)} -- out pipes
+        Parameters
+        ----------
+        inPs : list(Pipe)  
+            List of input pipes
+        outPs : list(Pipe) 
+            List of output pipes
         """
         WorkerProcess.__init__(self, inPs, outPs)
 
@@ -34,6 +37,8 @@ class CameraReceiver(WorkerProcess):
         self.imgSize    = (480,640,3)
     # ===================================== RUN ==========================================
     def run(self):
+        """Apply the initializers and start the threads. 
+        """
         self._init_socket()
         self._init_threads()
 
@@ -46,6 +51,8 @@ class CameraReceiver(WorkerProcess):
 
     # ===================================== INIT SOCKET ==================================
     def _init_socket(self):
+        """Initialize the socket. 
+        """
         self.server_socket = socket.socket()
         self.server_socket.bind((self.serverIp, self.port))
         self.server_socket.listen(0)
@@ -54,15 +61,19 @@ class CameraReceiver(WorkerProcess):
 
     # ===================================== INIT THREADS =================================
     def _init_threads(self):
+        """Initialize the read thread to receive the video.
+        """
         readTh = Thread(target = self._read_stream, args = (self.outPs, ))
         self.threads.append(readTh)
 
     # ===================================== READ STREAM ==================================
     def _read_stream(self, outPs):
-        """Read the image from input stream, decode it aand show it.
+        """Read the image from input stream, decode it and show it.
         
-        Arguments:
-            outPs {list(Pipe)} -- out pipes (not used at the moment)
+        Parameters
+        ----------
+        outPs : list(Pipe)
+            output pipes (not used at the moment)
         """
         try:
             while True:

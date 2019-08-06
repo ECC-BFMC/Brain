@@ -13,10 +13,16 @@ class CameraSpooferProcess(WorkerProcess):
         """Processed used for spoofing a camera/ publishing a video stream from a folder 
         with videos
         
-        Arguments:
-            inPs {list(Pipe)} -- []
-            outPs {list(Pipe)} -- list of output pipes(order does not matter)
-            videoDir {str} -- path to a dir with videos 
+        Parameters
+        ----------
+        inPs : list(Pipe)
+
+        outPs : list(Pipe)
+            list of output pipes(order does not matter)
+        videoDir : [str]
+            path to a dir with videos
+        ext : str, optional
+            the extension of the file, by default '.h264'
         """
         WorkerProcess.__init__(self, inPs, outPs)
 
@@ -30,14 +36,28 @@ class CameraSpooferProcess(WorkerProcess):
     
     # ===================================== INIT VIDEOS ==================================
     def open_files(self, inputDir, ext):
-        "Open all files with the given path and extension"
+        """Open all files with the given path and extension
+        
+        Parameters
+        ----------
+        inputDir : string
+            the input directory absolute path
+        ext : string
+            the extention of the files
+        
+        Returns
+        -------
+        list
+            A list of the files in the folder with the specified file extension. 
+        """
         
         files =  glob.glob(inputDir + '/*' + ext)  
-        
         return files
 
     # ===================================== INIT THREADS =================================
     def _init_threads(self):
+        """Initialize the thread of the process. 
+        """
         thPlay = None
 
         if self.mode == 1:
@@ -49,8 +69,10 @@ class CameraSpooferProcess(WorkerProcess):
     def play_video(self, videos):
         """Iterate through each video in the folder, open a cap and publish the frames.
         
-        Arguments:
-            videos {[type]} -- [description]
+        Parameters
+        ----------
+        videos : list(string)
+            The list of files with the videos. 
         """
         while True:
             for video in videos:

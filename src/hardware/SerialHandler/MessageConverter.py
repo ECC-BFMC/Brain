@@ -8,26 +8,45 @@ class MessageConverter:
 
     Example:
         
-        'Command' : [ [ arg1 ,  arg2 ],   [type1, type2],  [ enhanced precision] ]
-           'MCTL' : [ ['f_vel','f_angle'],[float, float],           [True]  ]
+        | 'Command' : [ [ arg1 ,  arg2 ],   [type1, type2],  [ enhanced precision] ]
+        | 'MCTL'    : [ ['f_vel','f_angle'],[float, float],  [False] ]
+        | 'BRAK'    : [ ['f_angle' ],       [float],         [False] ]
+
     """
 
+    
     commands = {
                 'MCTL' : [ ['f_vel','f_angle'],[float, float],  [False]  ],
                 'BRAK' : [ ['f_angle' ],       [float],         [False] ],
                 'PIDA' : [ ['activate'],       [ bool],         [False] ],
                 'SFBR' : [ ['activate'],       [ bool],         [False] ],
                 'DSPB' : [ ['activate'],       [ bool],         [False] ],
-                'ENPG' : [ ['activate'],       [ bool],         [False] ],
+                'ENPB' : [ ['activate'],       [ bool],         [False] ],
 
                 # optional commands
                 'PIDS' : [ ['kp','ki','kd','tf'],[ float, float, float, float], [True] ],
                 'SPLN' : [ ['A','B','C','D', 'dur_sec', 'isForward'], 
                            [complex, complex, complex, complex, float, bool], [False] ],
-            }   
+            }
+    """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """   
 
     # ===================================== GET COMMAND ===================================
     def get_command(self, action, **kwargs):
+        """This method generates automatically the command string, which will be sent to the other device. 
+        
+        Parameters
+        ----------
+        action : string
+            The key word of the action, which defines the type of action. 
+        **kwargs : dict
+            Optional keyword parameter, which have to contain all parameters of the action. 
+            
+ 
+        Returns
+        -------
+        string
+            Command with the decoded action, which can be transmite to embed device via serial communication.
+        """
         self.verify_command(action, kwargs)
         
         enhPrec = MessageConverter.commands[action][2][0]
@@ -56,6 +75,15 @@ class MessageConverter:
 
     # ===================================== VERIFY COMMAND ===============================
     def verify_command(self, action, commandDict):
+        """The purpose of this method to verify the command, the command has the right number and named parameters. 
+        
+        Parameters
+        ----------
+        action : string
+            The key word of the action. 
+        commandDict : dict
+            The dictionary with the names and values of command parameters, it has to contain all parameters defined in the commands dictionary. 
+        """
         
         assert len(commandDict.keys()) == len(MessageConverter.commands[action][0]), \
                 'Number of arguments does not match'

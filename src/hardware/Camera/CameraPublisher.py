@@ -17,7 +17,7 @@ class CameraPublisher(Thread):
     #================================ CAMERA =============================================
     def __init__(self, outPs):
         """The purpose of this thread is to send the camera images. It is able to record
-        videos and save them localy.
+        videos and save them locally.
         
         Parameters
         ----------

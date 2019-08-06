@@ -4,6 +4,8 @@ class RcBrain:
     
     # ===================================== INIT =========================================
     def __init__(self):
+        """It's an example to process the keyboard events and convert them to commands for the robot.
+        """
 
         self.speed = 0.0
         self.steerAngle = 0.0
@@ -38,6 +40,8 @@ class RcBrain:
 
     # ===================================== DISPLAY INFO =================================
     def displayInfo(self):
+        """Display all parameters on the screen. 
+        """
         # clear stdout for a smoother display
         os.system('cls' if os.name=='nt' else 'clear')
 
@@ -54,6 +58,13 @@ class RcBrain:
         )
     # ===================================== STATE DICT ===================================
     def _stateDict(self):
+        """It generates a dictionary with the robot current states. 
+        
+        Returns
+        -------
+        dict
+            It contains the robot current control state, speed and angle. 
+        """
         data = {}
         data['controlState']  =  1
         data['speed']         =  self.speed
@@ -62,6 +73,17 @@ class RcBrain:
         return data
     # ========================= CALLBACK =================================================
     def getMessage(self,data):
+        """ Generate the message based on the current pressed or released key and the current state. 
+        
+        Parameters
+        ----------
+        data : string
+            The filtered and encoded keyboard event.
+        Returns
+        -------
+        string
+            The encoded command.
+        """
 
         self._updateMotionState(data)
 
@@ -74,6 +96,8 @@ class RcBrain:
 
     # ===================================== UPDATE SPEED =================================
     def _updateSpeed(self):
+        """Update the speed based on the current state and the keyboard event.
+        """
         #forward
         if self.currentState[0] == True:
             if self.speed == 0:
@@ -101,6 +125,8 @@ class RcBrain:
 
     # ===================================== UPDATE STEER ANGLE ===========================
     def _updateSteerAngle(self):
+        """Update the steering angle based on the current state and the keyboard event.
+        """
         #left steer
         if self.currentState[2] == True:
             if self.steerAngle == 0:
@@ -126,6 +152,13 @@ class RcBrain:
 
     # ===================================== UPDATE PARAMS ================================
     def _updateParameters(self, currentKey):
+        """Update the parameter of the control mechanism (limits and steps).
+        
+        Parameters
+        ----------
+        currentKey : string
+            Keyboard event encoded in string.
+        """
         #--------------- RESET ---------------------------------
         if currentKey == 'p.r':
             self.speed = 0.0
@@ -168,7 +201,13 @@ class RcBrain:
 
     # ===================================== UPDATE MOTION STATE ==========================
     def _updateMotionState(self, currentKey):
-
+        """ Update the motion state based on the current state and the pressed or released key. 
+        
+        Parameters
+        ----------
+        currentKey : string 
+            Encoded keyboard event.
+        """
         if currentKey == 'p.w':
             self.currentState[0] = True
         elif currentKey == 'r.w':

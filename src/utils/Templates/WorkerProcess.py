@@ -2,8 +2,19 @@ import multiprocessing
 from multiprocessing import Process
 
 class WorkerProcess(Process):
-    
+
     def __init__(self, inPs, outPs, daemon = True):
+        """WorkerProcess is an abstract class for description a general structure and interface a process.
+        
+        Parameters
+        ----------
+        inPs : list(Pipe)
+            input pipes 
+        outPs : list(Pipe)
+            output pipes 
+        daemon : bool, optional
+            daemon process flag, by default True
+        """
         Process.__init__(self)
 
         self.inPs = inPs
@@ -13,10 +24,19 @@ class WorkerProcess(Process):
         self.threads = list()
 
     
-    def _init_threads(self):
+    def init_threads(self):
+        """ Initialize the threads of the process.
+
+        Raises
+        ------
+        NotImplementedError
+            Have to implement the initialization of threads
+        """
         raise NotImplementedError
 
     def run(self):
+        """This method applies the initialization of the theards and starts all of them. The process will shutdown, when all of the threads have stoped.
+        """
         self.init_threads()
 
         for th in self.threads:
