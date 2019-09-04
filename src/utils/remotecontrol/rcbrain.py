@@ -1,4 +1,12 @@
 import os
+import copy
+
+class RcBrainConfigParams:
+    def __init__(self,maxSteerAngle,maxSpeed,steerAngleStep,speedStep):
+        self.maxSteerAngle = maxSteerAngle
+        self.maxSpeed = maxSpeed
+        self.steerAngleStep = steerAngleStep
+        self.speedStep = speedStep
 
 class RcBrain:
     
@@ -12,31 +20,22 @@ class RcBrain:
 
         #----------------- CONSTANT VALUES --------------------
         #this values do not change
-        self.parameterIncrement =   0.1      
-        self.maxSteerAngle      =   21.0
-        self.maxSpeed           =   30.0
-        self.maxSpeedStep       =   3.0
-        self.maxSteerAngleStep  =   4.0
+        self.parameterIncrement =   0.1
+        self.limit_configParam = RcBrainConfigParams(21.0,30.0,3.0,4.0)
 
         self.startSpeed         =   9.0
         self.startSteerAngle    =   1.0
 
         #----------------- DEFAULT VALUES ----------------------
         #when the RC is reset, this are the default values
-        self.maxSpeedDefault        =   20.5
-        self.maxSteerAngleDefault   =   20
-        self.speedStepDefault       =   1.5
-        self.steerStepDefault       =   2.0
+        self.default_configParam = RcBrainConfigParams(20.5,20.0,1.5,2.0)
         
         #----------------- PARAMETERS -------------------------
         #this parameter can be modofied via RC
-        self.speedStepParam     =   self.speedStepDefault       #acceleration
-        self.steerStepParam     =   self.steerStepDefault       #steering speed
-        self.maxSpeedParam      =   self.maxSpeedDefault        #max allowed speed
-        self.maxSteerAngleParam =   self.maxSteerAngleDefault   
+        self.configParam = copy.deepcopy(self.default_configParam)  
 
         #----------------- DIRECTION SIGNALS STATES -----------
-        self.currentState =[False,False,False,False]            #UP, DOWN , LEFT, RIGHT
+        self.currentState =[False,False,False,False,False]            #UP, DOWN , LEFT, RIGHT, BRAKE
 
     # ===================================== DISPLAY INFO =================================
     def displayInfo(self):
@@ -47,14 +46,14 @@ class RcBrain:
 
         print("=========== REMOTE CONTROL ============")
         print(
-            "speed:          "  + str(self.speed) +             '[W/S]' +
-            "\nangle:         " + str(self.steerAngle) +        '[A/D]' +
-            "\nmaxSpeed :     " + str(self.maxSpeedParam) +     '[T/G]' +
-            "\nmaxSteerAngle: " + str(self.maxSteerAngleParam) +'[Y/H]' +
-            "\nacceleration:  " + str(self.speedStepParam) +    '[U/J]' +
-            "\nsteerStep:     " + str(self.steerStepParam) +    '[I/K]' +
-            '\nReset Params:                                     [ R ]' 
-
+            "speed:          "  + str(self.speed) +                     '[W/S]' +
+            "\nangle:         " + str(self.steerAngle) +                '[A/D]' +
+            "\nmaxSpeed :     " + str(self.configParam.maxSpeed) +      '[T/G]' +
+            "\nmaxSteerAngle: " + str(self.configParam.maxSteerAngle) + '[Y/H]' +
+            "\nacceleration:  " + str(self.configParam.speedStep) +     '[U/J]' +
+            "\nsteerStep:     " + str(self.configParam.steerAngleStep) +'[I/K]' +
+            '\nReset Params:                                     [ R ]' +
+            '\nCtrl+C to exit'
         )
     # ===================================== STATE DICT ===================================
     def _stateDict(self):
@@ -66,10 +65,13 @@ class RcBrain:
             It contains the robot current control state, speed and angle. 
         """
         data = {}
-        data['controlState']  =  1
-        data['speed']         =  self.speed
-        data['steerAngle']    =  self.steerAngle
-
+        if self.currentState[4]:
+            data['action']        =  'BRAK'
+        else:
+            data['action']        =  'MCTL'
+            data['speed']         =  float(self.speed)
+        data['steerAngle']    =  float(self.steerAngle)
+        print(data)
         return data
     # ========================= CALLBACK =================================================
     def getMessage(self,data):
@@ -95,33 +97,42 @@ class RcBrain:
         return self._stateDict()        
 
     # ===================================== UPDATE SPEED =================================
+
+    # If we keep the two buttons pressed the each states are active and the reached value remains constant.
+    # When each two keys are released, it sets to zero the value??? to rapid reseting.
     def _updateSpeed(self):
         """Update the speed based on the current state and the keyboard event.
         """
+        if self.currentState[4]:
+            self.currentState[0] = False
+            self.currentState[1] = False
+            self.speed = 0
+            return
+        
         #forward
-        if self.currentState[0] == True:
+        if self.currentState[0]:
             if self.speed == 0:
                 self.speed = self.startSpeed
-            elif self.speed < self.maxSpeedParam:
-                if  self.maxSpeedParam - self.speed < self.speedStepParam:
-                    self.speed += self.maxSpeedParam - self.speed
-                else:
-                    self.speed += self.speedStepParam
-
-        elif not self.currentState[1] and not self.currentState[0]:
+            elif self.speed == -self.startSpeed:
                 self.speed = 0
-
+            elif self.speed < self.configParam.maxSpeed:
+                if  self.configParam.maxSpeed - self.speed < self.configParam.speedStep:
+                    self.speed = self.configParam.maxSpeed
+                else:
+                    self.speed += self.configParam.speedStep
         #backwards
-        if self.currentState[1] == True:
+        elif self.currentState[1]:
             if self.speed == 0:
                 self.speed = - self.startSpeed
-            elif self.speed >  -self.maxSpeedParam:
-                if  abs(self.maxSpeedParam + self.speed) < self.speedStepParam:
-                    self.speed -= self.maxSpeedParam + self.speed
-                else:
-                    self.speed -= self.speedStepParam
-        elif not self.currentState[1] and not self.currentState[0]:
+            elif self.speed == self.startSpeed:
                 self.speed = 0
+            elif self.speed >  -self.configParam.maxSpeed:
+                if  abs(self.configParam.maxSpeed + self.speed) < self.configParam.speedStep:
+                    self.speed = - self.configParam.maxSpeed
+                else:
+                    self.speed -= self.configParam.speedStep
+        # else:
+        #     self.speed = 0.0
 
     # ===================================== UPDATE STEER ANGLE ===========================
     def _updateSteerAngle(self):
@@ -131,22 +142,22 @@ class RcBrain:
         if self.currentState[2] == True:
             if self.steerAngle == 0:
                 self.steerAngle = -self.startSteerAngle
-            elif self.steerAngle > -self.maxSteerAngleParam:
-                if self.maxSteerAngleParam + self.steerAngle < self.steerStepParam:
-                    self.steerAngle -= self.maxSteerAngleParam + self.steerAngle
+            elif self.steerAngle > -self.configParam.maxSteerAngle:
+                if self.configParam.maxSteerAngle + self.steerAngle < self.configParam.steerAngleStep:
+                    self.steerAngle = - self.configParam.maxSteerAngle
                 else:
-                    self.steerAngle -= self.steerStepParam 
+                    self.steerAngle -= self.configParam.steerAngleStep 
         elif not self.currentState[2] and not self.currentState[3]:
                 self.steerAngle = 0
         #right steer    
         if self.currentState[3] == True:
             if self.steerAngle == 0:
                 self.steerAngle = self.startSteerAngle
-            elif self.steerAngle < self.maxSteerAngleParam:
-                if self.maxSteerAngleParam - self.steerAngle < self.steerStepParam:
-                    self.steerAngle += self.maxSteerAngleParam - self.steerAngle
+            elif self.steerAngle < self.configParam.maxSteerAngle:
+                if self.configParam.maxSteerAngle - self.steerAngle < self.configParam.steerAngleStep:
+                    self.steerAngle = self.configParam.maxSteerAngle
                 else:
-                    self.steerAngle += self.steerStepParam
+                    self.steerAngle += self.configParam.steerAngleStep
         elif not self.currentState[2] and not self.currentState[3]:
                 self.steerAngle = 0
 
@@ -163,39 +174,35 @@ class RcBrain:
         if currentKey == 'p.r':
             self.speed = 0.0
             self.steerAngle = 0.0
-            self.speedStepParam     =   self.speedStepDefault
-            self.steerStepParam     =   self.steerStepDefault
-            self.maxSpeedParam      =   self.maxSpeedDefault
-            self.maxSteerAngleParam =   self.maxSteerAngleDefault   
-
+            self.configParam = copy.deepcopy(self.default_configParam)  
         #--------------- MAX SPEED ------------------------------
         elif currentKey == 'p.t':
-            if self.maxSpeedParam < self.maxSpeed:
-                self.maxSpeedParam += self.parameterIncrement
+            if self.configParam.maxSpeed < self.limit_configParam.maxSpeed:
+                self.configParam.maxSpeed += self.parameterIncrement
         elif currentKey == 'p.g':
-            if self.startSpeed < self.maxSpeedParam:
-                self.maxSpeedParam -= self.parameterIncrement
+            if self.startSpeed < self.configParam.maxSpeed:
+                self.configParam.maxSpeed  -= self.parameterIncrement
         #--------------- MAX STEER ANGLE ------------------------
         elif currentKey == 'p.y':
-            if self.maxSteerAngleParam < self.maxSteerAngle:
-                self.maxSteerAngleParam += self.parameterIncrement
+            if self.configParam.maxSteerAngle < self.limit_configParam.maxSteerAngle:
+                self.configParam.maxSteerAngle += self.parameterIncrement
         elif currentKey == 'p.h':
-            if self.startSteerAngle < self.maxSteerAngleParam:
-                self.maxSteerAngleParam -= self.parameterIncrement
+            if self.startSteerAngle < self.configParam.maxSteerAngle:
+                self.configParam.maxSteerAngle -= self.parameterIncrement
         #--------------- SPEED STEP ------------------------------
         elif currentKey == 'p.u':
-            if self.speedStepParam < self.maxSpeedStep:
-                self.speedStepParam += self.parameterIncrement
+            if self.configParam.speedStep < self.limit_configParam.speedStep:
+                self.configParam.speedStep += self.parameterIncrement
         elif currentKey == 'p.j':
-            if 0.1 < self.speedStepParam:
-                self.speedStepParam -= self.parameterIncrement
+            if 0.1 < self.configParam.speedStep:
+                self.configParam.speedStep -= self.parameterIncrement
         #--------------- STEER STEP ------------------------------
         elif currentKey == 'p.i':
-            if self.steerStepParam < self.maxSteerAngleStep:
-                self.steerStepParam += self.parameterIncrement
+            if self.configParam.steerAngleStep < self.limit_configParam.steerAngleStep:
+                self.configParam.steerAngleStep += self.parameterIncrement
         elif currentKey == 'p.k':
-            if 0.1 < self.steerStepParam:
-                self.steerStepParam -= self.parameterIncrement
+            if 0.1 < self.configParam.steerAngleStep:
+                self.configParam.steerAngleStep -= self.parameterIncrement
         elif currentKey == 'p.p':
             self.displayInfo()
 
@@ -224,4 +231,9 @@ class RcBrain:
             self.currentState[3] = True
         elif currentKey == 'r.d':
             self.currentState[3] = False
+        elif currentKey == 'p.space':
+            self.currentState[4] = True
+        elif currentKey == 'r.space':
+            self.currentState[4] = False
+
         
