@@ -24,8 +24,8 @@ class WorkerProcess(Process):
         self.threads = list()
 
     
-    def init_threads(self):
-        """ Initialize the threads of the process.
+    def _init_threads(self):
+        """ It initializes the threads of the process and adds the thread to the 'threads' list, which will be automatically started and stopped in the 'run' method.
 
         Raises
         ------
@@ -35,7 +35,8 @@ class WorkerProcess(Process):
         raise NotImplementedError
 
     def run(self):
-        """This method applies the initialization of the theards and starts all of them. The process will shutdown, when all of the threads have stoped.
+        """This method applies the initialization of the theards and starts all of them. The process ignores the keyboardInterruption signal and can terminate by applying the 'stop' method. 
+        The process will be blocked, until an other process use the 'stop' function. After appling the function it terminates all subthread.
         """
         self.init_threads()
 
