@@ -19,7 +19,7 @@ class CameraProcess(WorkerProcess):
         daemon : bool, optional
             daemon process flag, by default True
         """
-        WorkerProcess.__init__(self, inPs, outPs, daemon)
+        super(CameraProcess,self).__init__( inPs, outPs, daemon = True)
 
     # ===================================== INIT TH ======================================
     def init_threads(self):

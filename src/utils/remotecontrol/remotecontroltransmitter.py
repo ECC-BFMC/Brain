@@ -20,7 +20,7 @@ class RemoteControlTransmitter(Thread):
         """Remote controller transmitter. This should run on your PC. 
         
         """
-        Thread.__init__(self)
+        super(RemoteControlTransmitter,self).__init__()
 
         # Can be change to a multithread.Queue.
         self.lisBrR, self.lisBrS = Pipe(duplex=False)

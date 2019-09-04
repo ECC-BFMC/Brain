@@ -29,7 +29,7 @@ class CameraReceiver(WorkerProcess):
         outPs : list(Pipe) 
             List of output pipes
         """
-        WorkerProcess.__init__(self, inPs, outPs)
+        super(CameraReceiver,self).__init__(inPs, outPs)
 
         self.port       =   2244
         self.serverIp   =   '0.0.0.0'

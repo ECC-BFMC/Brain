@@ -30,6 +30,7 @@ class ReadThread(threading.Thread):
         """
         threading.Thread.__init__(self)
         self.ThreadID=f_theadID
+        super(ReadThread,self).__init__()
         self.serialCon=f_serialCon
         self.fileHandler=f_fileHandler
         self.Run=False

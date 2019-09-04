@@ -25,13 +25,7 @@ class RemoteControlReceiver(WorkerProcess):
             List of output pipes (order does not matter)
         """
 
-        WorkerProcess.__init__(self, inPs, outPs)
-
-
-        self.inPs       =   inPs
-        self.outPs      =   outPs
-
-        self.threads = list()
+        super(RemoteControlReceiver,self).__init__( inPs, outPs)
 
         self.port       =   12244
         self.serverIp   =   '0.0.0.0'

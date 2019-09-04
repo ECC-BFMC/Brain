@@ -14,7 +14,7 @@ class Consumer(WorkerProcess):
         outPs : list(Pipe)
             List of the output pipes
         """
-        WorkerProcess.__init__(self, inPs, outPs)
+        super(Consumer,self).__init__( inPs, outPs)
 
     def init_threads(self):
         """Initialize the threads by adding a consume method for each input pipes. 

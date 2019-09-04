@@ -24,7 +24,7 @@ class CameraSpooferProcess(WorkerProcess):
         ext : str, optional
             the extension of the file, by default '.h264'
         """
-        WorkerProcess.__init__(self, inPs, outPs)
+        super(CameraSpooferProcess,self).__init__(inPs,outPs)
 
         # params
         self.mode = 1

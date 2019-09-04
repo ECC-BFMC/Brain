@@ -12,8 +12,7 @@ class WorkerThread(Thread):
         outPs : list(Pipes)
             output pipes 
         """
-        Thread.__init__(self)
-
+        super(WorkerThread,self).__init__()
         self.inQs = inQs
         self.outQs = outQs
 

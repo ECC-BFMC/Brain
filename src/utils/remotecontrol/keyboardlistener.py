@@ -14,7 +14,7 @@ class KeyboardListener(Thread):
         outPs : list(Pipe)
             List of output pipes.
         """
-        Thread.__init__(self)
+        super(KeyboardListener,self).__init__()
 
         self.outPs = outPs
 

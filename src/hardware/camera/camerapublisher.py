@@ -25,6 +25,7 @@ class CameraPublisher(Thread):
             the list of pipes were the images will be sent
         """
         Thread.__init__(self)
+        super(CameraPublisher,self).__init__()
 
 
         # streaming options

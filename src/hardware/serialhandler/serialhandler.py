@@ -16,7 +16,7 @@ class SerialHandler(WorkerProcess):
         outPs : None
             Has no role.
         """
-        WorkerProcess.__init__(self, inPs, outPs)
+        super(SerialHandler,self).__init__(inPs, outPs)
 
         devFile = '/dev/ttyACM0'
         logFile = 'historyFile.txt'

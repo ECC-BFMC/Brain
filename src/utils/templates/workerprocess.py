@@ -15,7 +15,7 @@ class WorkerProcess(Process):
         daemon : bool, optional
             daemon process flag, by default True
         """
-        Process.__init__(self)
+        super(WorkerProcess,self).__init__()
 
         self.inPs = inPs
         self.outPs = outPs
