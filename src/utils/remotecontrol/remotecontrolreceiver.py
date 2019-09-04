@@ -1,15 +1,9 @@
-import sys
-sys.path.append('.')
-
 import json
 import socket
-import struct
-import multiprocessing
 
 from threading       import Thread
-from multiprocessing import Process
 
-from src.utils.Templates.WorkerProcess import WorkerProcess
+from src.utils.templates.workerprocess import WorkerProcess
 
 class RemoteControlReceiver(WorkerProcess):
     # ===================================== INIT =========================================
@@ -33,15 +27,8 @@ class RemoteControlReceiver(WorkerProcess):
     def run(self):
         """Apply the initializing methods and start the threads
         """
-        self._init_threads()
         self._init_socket()
-
-        for th in self.threads:
-            th.daemon = True
-            th.start()
-        
-        for th in self.threads:
-            th.join()
+        super(RemoteControlReceiver,self).run()
 
     # ===================================== INIT SOCKET ==================================
     def _init_socket(self):
@@ -57,7 +44,7 @@ class RemoteControlReceiver(WorkerProcess):
     def _init_threads(self):
         """Initialize the read thread to transmite the received messages to other processes. 
         """
-        readTh = Thread(target = self._read_stream, args = (self.outPs, ))
+        readTh = Thread(name='ReceiverCommand',target = self._read_stream, args = (self.outPs, ))
         self.threads.append(readTh)
 
     # ===================================== READ STREAM ==================================

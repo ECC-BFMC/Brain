@@ -1,6 +1,4 @@
-import time
 from pynput import keyboard 
-import sys
 from threading import Thread
 
 class KeyboardListener(Thread):
@@ -40,7 +38,7 @@ class KeyboardListener(Thread):
                     outP.send(keyMsg)
     
         except AttributeError:                              #for special keys (esc,ctrl)    
-            if key == keyboard.Key.esckeyboard.Key.esc:
+            if key == keyboard.Key.space:
                 key = 'p.space'
                 for outP in self.outPs:
                     outP.send(key)          

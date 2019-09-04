@@ -1,18 +1,12 @@
-import sys
-sys.path.append('.')
-
-import os
 import json
-import time
 import socket
-import threading
 
 from threading       import  Thread
-from multiprocessing import  Process, Pipe
+from multiprocessing import  Pipe
 
-from src.utils.RemoteControl.RcBrain            import RcBrain
-from src.utils.RemoteControl.KeyboardListener   import KeyboardListener
-from src.utils.Templates.WorkerProcess          import WorkerProcess
+from src.utils.remotecontrol.rcbrain            import RcBrain
+from src.utils.remotecontrol.keyboardlistener   import KeyboardListener
+from src.utils.templates.workerprocess          import WorkerProcess
 
 class RemoteControlTransmitter(Thread):
     # ===================================== INIT==========================================
@@ -29,7 +23,7 @@ class RemoteControlTransmitter(Thread):
         self.listener  =  KeyboardListener([self.lisBrS])
 
         self.port      =  12244
-        self.serverIp  = '192.168.1.243'
+        self.serverIp  = '192.168.1.2'
 
         self.threads = list()
     # ===================================== RUN ==========================================
@@ -48,9 +42,10 @@ class RemoteControlTransmitter(Thread):
     def _init_threads(self):
         """Initialize the command sender thread for transmite the receiver process all commands. 
         """
+        self.listener.daemon = self.daemon
         self.threads.append(self.listener)
         
-        sendTh = Thread(target = self._send_command_thread, args=(self.lisBrR, ))
+        sendTh = Thread(name = 'SendCommand',target = self._send_command_thread, args=(self.lisBrR, ),daemon=self.daemon)
         self.threads.append(sendTh)
 
     # ===================================== INIT SOCKET ==================================
@@ -80,10 +75,3 @@ class RemoteControlTransmitter(Thread):
             size = len(command)
 
             self.client_socket.sendto(command,(self.serverIp,self.port))
-
-# ===================================== MAIN =============================================
-if __name__ == "__main__":
-    a = RemoteControlTransmitter()
-    a.daemon = True
-    a.start()
-    a.join()
