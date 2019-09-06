@@ -1,7 +1,9 @@
 import threading 
 from threading import Thread
+from src.hardware.serialhandler.messageconverter import MessageConverter
+from src.utils.templates.threadwithstop import ThreadWithStop
 
-class WriteThread():
+class WriteThread(Thread):
     # ===================================== INIT =========================================
     def __init__(self, inP, serialCom, logFile):
         """The purpose of this thread is to redirectionate the received through input pipe to an other device by using serial communication. 
@@ -15,9 +17,11 @@ class WriteThread():
         logFile : FileHandler
             The log file handler to save the commands. 
         """
-        self.inP        =  inPs
+        super(WriteThread,self).__init__()
+        self.inP        =  inP
         self.serialCom  =  serialCom
         self.logFile    =  logFile
+        self.messageConverter = MessageConverter()
 
     # ===================================== RUN ==========================================
     def run(self):
@@ -25,8 +29,8 @@ class WriteThread():
         """
         while True:
             command = self.inP.recv()
-
-            self.serialCom.send(command.encode('ascii'))
-            self.logFile.write(command.encode('ascii'))
+            command_msg = self.messageConverter.get_command(**command)
+            self.serialCom.write(command_msg.encode('ascii'))
+            self.logFile.write(command_msg)
 
 

@@ -16,8 +16,8 @@ class MessageConverter:
 
     
     commands = {
-                'MCTL' : [ ['f_vel','f_angle'],[float, float],  [False]  ],
-                'BRAK' : [ ['f_angle' ],       [float],         [False] ],
+                'MCTL' : [ ['speed','steerAngle'],[float, float],  [False]  ],
+                'BRAK' : [ ['steerAngle' ],       [float],         [False] ],
                 'PIDA' : [ ['activate'],       [ bool],         [False] ],
                 'SFBR' : [ ['activate'],       [ bool],         [False] ],
                 'DSPB' : [ ['activate'],       [ bool],         [False] ],
@@ -94,10 +94,3 @@ class MessageConverter:
                     action + "should be of type " + \
                     str(MessageConverter.commands[action][1][i]) + 'instead of' + \
                     str(type(value))
-
-
-if __name__ == "__main__":
-    a = MessageConverter()
-
-    com = a.get_command("MCTL", f_angle=0.0, f_vel=0.2 )
-    print(com)

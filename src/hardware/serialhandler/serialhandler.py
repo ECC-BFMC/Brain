@@ -1,7 +1,12 @@
 import serial
+import time
+from multiprocessing import Event
 
-from src.utils.Templates.WorkerProcess      import WorkerProcess
-from src.hardware.SerialHandler.FileHandler import FileHandler
+from src.utils.templates.workerprocess      import WorkerProcess
+from src.hardware.serialhandler.filehandler import FileHandler
+from src.hardware.serialhandler.readthread  import ReadThread
+from src.hardware.serialhandler.writethread import WriteThread
+
 
 class SerialHandler(WorkerProcess):
     # ===================================== INIT =========================================
@@ -22,22 +27,33 @@ class SerialHandler(WorkerProcess):
         logFile = 'historyFile.txt'
         
         # comm init       
-        self.serialCom = serial.Serial(f_device_File,460800,timeout=0.1)
+        self.serialCom = serial.Serial(devFile,460800,timeout=0.1)
         self.serialCom.flushInput()
         self.serialCom.flushOutput()
 
         # log file init
-        self.historyFile = FileHandler(f_history_file)
+        self.historyFile = FileHandler(logFile)
+        
+        
 
     # ===================================== INIT THREADS =================================
-    def init_threads(self):
+    def _init_threads(self):
         """ Initializes the read and the write thread.
         """
         # read write thread        
         readTh  = ReadThread(1,self.serialCom,self.historyFile)
         self.threads.append(readTh)
         writeTh = WriteThread(self.inPs[0], self.serialCom, self.historyFile)
-        self.readTh.append(writeTh)
+        self.threads.append(writeTh)
+    
+
+    def run(self):
+        super(SerialHandler,self).run()
+        #Post running process -> close the history file
+        self.historyFile.close()
+
+    
+
 
 
 
