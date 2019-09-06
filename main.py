@@ -5,72 +5,89 @@ import sys
 sys.path.append('.')
 
 import time
-from multiprocessing import Pipe, Process
+import signal
+from multiprocessing import Pipe, Process, Event 
 
 # hardware imports
-from src.hardware.Camera.CameraProcess               import CameraProcess
-from src.hardware.SerialHandler.SerialHandlerProcess import SerialHandlerProcess
+from src.hardware.camera.cameraprocess               import CameraProcess
+from src.hardware.serialhandler.serialhandler        import SerialHandler
 
 # data imports
 # from src.data.GpsProcess.GpsProcess              import GpsProcess
-from src.data.Consumer.ConsumerProcess             import Consumer
+# from src.data.consumer.consumerprocess             import Consumer
 
 # utility imports
-from src.utils.CameraStreamer.CameraStreamer       import CameraStreamer
-from src.utils.CameraSpoofer.CameraSpooferProcess  import CameraSpooferProcess
-from src.utils.RemoteControl.RemoteControlReceiver import RemoteControlReceiver
+from src.utils.camerastreamer.camerastreamer       import CameraStreamer
+from src.utils.cameraspoofer.cameraspooferprocess  import CameraSpooferProcess
+from src.utils.remotecontrol.remotecontrolreceiver import RemoteControlReceiver
 
 # =============================== CONFIG =================================================
-enableStream        =  False
-enableCameraSpoof   =  False
+enableStream        =  True
+enableCameraSpoof   =  False 
 enableRc            =  True
 #================================ PIPES ==================================================
 
-camStR, camStS = Pipe(duplex = False)           # camera  ->  streamer
-gpsBrR, gpsBrS = Pipe(duplex = False)           # gps     ->  brain
-rcShR, rcShS   = Pipe(duplex = False)           # rc      ->  serial handler
 
-camCsR, camCsS = Pipe(duplex = False)           # camera  ->  consumer
+# gpsBrR, gpsBrS = Pipe(duplex = False)           # gps     ->  brain
 #================================ PROCESSES ==============================================
 allProcesses = list()
 
 # =============================== HARDWARE PROCC =========================================
 # ------------------- camera + streamer ----------------------
 if enableStream:
+    camStR, camStS = Pipe(duplex = False)           # camera  ->  streamer
+
+    if enableCameraSpoof:
+        camSpoofer = CameraSpooferProcess([],[camStS],'vid')
+        allProcesses.append(camSpoofer)
+
+    else:
+        camProc = CameraProcess([],[camStS])
+        allProcesses.append(camProc)
+
     streamProc = CameraStreamer([camStR], [])
     allProcesses.append(streamProc)
 
-    camProc = CameraProcess([],[ camCsS, camStS])
-else:
-    camProc = CameraProcess([],[camCsS])
-
-allProcesses.append(camProc)
 
 
-# serial handler process
-shProc = SerialHandlerProcess([rcShR], [])
-allProcesses.append(shProc)
+
 
 # =============================== DATA ===================================================
 #gps client process
 # gpsProc = GpsProcess([], [gpsBrS])
 # allProcesses.append(gpsProc)
 
-#consumer process
-consProc = Consumer([camCsR], [])
-allProcesses.append(consProc)
+
 
 # ===================================== CONTROL ==========================================
 #------------------- remote controller -----------------------
 if enableRc:
+    rcShR, rcShS   = Pipe(duplex = False)           # rc      ->  serial handler
+
+    # serial handler process
+    shProc = SerialHandler([rcShR], [])
+    allProcesses.append(shProc)
+
     rcProc = RemoteControlReceiver([],[rcShS])
     allProcesses.append(rcProc)
 
-
+print("Starting the processes!",allProcesses)
 for proc in allProcesses:
     proc.daemon = True
-    print(proc)
     proc.start()
 
-for proc in allProcesses:
-    proc.join()
+blocker = Event()  
+
+try:
+    blocker.wait()
+except KeyboardInterrupt:
+    print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
+    for proc in allProcesses:
+        if hasattr(proc,'stop') and callable(getattr(proc,'stop')):
+            print("Process with stop",proc)
+            proc.stop()
+            proc.join()
+        else:
+            print("Process witouth stop",proc)
+            proc.terminate()
+            proc.join()
