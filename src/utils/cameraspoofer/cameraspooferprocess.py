@@ -1,10 +1,10 @@
-import os
 import cv2
 import glob
+import time
 
 from threading       import Thread
 
-from src.utils.Templates.WorkerProcess import WorkerProcess
+from src.utils.templates.workerprocess import WorkerProcess
 
 class CameraSpooferProcess(WorkerProcess):
 
@@ -27,7 +27,6 @@ class CameraSpooferProcess(WorkerProcess):
         super(CameraSpooferProcess,self).__init__(inPs,outPs)
 
         # params
-        self.mode = 1
         self.videoSize = (640,480)
         
         self.videoDir = videoDir
@@ -58,11 +57,9 @@ class CameraSpooferProcess(WorkerProcess):
     def _init_threads(self):
         """Initialize the thread of the process. 
         """
-        thPlay = None
 
-        if self.mode == 1:
-            thPlay = Thread(target= self.play_video, args=(self.videos, ))
-            self.threads.append(thPlay)
+        thPlay = Thread(name='VideoPlayerThread',target= self.play_video, args=(self.videos, ))
+        self.threads.append(thPlay)
 
 
     # ===================================== PLAY VIDEO ===================================
@@ -80,11 +77,13 @@ class CameraSpooferProcess(WorkerProcess):
                 
                 while True:
                     ret, frame = cap.read()
+                    stamp = time.time()
                     if ret: 
                         frame = cv2.resize(frame, self.videoSize)
                         
                         for p in self.outPs:
-                            p.send(frame)   
+                            p.send([[stamp], frame])
+                               
                     else:
                         break
 
