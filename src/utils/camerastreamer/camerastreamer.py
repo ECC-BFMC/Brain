@@ -1,4 +1,3 @@
-import io
 import socket
 import struct
 import time
@@ -8,7 +7,7 @@ from threading import Thread
 
 import cv2
 
-from src.utils.Templates.WorkerProcess import WorkerProcess
+from src.utils.templates.workerprocess import WorkerProcess
 
 class CameraStreamer(WorkerProcess):
     # ===================================== INIT =========================================
@@ -27,28 +26,23 @@ class CameraStreamer(WorkerProcess):
         """
         super(CameraStreamer,self).__init__( inPs, outPs)
 
-        self.serverIp   =  '192.168.1.141' # PC ip
-        self.port       =  2244           # com port
+        self.serverIp   =  '192.168.1.102' # PC ip
+        self.port       =  2244            # com port
         
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads.
         """
         self._init_socket()
-        self._init_threads()
+        super(CameraStreamer,self).run()
 
-        for th in self.threads:
-            th.daemon = True
-            th.start()
-        
-        for th in self.threads:
-            th.join()
-            
     # ===================================== INIT THREADS =================================
     def _init_threads(self):
         """Initialize the sending thread.
         """
-        streamTh = Thread(target = self._send_thread, args= (self.inPs[0], ))
+        if self._blocker.is_set():
+            return
+        streamTh = Thread(name='StreamSending',target = self._send_thread, args= (self.inPs[0], ))
         streamTh.daemon = True
         self.threads.append(streamTh)
 
@@ -57,9 +51,21 @@ class CameraStreamer(WorkerProcess):
         """Initialize the socket. 
         """
         self.client_socket = socket.socket()
-        self.client_socket.connect((self.serverIp, self.port))
+        self.connection = None
+        # Trying repeatedly to connect the camera receiver.
+        try:
+            while self.connection is None and not self._blocker.is_set():
+                try:
+                    self.client_socket.connect((self.serverIp, self.port))
+                    self.client_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                    self.connection = self.client_socket.makefile('wb') 
+                except ConnectionRefusedError as error:
+                    time.sleep(0.5)
+                    pass
+        except KeyboardInterrupt:
+            self._blocker.set()
+            pass
 
-        self.connection = self.client_socket.makefile('wb') 
         
     # ===================================== SEND THREAD ==================================
     def _send_thread(self, inP):
@@ -85,5 +91,10 @@ class CameraStreamer(WorkerProcess):
                 self.connection.write(data)
 
             except Exception as e:
-                print(e)
+                print("CameraStreamer failed to stream images:",e,"\n")
+                # Reinitialize the socket for reconnecting to client.  
+                self.connection = None
+                self._init_socket()
+                pass
+
             

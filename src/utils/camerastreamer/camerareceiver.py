@@ -11,9 +11,9 @@ import cv2
 from threading import Thread
 
 import multiprocessing
-from multiprocessing import Process
+from multiprocessing import Process,Event
 
-from src.utils.Templates.WorkerProcess import WorkerProcess
+from src.utils.templates.workerprocess import WorkerProcess
 
 
 class CameraReceiver(WorkerProcess):
@@ -40,30 +40,24 @@ class CameraReceiver(WorkerProcess):
         """Apply the initializers and start the threads. 
         """
         self._init_socket()
-        self._init_threads()
-
-        for th in self.threads:
-            th.daemon = True
-            th.start()
-
-        for th in self.threads:
-            th.join()
+        super(CameraReceiver,self).run()
 
     # ===================================== INIT SOCKET ==================================
     def _init_socket(self):
         """Initialize the socket. 
         """
         self.server_socket = socket.socket()
+        self.server_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         self.server_socket.bind((self.serverIp, self.port))
-        self.server_socket.listen(0)
 
+        self.server_socket.listen(0)
         self.connection = self.server_socket.accept()[0].makefile('rb')
 
     # ===================================== INIT THREADS =================================
     def _init_threads(self):
         """Initialize the read thread to receive the video.
         """
-        readTh = Thread(target = self._read_stream, args = (self.outPs, ))
+        readTh = Thread(name = 'StreamReceiving',target = self._read_stream, args = (self.outPs, ))
         self.threads.append(readTh)
 
     # ===================================== READ STREAM ==================================
@@ -91,13 +85,8 @@ class CameraReceiver(WorkerProcess):
                 # ----------------------- show images -------------------
                 cv2.imshow('Image', image) 
                 cv2.waitKey(1)
-
+        except:
+            pass
         finally:
             self.connection.close()
             self.server_socket.close()
-
-
-if __name__ =='__main__':
-    a = CameraReceiver([],[])
-    a.start()
-    a.join()
