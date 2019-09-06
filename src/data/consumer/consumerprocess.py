@@ -1,6 +1,4 @@
-from src.utils.Templates.WorkerProcess import WorkerProcess
-
-import threading
+from src.utils.templates.workerprocess import WorkerProcess
 from threading import Thread
 
 class Consumer(WorkerProcess):
@@ -16,14 +14,15 @@ class Consumer(WorkerProcess):
         """
         super(Consumer,self).__init__( inPs, outPs)
 
-    def init_threads(self):
+    def _init_threads(self):
         """Initialize the threads by adding a consume method for each input pipes. 
         """
         for pipe in self.inPs:
-            self.threads.append(Thread(target=self._consume, args=(pipe,)))
+            self.threads.append(Thread(name='Consume',target=Consumer._consume, args=(pipe,)))
     
-    def _consume(self, pipe):
-        """A simple method to read the content from the input pipe. 
+    @staticmethod
+    def _consume(pipe):
+        """A simple method to read the content from the input pipe to consume the content of the connection. 
         
         Parameters
         ----------
@@ -32,4 +31,7 @@ class Consumer(WorkerProcess):
         """
         while True:
             res = pipe.recv()
-            print("type recv", type(res))
+            # print("type recv", type(res))
+
+    
+    
