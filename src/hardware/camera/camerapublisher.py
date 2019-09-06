@@ -10,9 +10,10 @@ import threading
 
 from threading import Thread
 from multiprocessing import Process
+from src.utils.templates.threadwithstop import ThreadWithStop
 
 #================================ CAMERA PROCESS =========================================
-class CameraPublisher(Thread):
+class CameraPublisher(ThreadWithStop):
     
     #================================ CAMERA =============================================
     def __init__(self, outPs):
@@ -24,8 +25,8 @@ class CameraPublisher(Thread):
         outPs : list(Pipes)
             the list of pipes were the images will be sent
         """
-        Thread.__init__(self)
         super(CameraPublisher,self).__init__()
+        self.daemon = True
 
 
         # streaming options
@@ -51,7 +52,7 @@ class CameraPublisher(Thread):
         self.camera.framerate       =   15
 
         self.camera.brightness      =   50
-        self.camera.shutter_speed   =   12000
+        self.camera.shutter_speed   =   1200
         self.camera.contrast        =   0
         self.camera.iso             =   0 # auto
         
@@ -93,7 +94,8 @@ class CameraPublisher(Thread):
         """
         i = 0
 
-        while True:
+        while self._running:
+            
             yield self._stream
             self._stream.seek(0)
             data = self._stream.read()
@@ -104,6 +106,7 @@ class CameraPublisher(Thread):
             stamp = time.time()
 
             # output image and time stamp
+            # Note: The sending process can be blocked, when doesn't exist any consumer process and it reaches the limit size.
             for outP in self.outPs:
                 outP.send([[stamp], data])
 

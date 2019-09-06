@@ -2,8 +2,8 @@
 import multiprocessing
 from multiprocessing import Process
 
-from src.utils.Templates.WorkerProcess import WorkerProcess
-from src.hardware.Camera.CameraPublisher import CameraPublisher
+from src.utils.templates.workerprocess import WorkerProcess
+from src.hardware.camera.camerapublisher import CameraPublisher
 
 class CameraProcess(WorkerProcess):
     #================================ CAMERA PROCESS =====================================
@@ -22,7 +22,7 @@ class CameraProcess(WorkerProcess):
         super(CameraProcess,self).__init__( inPs, outPs, daemon = True)
 
     # ===================================== INIT TH ======================================
-    def init_threads(self):
+    def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads.
         """
         camTh = CameraPublisher(self.outPs) 
