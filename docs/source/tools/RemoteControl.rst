@@ -7,9 +7,11 @@ These two classes create the connection based on UPD protocol between two device
 The RcBrain class is the main control mechanism, which based on the keyboard events calculates the robot state, like forward speed and steering angle. It's responsible for processing the keyboard 
 events and setting a parameters for control commands.
 
+.. image:: ../diagrams/pics/ClassDiaStartUp_RemoteControl.png
+    :align: center
 
-.. automodule:: src.utils.RemoteControl.RemoteControlTransmitter
-.. automodule:: src.utils.RemoteControl.RemoteControlReceiver
-.. automodule:: src.utils.RemoteControl.KeyboardListener
-.. automodule:: src.utils.RemoteControl.RcBrain
+.. automodule:: src.utils.remotecontrol.remotecontroltransmitter
+.. automodule:: src.utils.remotecontrol.remotecontrolreceiver
+.. automodule:: src.utils.remotecontrol.keyboardlistener
+.. automodule:: src.utils.remotecontrol.rcbrain
 
