@@ -3,6 +3,19 @@ import copy
 
 class RcBrainConfigParams:
     def __init__(self,maxSteerAngle,maxSpeed,steerAngleStep,speedStep):
+        """ The aim of the class is to group the configuration parameters for the rcBrain. 
+        
+        Parameters
+        ----------
+        maxSteerAngle : float
+            Maximum value of steering angle
+        maxSpeed : float
+            Maximum value of speed
+        steerAngleStep : float
+            The step value of steering angle
+        speedStep : [type]
+            The step value of speed
+        """
         self.maxSteerAngle = maxSteerAngle
         self.maxSpeed = maxSpeed
         self.steerAngleStep = steerAngleStep
@@ -31,7 +44,7 @@ class RcBrain:
         self.default_configParam = RcBrainConfigParams(20.5,20.0,1.5,2.0)
         
         #----------------- PARAMETERS -------------------------
-        #this parameter can be modofied via RC
+        #this parameter can be modified via key events. 
         self.configParam = copy.deepcopy(self.default_configParam)  
 
         #----------------- DIRECTION SIGNALS STATES -----------
