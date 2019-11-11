@@ -12,7 +12,7 @@ class SerialHandler(WorkerProcess):
     # ===================================== INIT =========================================
     def __init__(self,inPs, outPs):
         """The functionality of this process is to redirectionate the commands from the remote or other process to the micro-controller by serial port.
-        The default frequency is 460800 and device file /dev/ttyACM0. It automatically save the sent commands into a log file, named historyFile.txt. 
+        The default frequency is 256000 and device file /dev/ttyACM0. It automatically save the sent commands into a log file, named historyFile.txt. 
         
         Parameters
         ----------
@@ -27,7 +27,7 @@ class SerialHandler(WorkerProcess):
         logFile = 'historyFile.txt'
         
         # comm init       
-        self.serialCom = serial.Serial(devFile,460800,timeout=0.1)
+        self.serialCom = serial.Serial(devFile,256000,timeout=0.1)
         self.serialCom.flushInput()
         self.serialCom.flushOutput()
 

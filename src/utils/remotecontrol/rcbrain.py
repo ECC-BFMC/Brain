@@ -82,7 +82,7 @@ class RcBrain:
             data['action']        =  'BRAK'
         else:
             data['action']        =  'MCTL'
-            data['speed']         =  float(self.speed)
+            data['speed']         =  float(self.speed/100.0)
         data['steerAngle']    =  float(self.steerAngle)
         print(data)
         return data
