@@ -7,7 +7,7 @@ Welcome to BFMC Startup Project's documentation!
 
    readme_link
    architecture
-   hardwarelayer/index
+   HardwareLayer/index
    tools/index
 
 Indices and tables

@@ -7,7 +7,7 @@ This repository represents a tool which shows and allows you to start-up your ca
   
 ## General architecture
 ![architecture](docs/source/diagrams/pics/generalArchitecture.png)
-The above image illustrates the general overview of a possible architecture. It is a layered architecture where each node (colored rectangle) represents a process. The rectangles marked gray denotes that the module/package has not been implemented. The inter-process communication is done with pipes. The main ideas that followed me in the developing of this architecture was modularity and the ease of modification anywhere and anytime. For development and debugging some tools have been created.
+The above image illustrates the general overview of a possible architecture. It is a layered architecture where each node (colored rectangle) represents a process. The gray rectangles denotes the modules/packages, which are not implemented. The inter-process communication is done with pipes. The main ideas, that we followed in the development of this architecture, were modularity and the ease of modification anywhere and anytime. A range of tools have been created for development and debugging. 
 
 ### The application structure:
 
@@ -52,6 +52,9 @@ The `requirements` files contains the other dependencies, they are different for
 ```
   pip3 install -r requirements_remote.txt
 ```
+Note: 
+  The remote tools were tested on Linux and Windows. On Linux they are worked correctly without any error. On Windows the camera receiver works nicely, but 
+the remote controller transmitter may produce a delay. On Mac Os the remote tools weren't tested. 
 
 ## Configuration
 

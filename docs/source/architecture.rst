@@ -1,4 +1,4 @@
-Architecture of the tools
+Tools architecture
 =========================
 
 In this section is presented the architecture of the development tools, Camera Streamer and Remote Control. In the fist figure 
