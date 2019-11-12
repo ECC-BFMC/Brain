@@ -52,7 +52,8 @@ The `requirements` files contains the other dependencies, they are different for
 ```
   pip3 install -r requirements_remote.txt
 ```
-Note: 
+
+**Note:**
   The remote tools were tested on Linux and Windows. On Linux they are worked correctly without any error. On Windows the camera receiver works nicely, but 
 the remote controller transmitter may produce a delay. On Mac Os the remote tools weren't tested. 
 
