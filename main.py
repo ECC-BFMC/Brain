@@ -41,7 +41,6 @@ from src.hardware.camera.cameraprocess               import CameraProcess
 from src.hardware.serialhandler.serialhandler        import SerialHandler
 
 # data imports
-# from src.data.GpsProcess.GpsProcess              import GpsProcess
 # from src.data.consumer.consumerprocess             import Consumer
 
 # utility imports
