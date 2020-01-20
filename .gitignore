@@ -2,5 +2,5 @@ docs/build/
 .vscode/
 __pycache__
 *.pyc
-test/
+test/serialreader
 vid/
