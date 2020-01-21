@@ -13,6 +13,7 @@ picamera, opencv, pyserial. The concept and architectures are specified in the f
    HardwareLayer/index
    dataacquisition/index
    tools/index
+   releasenote
 
 Indices and tables
 ==================
