@@ -35,14 +35,25 @@ import position_listener
 import time
 
 class GpsTracker(threading.Thread):
-    """ GpsTracker targets to connect on the server and to receive the messages, which incorporates 
-    the coordinate of the robot on the race track. It has two main state, the setup state and the listening state. 
-    In the setup state, it creates the connection with server. It's receiving  the messages from the server in the listening
-    state. 
     
-    It's a thread, so can be running parallel with other threads. You can access to the received parameters via 'coor' function.
-    """
     def __init__(self):
+        """ GpsTracker targets to connect on the server and to receive the messages, which incorporates 
+        the coordinate of the robot on the race track. It has two main state, the setup state and the listening state. 
+        In the setup state, it creates the connection with server. It's receiving  the messages from the server in the listening
+        state. 
+
+        It's a thread, so can be running parallel with other threads. You can access to the received parameters via 'coor' function.
+
+        Examples
+        --------
+        Here you can find a simple example, where the GpsTracker are running 10 second:
+            | gpstracker = GpsTracker()
+            | gpstracker.start()
+            | time.sleep(10)
+            | gpstracker.stop()
+            | gpstracker.join()
+
+        """
         super().__init__()
         #: serverData object with server parameters
         self.__server_data = server_data.ServerData()
@@ -56,6 +67,8 @@ class GpsTracker(threading.Thread):
         self.__running = True
 
     def setup(self):
+        """Actualize the server's data and create a new socket with it.
+        """
         # Running while it has a valid connection with the server
         while(self.__server_data.socket == None and self.__running):
             # discover the parameters of server
@@ -66,7 +79,8 @@ class GpsTracker(threading.Thread):
         
     
     def listen(self):
-        # Listenning the coordination of robot
+        """ Listening the coordination of robot
+        """
         self.__position_listener.listen()
 
     def run(self):
@@ -75,9 +89,18 @@ class GpsTracker(threading.Thread):
             self.listen()
     
     def coor(self):
+        """Access to the last receive coordinate
+        
+        Returns
+        -------
+        dictionary
+            coordinate and timestamp
+        """
         return self.__position_listener.coor
 
     def stop(self):
+        """Terminate the thread running.
+        """
         self.__running = False
         self.__server_listener.stop()
         self.__position_listener.stop()

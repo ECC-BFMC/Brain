@@ -11,6 +11,7 @@ picamera, opencv, pyserial. The concept and architectures are specified in the f
    readme_link
    architecture
    HardwareLayer/index
+   dataacquisition/index
    tools/index
 
 Indices and tables
