@@ -36,9 +36,10 @@ from utils import load_private_key,sign_data
 from complexencoder import ComplexEncoder
 
 class CarClientServerThread(threading.Thread):
-    """ It's a thread to run the server for serving the car clients. By function 'stop' can terminate the client serving.
-    """
+    
     def __init__(self,serverConfig,logger):
+        """ It's a thread to run the server for serving the car clients. By function 'stop' can terminate the client serving.
+        """
         super().__init__()
         self.carclientserver = CarClientServer(serverConfig,CarClientHandler,logger)
         self.carclientserver.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

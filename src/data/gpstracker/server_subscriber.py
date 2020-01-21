@@ -49,6 +49,8 @@ class ServerSubscriber:
 		self.__public_key = load_public_key('publickey.pem')
 
 	def subscribe(self): 
+		""" It connects to the server and send the car id. After sending the car identification number it checks the server authentication.
+		"""
 		try:
 			# creating and initializing the socket
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
