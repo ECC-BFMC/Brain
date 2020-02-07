@@ -10,3 +10,4 @@ In our case, it has only one implemented module: GpsTracker.
     :maxdepth: 1
     
     GpsTracker
+    TrafficLights.rst
