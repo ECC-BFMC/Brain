@@ -1,4 +1,4 @@
-Data acquisition 
+Data acquisition layer
 =======================
 
 This layer contains all classes, which help to extract the features or receive data from other device. 
@@ -9,5 +9,7 @@ In our case, it has only one implemented module: GpsTracker.
 .. toctree::
     :maxdepth: 1
     
+    CarsTracker
     GpsTracker
-    TrafficLights.rst
+    TrafficLights
+    

@@ -2,9 +2,9 @@ Release notes
 =============
 
 
-Version 1.1.0
+Version 2.1.0
 ################
-Release date: 21.01.2020
+Release date: 21.10.2020
 
 What's New
 """"""""""""""" 

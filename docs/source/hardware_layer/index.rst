@@ -8,6 +8,8 @@ which transfers to other workers. The serialHanlder communicates with other devi
 .. toctree::
     :maxdepth: 1
 
+    BNOHandler
+    ObstacleHandler
     CameraHandler
     SerialHandler
     
