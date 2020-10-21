@@ -7,7 +7,7 @@ On the RaspberryPi (RcCar) following processes run: CameraProcess, SerialHandler
 take part of the hardware layer and the second two are implemented in the `utils` package. Each process contains minimum one thread, these threads are 
 symbolized by rectangles and the communication (multiprocess.Pipe and socket.socket) between them by arrows. 
 
-.. image:: diagrams/pics/ComponentDia_StartUp.png
+.. image:: diagrams/pics/Proposed_Architecture.png
     :align: center
 
 On the remote device run the camera receiver and the remote control transmitter processes, where the Remote control transmitter process contains only two thread, SendCommand and KeyboardListener. 
