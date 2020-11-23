@@ -81,18 +81,42 @@ python3 -m bin.camerareceiver
 ```
 
 ## BNO displayer
-If you run 
+
+First and foremost, you should check that the wiring between the Raspberry Pi and the IMU board is correct. 
+
+You can check the following pin layout of the IMU board and the pinout of the RPI 4b https://www.raspberrypi.org/documentation/usage/gpio/
+
+.. image:: diagrams/pics/IMULayout.png
+    :align: center
+
+For our example, we will use the RTIMULib tool.
+In order to install the neccesary tools, the library and enable your I2C communication, please follow this guide: https://github.com/RPi-Distro/RTIMULib/tree/master/Linux
+
+To make the library python compatible, there is one more step to be taken:
+```
+cd ../python
+python3.7 setup.py build
+sudo python3.7 setup.py install
+```
+
+We have provided two more scripts, BNOhandler.py and BNO_test.py, which should serve as a base for further
+development with the sensor. The BNOhandler is a written as a thread and the BNO_test is used as an example of running the thread. They are located under the hardware layer.
+
+For a more thorough understanding of the BNO055's capabilities you should read the official
+datasheet at https://www.bosch-sensortec.com/products/smart-sensors/bno055.html and
+RTIMULib's documentation on it's official GitHub repository:
+https://github.com/RPi-Distro/RTIMULib
 
 ## Cars tracker
-If you run 
+Will be provided by 18th of December
 
 ## Traffic lights interaction
-If you run 
+In order to test the functionality of the traffic lights, we have developed a simulated traffic light, you can check it here: test/trafficlight/Simulator.py. You can run it on a different machine and your listener on your car. The listener is located here: src/data/trafficlights/Example.py. It uses the Listener.py as a thread.
 
 ## GPS interaction
-If you run 
+In order to test the functionality of the GPS server, we have developed a simulated server, you can find it here: test/gpsserver/gps.py. You can run it on a different machine and your client on your car. The client is lcoated here: src/data/gpstracker/gpstracker.py. It uses all the scripts as threads for connecting, subscribing and position listening.
 
 ## Obstacle handler
-If you run 
+Will be provided by 18th of December
 
 [Documentation](https://bfmcstartup.readthedocs.io/en/stable/)

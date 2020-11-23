@@ -19,8 +19,3 @@ It will work similarly to the `CameraProcess`, only will play the stored videos.
 
 .. image:: diagrams/pics/ComponentDia_CameraSpoofer.png
     :align: center
-
-
-BNO displayer
----------------------
-The BNO....

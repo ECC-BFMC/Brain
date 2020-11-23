@@ -17,9 +17,9 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'BFMC Startup'
-copyright = '2019, Nandor Kilyen'
-author = 'Nandor Kilyen'
+project = 'BFMC.Startup'
+copyright = 'Bosch Engineering Center Cluj and BFMC organizers'
+author = 'Bosch Engineering Center Cluj and BFMC organizers'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'

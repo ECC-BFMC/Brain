@@ -17,4 +17,4 @@ You can access to other documentation:
    dataacquisition_layer/index
    hardware_layer/index
    tools/index
-   releasenote
+
