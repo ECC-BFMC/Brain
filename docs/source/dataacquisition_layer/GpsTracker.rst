@@ -20,7 +20,7 @@ Testing
 ########
 
 If you incorporate the below described module in your application and you want to test it, then this application 
-helps to verify the working with the localization system. You have to enter in the folder 'test\gpsserver',
+helps to verify the working with the localization system. You have to enter in the folder 'test\gpstrackerSERVER',
 where you have run the gps.py module. This module will run a server on your remote device and this server will send 
 unreal coordinates for your gpstracker on the robot. The server writes on screen the states of process, you can 
 follow functionality. In testing phase, you don't need to place a Aruco marker on the robot's roof, because you don't a same 
