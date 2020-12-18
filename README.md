@@ -108,15 +108,16 @@ RTIMULib's documentation on it's official GitHub repository:
 https://github.com/RPi-Distro/RTIMULib
 
 ## Cars tracker
-Will be provided by 18th of December
+In order to test the functionality of the GPS server, we have developed a simulated server, you can find it here: test/carstrackerSIM. 
+You can run it on a different machine and your listener on your car. It uses the broadcaster.py. The listener is locat3d here: src/data/carstracker/carstracker.py
 
 ## Traffic lights interaction
-In order to test the functionality of the traffic lights, we have developed a simulated traffic light, you can check it here: test/trafficlight/Simulator.py. You can run it on a different machine and your listener on your car. The listener is located here: src/data/trafficlights/Example.py. It uses the Listener.py as a thread.
+In order to test the functionality of the traffic lights, we have developed a simulated traffic light, you can check it here: test/trafficlightSIM/Simulator.py. You can run it on a different machine and your listener on your car. The listener is located here: src/data/trafficlights/Example.py. It uses the Listener.py as a thread.
 
 ## GPS interaction
-In order to test the functionality of the GPS server, we have developed a simulated server, you can find it here: test/gpsserver/gps.py. You can run it on a different machine and your client on your car. The client is lcoated here: src/data/gpstracker/gpstracker.py. It uses all the scripts as threads for connecting, subscribing and position listening.
+In order to test the functionality of the GPS server, we have developed a simulated server, you can find it here: test/gpsstrackerSERVER/gps.py. You can run it on a different machine and your client on your car. The client is lcoated here: src/data/gpstracker/gpstracker.py. It uses all the scripts as threads for connecting, subscribing and position listening.
 
 ## Obstacle handler
-Will be provided by 18th of December
+In order to test the functionality of the obstacle handler server, we have developed a simulated server, you can find it here: test/obstaclehandlerSERVER/obstacle_handler.py. You can run it on a different machine and your client on your car. The client is lcoated here: src/data/obstaclehandler/obstacle_handler.py. It uses all the scripts as threads for connecting, subscribing and obstacle position streaming.
 
 [Documentation](https://bfmcstartup.readthedocs.io/en/stable/)
