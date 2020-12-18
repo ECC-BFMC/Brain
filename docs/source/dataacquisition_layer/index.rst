@@ -12,4 +12,4 @@ In our case, it has only one implemented module: GpsTracker.
     CarsTracker
     GpsTracker
     TrafficLights
-    
+    ObstacleHandler    
