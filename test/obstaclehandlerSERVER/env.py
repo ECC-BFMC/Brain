@@ -34,11 +34,11 @@ import logging
 import time
 
 class ObstacleHandlerSystemServer:
-    """LocalizationSystemServer aims to serve the car clients with coordinates of robot on the race track. 
+    """ObstacleHandlerSystemServer aims to serve the car clients by receiving the sent coordinates and the obstacle id encountered on the map. 
     It involves a ServerConfig object, CarClientServerThread object, ServerBeaconThread object. 
     The object of ServerConfig accumulates all information about server. The object of ServerBeaconThread 
     aims to infrom the client about the server ip by sending continuously a broadcast message. The object of 
-    CarClientServerThread are serving the car client with the coordinates of robots. 
+    CarClientServerThread are serving the car clients. 
 
     In this examples, a object of GenerateData is added for create coordinates of a robots, which are moving on circle.
     """
