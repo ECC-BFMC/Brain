@@ -51,13 +51,14 @@ class ServerBeaconThread(Thread):
 		try:
 			# Create and setup a socket for broadcasting the server data. 
 			beacon = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			beacon.bind(('', self.serverConfig.negotiation_port))
 			beacon.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			beacon.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			beacon.bind(('', self.serverConfig.negotiation_port))
 			
 			self.logger.info(self.name+' started')
 			
 			# Sending the message periodically
-			msg = bytes(str(self.serverConfig.carClientPort), "UTF-8")
+			msg = bytes(str(self.serverConfig.carClientPort))
 			while self.runningThread:
 				beacon.sendto( msg , (self.serverConfig.broadcast_ip, self.serverConfig.negotiation_port))
 				time.sleep(self.sleepDuration)

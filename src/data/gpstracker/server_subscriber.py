@@ -28,7 +28,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import sys
+import time
+from cryptography.utils import signature
 sys.path.insert(0,'.')
+import traceback
 
 import socket
 
@@ -46,10 +49,17 @@ class ServerSubscriber:
 		#: object with server parameters
 		self.__server_data = server_data
 		#: public key of the server for authentication
-		self.__public_key = load_public_key('publickey.pem')
+		#: for testing purposes, with the provided simulated gps system, use the "publickey_server_test.pem"
+		#: At Bosch location, during the competition and during the testing on the track, please use the "publickey_server.pem"
+# 		self.__public_key = load_public_key('publickey_server.pem')
+		self.__public_key = load_public_key('publickey_server_test.pem')
+
+	def ID(self):
+		return self.__carId
 
 	def subscribe(self): 
-		""" It connects to the server and send the car id. After sending the car identification number it checks the server authentication.
+		""" 
+		It connects to the server and send the car id. After sending the car identification number it checks the server authentication.
 		"""
 		try:
 			# creating and initializing the socket
@@ -58,29 +68,40 @@ class ServerSubscriber:
 			sock.settimeout(2.0)
 			
 			# sending car id to the server
-			msg = bytes("{}".format(self.__carId), 'ascii')
+			if(sys.version_info[0] < 3 ): #Compatible with python 2 or 3
+				msg = bytes("{}".format(self.__carId)).encode('utf-8')
+			else:
+				msg = "{}".format(self.__carId).encode('utf-8')
+			
 			sock.sendall(msg)
-
+			
 			# receiving response from the server
 			msg = sock.recv(4096).decode('utf-8')
 			# receiving signature from the server
-			signature = sock.recv(4096)[:-1]
-			# verifying the server authentication
+			signature = sock.recv(4096)
+			
+			# verifying server authentication
 			is_signature_correct = verify_data(self.__public_key,msg,signature)
-
-			# checking the parameters
+			
+			# Validate server
 			if (msg == '' or signature == '' or not is_signature_correct):
-				raise ConnectionError("Cannot approve the server.")
-			# server was found and the connection was successfully approved 
+				msg = "Authentication not ok".encode('utf-8')
+				sock.sendall(msg)
+				raise Exception("Authentication failed")
+			
+			msg = "Authentication ok".encode('utf-8')
+			
+			sock.sendall(msg)
+			 
 			print("Connected to ",self.__server_data.serverip)
 			self.__server_data.socket = sock
 			self.__server_data.is_new_server = False
 		
 		except Exception as e:
 			print("Failed to connect on server with error: " + str(e))
-			self.__server_data.is_new_server = True
+			time.sleep(1)
+			self.__server_data.is_new_server = False
 			self.__server_data.socket = None
 			self.__server_data.serverip = None
-
 
 		

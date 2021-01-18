@@ -32,6 +32,7 @@ import math
 from threading import Thread
 # Module used for communication
 import socket
+import json
 
 # Port used for broadcast
 PORT = 50009
@@ -75,6 +76,7 @@ class listener(Thread):
                 data,_ = self.sock.recvfrom(4096) # buffer size is 1024 bytes
                 # Decode received data
                 data = data.decode("utf-8") 
+                data = json.loads(data)
                 # Process data and extract ID, position coordinates and orientation
                 self.processData(data)
             except Exception as e:
@@ -96,16 +98,12 @@ class listener(Thread):
     #  @param self          The object pointer.
     #  @param data          The string received on PORT ("ID, position(complex no.), orientation(complex no.)").
     def processData(self,data):
-        # Split string by ,
-        chunks = data.split(',')
-        # Debug message
-        #print(chunks)   
         # Get ID
-        self.ID = int(chunks[0])
+        self.ID = int(data['id'])
         # Get position
-        self.pos = complex(chunks[1])
+        self.pos = complex(data['coor'])
         # Get orientation
-        self.ang = complex(chunks[2])
+        self.ang = complex(data['rot'])
         # Debug message
         to_print = "ID: {}, poition: {}, orientation: {}.".format(self.ID,self.pos,self.ang)
         print(to_print)

@@ -38,7 +38,7 @@ class ServerData:
 		#: ip address of server 
 		self.__server_ip = server_IP 
 		#: flag to mark, that the server is new. It becomes false, when the client subscribed on the server.
-		self.is_new_server = True
+		self.is_new_server = False
 		#: port, where the beacon server send broadcast messages
 		self.__beacon_port = beacon_port
 		#: port, where the server listen the car clients

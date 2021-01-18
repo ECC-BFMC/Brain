@@ -64,7 +64,7 @@ source_suffix = [
 
 
 # sphinx.ext.autodoc configuration
-autodoc_mock_imports = ["multiprocessing","cv2","serial","django","pynput","numpy","server_data","server_listener","server_subscriber","position_listener","utils","complexdecoder"]
+autodoc_mock_imports = ["multiprocessing","cv2","serial","django","pynput","numpy","server_data","server_listener","server_subscriber","position_listener","utils","complexdecoder", "obstacle_handler", "obstacle_streamer"]
 autoclass_content = "both"
 autodoc_default_flags = ["members","members","private-members","show-inheritance","undoc-members"]
 # autodoc_docstring_signature = True

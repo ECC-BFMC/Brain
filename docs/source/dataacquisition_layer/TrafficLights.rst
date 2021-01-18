@@ -12,5 +12,3 @@ Testing
 If you incorporate the listener module into your application and you want to test it, then you have to use a simulator for the semaphores. 
 Running the Simulator.py script (in test/trafficlightSIM) starts the simulated semaphores and keeps them running for 60 seconds. These operate as specified by a pattern defined in this file. 
 The simulator can be started on the same machine where the listener module runs.
-
-.. automodule:: test.trafficlight.Simulator

@@ -29,6 +29,7 @@
 from serverconfig import ServerConfig
 from carclientserver import CarClientServerThread
 from serverbeacon import ServerBeaconThread
+from data_saver import DataSaver
 
 import logging
 import time
@@ -39,13 +40,13 @@ class ObstacleHandlerSystemServer:
     The object of ServerConfig accumulates all information about server. The object of ServerBeaconThread 
     aims to infrom the client about the server ip by sending continuously a broadcast message. The object of 
     CarClientServerThread are serving the car clients. 
-
     In this examples, a object of GenerateData is added for create coordinates of a robots, which are moving on circle.
     """
     def __init__(self,logger):
         self.serverconfig = ServerConfig('<broadcast>',23456,23466)
+        self.data_saver = DataSaver()
         
-        self.__carclientserverThread = CarClientServerThread(self.serverconfig,logger)
+        self.__carclientserverThread = CarClientServerThread(self.serverconfig, self.data_saver, logger)
         self.__beaconserverThread =  ServerBeaconThread(self.serverconfig,1.0,logger)
      
     def run(self):    
@@ -69,7 +70,3 @@ if __name__ == '__main__':
     logger = logging.getLogger('root')
     ObsHanServer = ObstacleHandlerSystemServer(logger)
     ObsHanServer.run()
-
-    
-
-

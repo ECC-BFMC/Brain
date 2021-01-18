@@ -26,22 +26,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+import os
 import json
 import threading
 import SocketServer
 import socket
 import time
+from cryptography.utils import signature
 
-from utils import load_private_key,sign_data
-from complexdecoder import ComplexDecoder
+try:
+    from server.utils import load_private_key, load_public_key, sign_data, verify_data
+except ImportError:
+    from utils import load_private_key, load_public_key, sign_data, verify_data
+
 
 class CarClientServerThread(threading.Thread):
     
-    def __init__(self,serverConfig,logger,keyfile = "privatekey.pem",ObstacleMap={}):
+    def __init__(self, serverConfig, dataSaver, logger, keyfile = "privatekey_server_test.pem"):
         """ It's a thread to run the server for serving the car clients. By function 'stop' can terminate the client serving.
         """
         super(CarClientServerThread,self).__init__()
-        self.carclientserver = CarClientServer(serverConfig,CarClientHandler,logger,keyfile,ObstacleMap)
+        self.carclientserver = CarClientServer(serverConfig, CarClientHandler, dataSaver , logger, keyfile)
         self.carclientserver.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def run(self):
@@ -52,19 +57,19 @@ class CarClientServerThread(threading.Thread):
 
 
 
-class CarClientServer (SocketServer.ThreadingTCPServer,object):
-    """ It has role to serve the car client with coordination of detected robots. It's a subclass of 'SocketServer.ThreadingTCPServer',
-    so it creates a new thread for communicating the client. The server use a private key for authentication itself and has a dictionary named 
-    '_carMap', which contains the last detected coordinate and time.stamp for reach car identification number. The identification number of car 
+class CarClientServer (SocketServer.ThreadingTCPServer, object):
+    """ It has role to serve the car client as a data collector for information about obstacles. It's a subclass of 'SocketServer.ThreadingTCPServer',
+    so it creates a new thread for communicating the client. The server use a private key for authentication itself and another one for authenticating the client
+    . It stores the data about obstacles in the data_saver object. The identification number of car 
     is equal with id of Aruco marker placed on robot. The client requests are handled by objects of 'CarClientHandler' class. 
     
     """
-    def __init__(self,serverConfig,requestHandler,logger,keyfile,ObstacleMap={}):
+    def __init__(self, serverConfig, requestHandler, dataSaver, logger, keyfile):
         # This map contains the last recorded data
         self.private_key = load_private_key(keyfile)
         #: contains the last received coordination fo the carId.
-        self.ObstacleMap = ObstacleMap
         self.logger = logger
+        self.dataSaver = dataSaver
 
         #: shutdown mechanism
         self.isRunning = True
@@ -77,9 +82,9 @@ class CarClientServer (SocketServer.ThreadingTCPServer,object):
         super(CarClientServer,self).shutdown()
 
 class CarClientHandler(SocketServer.BaseRequestHandler):
-    """CarClientHandler responds for a client. Firstly it requests a identification number of robot and the information related this id
-    will be sent to client. After receiving the id of robot, it will send a message and a signature, which can help for authenticating the server.
-    While the connection is alive and the process isn't stopped, the handler will send the last coordinate in each second, where the robot was detected.
+    """CarClientHandler responds for a client. Firstly it requests a identification number of robot and the encrypted id. If it validates the robot, it 
+    will send a message and a signature, which can help for authenticating the server.
+    While the connection is alive and the process isn't stopped.
     
     Parameters
     ----------
@@ -88,21 +93,49 @@ class CarClientHandler(SocketServer.BaseRequestHandler):
     """
 
     def handle(self):
-        # Subscribing 
+        # receiving car id from client 
         data = str(self.request.recv(1024)) 
-        
         self.carId = int(data)
-        self.server.logger.info('Connected with {}. CarId is {}'.format(self.client_address,self.carId))
+        
+        # receiving signature from the client
+        signature = self.request.recv(4096)
+        
+        # Each participating team will have a unique ID to connect to the server. The public keys made available by the students to the 
+        # organizers will be stored i the key folder, with the corresponding id.
+        
+        dirname = os.path.dirname(__file__)
+        client_key_public_path = dirname + "/keys/" + str(self.carId) + "_publickey.pem"
+        try:
+            client_key_public = load_public_key(client_key_public_path)
+        except:
+            msg = 'Client ' + str(self.carId) + ' trying to connect. no key available.'
+            raise Exception(msg)
+        
+        # verifying the client authentication
+        is_signature_correct = verify_data(client_key_public, data, signature)
+        
+        # Validate client
+        if (data == '' or signature == '' or not is_signature_correct):
+            msg = "cannot approve client."
+            raise Exception(msg)
+
         # Authentication
         timestamp = time.time()
-        msg = "Conneted! " + str(timestamp)
-        signature = sign_data(self.server.private_key,msg) + '\n'.encode('utf-8')
+        msg = "Conneted! " + str(timestamp).encode('utf-8')
+        signature = sign_data(self.server.private_key,msg)
         
-        # commented        
-        self.request.sendall(msg.encode('utf-8'))
+        # Authentication of server        
+        self.request.sendall(msg)
         self.request.sendall(signature)
         time.sleep(0.1)
-        # Sending the coordinates for car client
+        
+        # receiving ok response from the client
+        msg = self.request.recv(4096)
+        if msg == 'Authentication not ok':
+            raise Exception(msg)
+        
+        self.server.logger.info('Connecting with {}. CarId is {}'.format(self.client_address,self.carId))
+        
         try:
             while(self.server.isRunning):
                 msg = self.request.recv(4096)
@@ -112,6 +145,7 @@ class CarClientHandler(SocketServer.BaseRequestHandler):
                     break
                 received = json.loads(msg,cls=ComplexDecoder)
                 self.server.logger.info('card ID {}. message ID {}. x: {}. y: {}'.format(self.carId, received['OBS'], received['x'], received['y']))
+                self.server.dataSaver.ADDobstacle(self.carId, received['OBS'], received['x'], received['y'])
             
             time.sleep(0.25)
                 

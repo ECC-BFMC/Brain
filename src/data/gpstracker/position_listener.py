@@ -49,7 +49,7 @@ class PositionListener:
 
 	def stop(self):
 		self.__running = False
-		
+	
 	def listen(self):
 		""" 
 		After the subscription on the server, it's listening the messages on the 
@@ -67,9 +67,11 @@ class PositionListener:
 					if(msg == ''):
 						print('Invalid message. Connection can be interrupted.')
 						break
-					coor = json.loads(msg,cls=ComplexDecoder)
+					
+					coor = json.loads(msg)
 					self.coor = coor
 				except socket.timeout:
+					print("position listener socket_timeout")
 					# the socket was created successfully, but it wasn't received any message. Car with id wasn't detected before. 
 					pass
 				except Exception as e:
@@ -78,7 +80,6 @@ class PositionListener:
 					print("Receiving position data from server " + str(self.__server_data.serverip) + " failed with error: " + str(e))
 					self.__server_data.serverip = None
 					break
-			
-	
+		self.__server_data.is_new_server = False
 		self.__server_data.socket = None
 		self.__server_data.serverip = None

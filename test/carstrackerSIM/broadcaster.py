@@ -36,6 +36,7 @@ import os
 import sys
 
 import position_listener_sim
+import json
 
 # ID of the mobile obstacle
 ID = 100
@@ -110,11 +111,11 @@ class Broadcaster(Thread):
         # Get new coordinates from listener
         coor = self.__position_listener.coor
         # Construct message to be sent
-        value = "{},{},{}".format(id,coor[0],coor[1])
-        message = bytes(value,'utf-8')
+        value = {'id':id, 'coor':str(coor[0]), 'rot':str(coor[1])}
+        message = json.dumps(value)
         # Debug msg
         print('sending {!r}'.format(message))
-        self.sock.sendto(message, self.server_address)
+        self.sock.sendto(message.encode('utf-8'), self.server_address)
 
 ## Method for running the broadcaster (for testing purposes).
 ##            It uses the position_listener_sim module

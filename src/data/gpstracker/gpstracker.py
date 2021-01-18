@@ -36,7 +36,7 @@ import time
 
 class GpsTracker(threading.Thread):
     
-    def __init__(self):
+    def __init__(self, ID):
         """ GpsTracker targets to connect on the server and to receive the messages, which incorporates 
         the coordinate of the robot on the race track. It has two main state, the setup state and the listening state. 
         In the setup state, it creates the connection with server. It's receiving  the messages from the server in the listening
@@ -54,13 +54,13 @@ class GpsTracker(threading.Thread):
             | gpstracker.join()
 
         """
-        super().__init__()
+        super(GpsTracker, self).__init__()
         #: serverData object with server parameters
         self.__server_data = server_data.ServerData()
         #: discover the parameters of server
         self.__server_listener = server_listener.ServerListener(self.__server_data)
         #: connect to the server
-        self.__subscriber = server_subscriber.ServerSubscriber(self.__server_data,1)
+        self.__subscriber = server_subscriber.ServerSubscriber(self.__server_data,ID)
         #: receive and decode the messages from the server
         self.__position_listener = position_listener.PositionListener(self.__server_data)
         
@@ -98,6 +98,9 @@ class GpsTracker(threading.Thread):
         """
         return self.__position_listener.coor
 
+    def ID(self):
+        return self.__subscriber.ID()
+    
     def stop(self):
         """Terminate the thread running.
         """
@@ -106,10 +109,18 @@ class GpsTracker(threading.Thread):
         self.__position_listener.stop()
 
 if __name__ == '__main__':
-    gpstracker = GpsTracker()
+    gpstracker = GpsTracker(4)
     gpstracker.start()
+    
+    time.sleep(5)
+    while True:
+        try:
+            coora = gpstracker.coor()
+            print(gpstracker.ID(), coora['timestamp'], coora['coor'][0], coora['coor'][0])
+            time.sleep(1)
+        except KeyboardInterrupt:
+            break
 
-    time.sleep(10)
     gpstracker.stop()
 
     gpstracker.join()

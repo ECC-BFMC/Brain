@@ -45,7 +45,7 @@ class LocalizationSystemServer:
     In this examples, a object of GenerateData is added for create coordinates of a robots, which are moving on circle.
     """
     def __init__(self,logger):
-        self.serverconfig = ServerConfig('<broadcast>',12346,12356)
+        self.serverconfig = ServerConfig('<broadcast>',12345,12356)
         
         self.__carclientserverThread = CarClientServerThread(self.serverconfig,logger)
         self.__beaconserverThread =  ServerBeaconThread(self.serverconfig,1.0,logger)

@@ -107,17 +107,47 @@ datasheet at https://www.bosch-sensortec.com/products/smart-sensors/bno055.html 
 RTIMULib's documentation on it's official GitHub repository:
 https://github.com/RPi-Distro/RTIMULib
 
+### Testing of simulated competition components.
+
+All the simulated components given by the organizers have to be run on python2.7!. 
+The given scripts are python2.7 and python3.7 compatible!
+
 ## Cars tracker
-In order to test the functionality of the GPS server, we have developed a simulated server, you can find it here: test/carstrackerSIM. 
-You can run it on a different machine and your listener on your car. It uses the broadcaster.py. The listener is locat3d here: src/data/carstracker/carstracker.py
+In order to test the functionality of the cars tracler, we have developed a simulated car streamer, you can find it here: test/carstrackerSIM/broadcaster.py. 
+You can run it on a different machine and your listener on your car. It uses the broadcaster.py. The listener (for your car) is located here: src/data/carstracker/carstracker.py. 
+It uses the Listener.py as a thread.
 
 ## Traffic lights interaction
 In order to test the functionality of the traffic lights, we have developed a simulated traffic light, you can check it here: test/trafficlightSIM/Simulator.py. You can run it on a different machine and your listener on your car. The listener is located here: src/data/trafficlights/Example.py. It uses the Listener.py as a thread.
 
 ## GPS interaction
 In order to test the functionality of the GPS server, we have developed a simulated server, you can find it here: test/gpsstrackerSERVER/gps.py. You can run it on a different machine and your client on your car. The client is lcoated here: src/data/gpstracker/gpstracker.py. It uses all the scripts as threads for connecting, subscribing and position listening.
+- For tesing purposes, publickey_server_test.pem should be used (file src/data/gpstracker/server_subscriber.py line 55)
+- For the competition, publickey_server.pem should be used (file test/gpstracker/server_subscriber.py line 54)
 
 ## Obstacle handler
-In order to test the functionality of the obstacle handler server, we have developed a simulated server, you can find it here: test/obstaclehandlerSERVER/obstacle_handler.py. You can run it on a different machine and your client on your car. The client is lcoated here: src/data/obstaclehandler/obstacle_handler.py. It uses all the scripts as threads for connecting, subscribing and obstacle position streaming.
+In order to test the functionality of the obstacle handler server, we have developed a simulated server, you can find it here: test/obstaclehandlerSERVER/env.py. You can run it on a different machine and the client on your own car. The client is located here: src/data/obstaclehandler/obstacle_handler.py. It uses all the scripts as threads for connecting, subscribing and obstacle position streaming.
+
+- The server saves the received data under test/obstaclehandlerSERVER/savings
+- For tesing purposes, publickey_server_test.pem should be used (file src/data/obstaclehandler/server_subscriber.py line 57)
+- For the competition, publickey_server.pem should be used (file test/obstaclehandler/server_subscriber.py line 56)
+- For the competition, a pair of privatekey_client.pem and publickey_client.pem will have to be generated. The publickey_client will have to be sent to the organizers by the communicated channel. If you want to connect with a different id (obstacle_handler.py), the public key corresponding with your private key have to be saved on the test/server/keys with the same id_publickey.pem. The example of id 120 is given.
+
+  // generate a private key with the correct length
+
+  openssl genrsa -out private-key.pem 2048
+
+  // generate corresponding public key
+
+  openssl rsa -in private-key.pem -pubout -out public-key.pem
+
+
+## Release notes:
+- Added two way validation through private&public RSA key pair for obstaclehandlerSERVER. In order to validate the client to the server and the server to the client.
+- Added test and competition RSA keys for obstacle handler and gps servers.
+- Implemented saving methos of the data for the obstacle handler server, in order to check the sent data.
+- Made all the test-ing simulation run on python2.7.
+- All the data collectors are runnable both in python2.7 and python3.7.
+
 
 [Documentation](https://bfmcstartup.readthedocs.io/en/stable/)

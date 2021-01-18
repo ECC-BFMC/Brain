@@ -18,6 +18,7 @@ import socket
 import os
 import sys
 from itertools import cycle
+import json
 
 class sim(Thread):
 
@@ -109,11 +110,11 @@ class sim(Thread):
         """
 
         # Send data
-        value = [id,state]
-        message = bytes(value)
+        value = {"id":id, "state":state}
+        message = json.dumps(value)
         # Debug message
         # print('sending {!r}'.format(message))
-        sent = self.sock.sendto(message, self.server_address)
+        sent = self.sock.sendto(message.encode('utf-8'), self.server_address)
 
 def runAdvertiser():
     """Method for sending the simulated semaphore signals.

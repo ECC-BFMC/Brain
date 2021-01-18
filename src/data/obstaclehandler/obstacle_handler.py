@@ -72,9 +72,10 @@ class ObstacleHandler(threading.Thread):
         
     
     def stream(self, obstacle_id, x, y):
-        """ Sends the id and coordinates of obstacle
+        """ Listening the coordination of robot
         """
-        self.__obstacle_streamer.stream(obstacle_id, x, y)
+        ob_id=obstacle_id
+        self.__obstacle_streamer.stream(ob_id, x, y)
 
     def send(self, obstacle_id, x, y):
         try:
@@ -84,7 +85,7 @@ class ObstacleHandler(threading.Thread):
                 self.stream(obstacle_id, x, y)
             return "sent: "
         except:
-            return "not sent: "
+            return "not returned: "
 
     def ID(self):
         return self.__subscriber.ID()
@@ -97,12 +98,12 @@ class ObstacleHandler(threading.Thread):
         self.__obstacle_streamer.stop()
 
 if __name__ == '__main__':
-    obsthandler = ObstacleHandler(2)
+    obsthandler = ObstacleHandler(120)
     obsthandler.start()
     for x in range(1, 10):
         try:
-            res = obsthandler.send(int(random.uniform(0,15)), random.uniform(0,15), random.uniform(0,15))
-            print res
+            res = obsthandler.send(int(random.uniform(0,25)), random.uniform(0,15), random.uniform(0,15))
+            print(res)
         except: pass
         time.sleep(random.uniform(1,5))
     obsthandler.stop()
