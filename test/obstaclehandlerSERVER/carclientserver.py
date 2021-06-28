@@ -33,6 +33,7 @@ import SocketServer
 import socket
 import time
 from cryptography.utils import signature
+from complexdecoder import ComplexDecoder
 
 try:
     from server.utils import load_private_key, load_public_key, sign_data, verify_data
