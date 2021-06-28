@@ -80,6 +80,7 @@ class CarClientServer (SocketServer.ThreadingTCPServer, object):
     
     def shutdown(self):
         self.isRunning = False
+        self.dataSaver.saving()
         super(CarClientServer,self).shutdown()
 
 class CarClientHandler(SocketServer.BaseRequestHandler):
