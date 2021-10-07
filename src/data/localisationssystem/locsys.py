@@ -34,27 +34,18 @@ import position_listener
 
 import time
 
-class GpsTracker(threading.Thread):
+class LocalisationSystem(threading.Thread):
     
     def __init__(self, ID):
-        """ GpsTracker targets to connect on the server and to receive the messages, which incorporates 
+        """ LocalisationSystem targets to connect on the server and to receive the messages, which incorporates 
         the coordinate of the robot on the race track. It has two main state, the setup state and the listening state. 
         In the setup state, it creates the connection with server. It's receiving  the messages from the server in the listening
         state. 
 
         It's a thread, so can be running parallel with other threads. You can access to the received parameters via 'coor' function.
 
-        Examples
-        --------
-        Here you can find a simple example, where the GpsTracker are running 10 second:
-            | gpstracker = GpsTracker()
-            | gpstracker.start()
-            | time.sleep(10)
-            | gpstracker.stop()
-            | gpstracker.join()
-
         """
-        super(GpsTracker, self).__init__()
+        super(LocalisationSystem, self).__init__()
         #: serverData object with server parameters
         self.__server_data = server_data.ServerData()
         #: discover the parameters of server
@@ -109,18 +100,18 @@ class GpsTracker(threading.Thread):
         self.__position_listener.stop()
 
 if __name__ == '__main__':
-    gpstracker = GpsTracker(4)
-    gpstracker.start()
+    LocalisationSystem = LocalisationSystem(4)
+    LocalisationSystem.start()
     
     time.sleep(5)
     while True:
         try:
-            coora = gpstracker.coor()
-            print(gpstracker.ID(), coora['timestamp'], coora['coor'][0], coora['coor'][0])
+            coora = LocalisationSystem.coor()
+            print(LocalisationSystem.ID(), coora['timestamp'], coora['coor'][0], coora['coor'][1])
             time.sleep(1)
         except KeyboardInterrupt:
             break
 
-    gpstracker.stop()
+    LocalisationSystem.stop()
 
-    gpstracker.join()
+    LocalisationSystem.join()

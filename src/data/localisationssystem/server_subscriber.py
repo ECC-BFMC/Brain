@@ -48,7 +48,7 @@ class ServerSubscriber:
 		#: object with server parameters
 		self.__server_data = server_data
 		#: public key of the server for authentication
-		#: for testing purposes, with the provided simulated gps system, use the "publickey_server_test.pem"
+		#: for testing purposes, with the provided simulated localisation system, use the "publickey_server_test.pem"
 		#: At Bosch location, during the competition and during the testing on the track, please use the "publickey_server.pem"
 # 		self.__public_key = load_public_key('publickey_server.pem')
 		self.__public_key = load_public_key('publickey_server_test.pem')

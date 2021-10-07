@@ -70,9 +70,12 @@ if enableStream:
 
 
 # =============================== DATA ===================================================
-#gps client process
-# gpsProc = GpsProcess([], [gpsBrS])
-# allProcesses.append(gpsProc)
+#LocSys client process
+# LocStR, LocStS = Pipe(duplex = False)           # LocSys  ->  brain
+# from data.localisationsystem.locsys import LocalisationSystemProcess
+# LocSysProc = LocalisationSystemProcess([], [LocStS])
+# allProcesses.append(LocSysProc)
+
 
 
 # =============================== CONTROL =================================================

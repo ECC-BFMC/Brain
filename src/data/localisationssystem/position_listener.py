@@ -68,7 +68,7 @@ class PositionListener:
 						print('Invalid message. Connection can be interrupted.')
 						break
 					
-					coor = json.loads(msg)
+					coor = json.loads((msg),cls=ComplexDecoder)
 					self.coor = coor
 				except socket.timeout:
 					print("position listener socket_timeout")

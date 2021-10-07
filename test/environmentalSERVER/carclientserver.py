@@ -33,7 +33,6 @@ import SocketServer
 import socket
 import time
 from cryptography.utils import signature
-from complexdecoder import ComplexDecoder
 
 try:
     from server.utils import load_private_key, load_public_key, sign_data, verify_data
@@ -103,7 +102,7 @@ class CarClientHandler(SocketServer.BaseRequestHandler):
         signature = self.request.recv(4096)
         
         # Each participating team will have a unique ID to connect to the server. The public keys made available by the students to the 
-        # organizers will be stored i the key folder, with the corresponding id.
+        # organizers will be stored in the key folder, with the corresponding connection id.
         
         dirname = os.path.dirname(__file__)
         client_key_public_path = dirname + "/keys/" + str(self.carId) + "_publickey.pem"
@@ -145,7 +144,7 @@ class CarClientHandler(SocketServer.BaseRequestHandler):
                 if(msg == ''):
                     print('Invalid message. Connection interrupted.')
                     break
-                received = json.loads(msg,cls=ComplexDecoder)
+                received = json.loads(msg)
                 self.server.logger.info('card ID {}. message ID {}. x: {}. y: {}'.format(self.carId, received['OBS'], received['x'], received['y']))
                 self.server.dataSaver.ADDobstacle(self.carId, received['OBS'], received['x'], received['y'])
             

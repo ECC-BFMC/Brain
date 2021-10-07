@@ -48,10 +48,17 @@ class ServerSubscriber:
 		self.__server_data = server_data
 		#: public key of the server for authentication
 		#: For testing purposes, with the provided simulated env_info_system, use the "publickey_server_test.pem" and the "privatekey_client_test.pem"
-		#: At Bosch location, during the competition and during the testing on the track, please use the "publickey_server.pem" and 
-		#: Your own created private key. Before the competition, instruction of where to send your public key will be given.
+
+		#: At Bosch location, during the competition and during the testing on the track, use the "publickey_server.pem" instead of the "publickey_server_test.pem" 
+		#: and your own created private key instead of the "privatekey_client_test.pem". The instructions on how to generate your own privatekey are listed below:
+	
 		#: openssl genrsa -out privateckey_client.pem 2048 ----> Creates a private ssh key and stores it in the current dir with the given name
 		#: openssl rsa -in privatekey_server.pem -pubout -out publickey_server.pem ----> Creates the corresponding public key out of the private one
+
+		#: Before the competition, instruction of where to send your public key will be given.
+		#: To test the functionality, save your public key under test/environmentalSERVER/keys your own key and change the name with the id you're trying to connect with (id_publickey.pem)
+		#: The given example connects with the id 120 and the same key is saved with "120_publickey.pem"
+
 		#: self.__public_key = load_public_key('publickey_server.pem')
 		self.__public_key = load_public_key('publickey_server_test.pem')
 		#: self.__private_key = load_private_key('privateckey_client.pem')
