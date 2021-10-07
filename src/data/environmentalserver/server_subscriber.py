@@ -30,11 +30,10 @@ import sys
 import time
 from cryptography.utils import signature
 sys.path.insert(0,'.')
-import traceback
 
 import socket
 
-from utils import load_public_key,verify_data
+from utils import load_public_key, load_private_key, verify_data, sign_data
 
 class ServerSubscriber:
 	""" It has role to subscribe on the server, to create a connection and verify the server authentication.
@@ -48,10 +47,15 @@ class ServerSubscriber:
 		#: object with server parameters
 		self.__server_data = server_data
 		#: public key of the server for authentication
-		#: for testing purposes, with the provided simulated gps system, use the "publickey_server_test.pem"
-		#: At Bosch location, during the competition and during the testing on the track, please use the "publickey_server.pem"
-# 		self.__public_key = load_public_key('publickey_server.pem')
+		#: For testing purposes, with the provided simulated env_info_system, use the "publickey_server_test.pem" and the "privatekey_client_test.pem"
+		#: At Bosch location, during the competition and during the testing on the track, please use the "publickey_server.pem" and 
+		#: Your own created private key. Before the competition, instruction of where to send your public key will be given.
+		#: openssl genrsa -out privateckey_client.pem 2048 ----> Creates a private ssh key and stores it in the current dir with the given name
+		#: openssl rsa -in privatekey_server.pem -pubout -out publickey_server.pem ----> Creates the corresponding public key out of the private one
+		#: self.__public_key = load_public_key('publickey_server.pem')
 		self.__public_key = load_public_key('publickey_server_test.pem')
+		#: self.__private_key = load_private_key('privateckey_client.pem')
+		self.__private_key = load_private_key('privatekey_client_test.pem')
 
 	def ID(self):
 		return self.__carId
@@ -66,16 +70,23 @@ class ServerSubscriber:
 			sock.connect((self.__server_data.serverip,self.__server_data.carSubscriptionPort ))
 			sock.settimeout(2.0)
 			
-			# sending car id to the server
+			# Authentication of client
 			if(sys.version_info[0] < 3 ): #Compatible with python 2 or 3
 				msg = bytes("{}".format(self.__carId)).encode('utf-8')
+				signature = sign_data(self.__private_key, msg)
 			else:
-				msg = "{}".format(self.__carId).encode('utf-8')
-			
+				msg_ = "{}".format(self.__carId)
+				msg = msg_.encode('utf-8')
+				signature = sign_data(self.__private_key, msg_)
+			#sending plain message to server
 			sock.sendall(msg)
+			# sending encripted car id to server
+			sock.sendall(signature)
 			
-			# receiving response from the server
+			# Authentication of server
+			# receiving plain message from the server
 			msg = sock.recv(4096).decode('utf-8')
+			
 			# receiving signature from the server
 			signature = sock.recv(4096)
 			
@@ -86,12 +97,12 @@ class ServerSubscriber:
 			if (msg == '' or signature == '' or not is_signature_correct):
 				msg = "Authentication not ok".encode('utf-8')
 				sock.sendall(msg)
-				raise Exception("Authentication failed")
-			
+				raise Exception("Key not present on server or broken key set")
+
 			msg = "Authentication ok".encode('utf-8')
 			
 			sock.sendall(msg)
-			 
+			
 			print("Connected to ",self.__server_data.serverip)
 			self.__server_data.socket = sock
 			self.__server_data.is_new_server = False
@@ -103,4 +114,3 @@ class ServerSubscriber:
 			self.__server_data.socket = None
 			self.__server_data.serverip = None
 
-		

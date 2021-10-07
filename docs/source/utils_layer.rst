@@ -1,21 +1,32 @@
 Utils layer
 ===========
 
-Remote car control
----------------------
+Camera Steamer
+-----------------------
 
-In this section is presented the architecture of the main development tools, Camera Streamer and Remote Control. The following figure shows the structure of our application, where the remote controller and the camera streamer features are activated and connected to a remote device. 
-On the RaspberryPi (RcCar) the following processes run: CameraProcess and SerialHandler ('hardware' package), CameraStreamer and RemoteControlReceiver ('utils' package). Each process contains minimum one thread, these threads are symbolized by rectangles and the communication (multiprocess Pipes and sockets) between them by arrows. 
+Camera streamer and camera receiver classes can be used for transferring the frames captured by the camera to a remote device. 
+The CameraStreamerProcess connects to the CameraProcess through the first input pipe and transfers the frames to the CameraReceiverProcess, on the remote client.
+The receiver connects to the RcCar and shows the frames received from the streamer.  
 
-On the remote device run the camera receiver and the remote control transmitter processes (bin package), where the Remote control transmitter process contains two thread, SendCommand and KeyboardListener. 
-The third shown object just implements a state machine for the keyboard controller, it is not the independent thread. It generates the message based on keyboard event by applying `getMessage` method.
-
-.. image:: diagrams/pics/ComponentDia_StartUp.png
+.. image:: diagrams/pics/ClassDiaStartUp_CameraStreamer.png
     :align: center
 
-On the second image a simple structure is presented, which shows the mode of usage for steaming the recording videos by 'CameraSpoofer' process. 
-In this case the `enableStream` and `enableCameraSpoof` flags have to enable, where the `CameraProcess` will be in replaced by 'CameraSpoofer' process. 
-It will work similarly to the `CameraProcess`, only will play the stored videos.
+.. automodule:: src.utils.camerastreamer.CameraStreamerProcess
+.. automodule:: src.utils.camerastreamer.CameraReceiverProcess
 
-.. image:: diagrams/pics/ComponentDia_CameraSpoofer.png
+
+Remote Control
+-------------------------
+
+The next section describes all component for a remote controller. 
+The RemoteControlTransmitterProcess class has the purpose to transmit all command received from the RcBrainThread & KeyboardListenerThread  
+to RemoteControlReceiverProcess. The RemoteControlReceiver forward the command to the SerialHandlerProcess. The process handle the transmisson 
+and receiving of the ok message to & from the Nucleo board. 
+
+.. image:: diagrams/pics/ClassDiaStartUp_RemoteControl.png
     :align: center
+
+.. automodule:: src.utils.remotecontrol.RemoteControlTransmitterProcess
+.. automodule:: src.utils.remotecontrol.RemoteControlReceiverProcess
+.. automodule:: src.utils.remotecontrol.KeyboardListenerThread
+.. automodule:: src.utils.remotecontrol.RcBrainThread

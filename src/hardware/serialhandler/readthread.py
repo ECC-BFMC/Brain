@@ -26,11 +26,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-from src.utils.templates.threadwithstop import ThreadWithStop
+from src.templates.threadwithstop import ThreadWithStop
 
 class ReadThread(ThreadWithStop):
     def __init__(self,f_serialCon,f_logFile):
-        """ The role of this thread is to receive the messages from the micro-controller and to redirectionate to the other processes or modules. 
+        """ The role of this thread is to receive the messages from the micro-controller and to redirectionate them to the other processes or modules. 
         
         Parameters
         ----------
@@ -85,38 +85,31 @@ class ReadThread(ThreadWithStop):
             for outP in subscribers:
                 outP.send(f_response)
 
-    def subscribe(self,f_key,outP):
-        """Subscribe a connection to specified response from the other device. 
+    def subscribe(self, subscribing, f_key, outP):
+        """Subscribe a connection to specified response from the other device in order to check the delivery of the messages or feedback form car.. 
         
         Parameters
         ----------
+        subscribing : bool
+            bool variable for subscribing or unsubscribing
         f_key : string
             the key word, which identify the source of the response 
         outP : multiprocessing.Connection
             The sender connection object, which represent the sending end of pipe. 
         """
-        if f_key in self.__subscribers:
-            if outP in self.__subscribers[f_key]:
-                raise ValueError("%s pipe has already subscribed the %s command."%(outP,f_key))
+        if subscribing:
+            if f_key in self.__subscribers:
+                if outP in self.__subscribers[f_key]:
+                    raise ValueError("%s pipe has already subscribed the %s command."%(outP,f_key))
+                else:
+                    self.__subscribers[f_key].append(outP)
             else:
-                self.__subscribers[f_key].append(outP)
+                self.__subscribers[f_key] = [outP]
         else:
-            self.__subscribers[f_key] = [outP]
-
-    def unsubscribe(self,f_key,outP):
-        """Unsubscribe a connection from the specified response type 
-        
-        Parameters
-        ----------
-        f_key : string
-            The key word, which identify the source of the response 
-        outP : multiprocessing.Connection
-            The sender connection object, which represent the sending end of pipe.
-        """
-        if f_key in self.__subscribers:
-            if outP in self.__subscribers[f_key]:
-                self.__subscribers[f_key].remove(outP)
+            if f_key in self.__subscribers:
+                if outP in self.__subscribers[f_key]:
+                    self.__subscribers[f_key].remove(outP)
+                else:
+                    raise ValueError("pipe %s wasn't subscribed to key %s"%(outP,f_key))
             else:
-                raise ValueError("pipe %s wasn't subscribed to key %s"%(outP,f_key))
-        else:
-            raise ValueError("doesn't exist any subscriber with key %s"%(f_key))    
+                raise ValueError("doesn't exist any subscriber with key %s"%(f_key))    

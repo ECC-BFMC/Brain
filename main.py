@@ -37,30 +37,23 @@ import signal
 from multiprocessing import Pipe, Process, Event 
 
 # hardware imports
-from src.hardware.camera.cameraprocess               import CameraProcess
-from src.hardware.serialhandler.serialhandler        import SerialHandler
-
-# data imports
-# from src.data.consumer.consumerprocess             import Consumer
+from src.hardware.camera.CameraProcess                      import CameraProcess
+from src.hardware.camera.CameraSpooferProcess               import CameraSpooferProcess
+from src.hardware.serialhandler.SerialHandlerProcess        import SerialHandlerProcess
 
 # utility imports
-from src.utils.camerastreamer.camerastreamer       import CameraStreamer
-from src.utils.cameraspoofer.cameraspooferprocess  import CameraSpooferProcess
-from src.utils.remotecontrol.remotecontrolreceiver import RemoteControlReceiver
+from src.utils.camerastreamer.CameraStreamerProcess         import CameraStreamerProcess
+from src.utils.remotecontrol.RemoteControlReceiverProcess   import RemoteControlReceiverProcess
 
 # =============================== CONFIG =================================================
 enableStream        =  True
 enableCameraSpoof   =  False 
 enableRc            =  True
-#================================ PIPES ==================================================
 
-
-# gpsBrR, gpsBrS = Pipe(duplex = False)           # gps     ->  brain
-#================================ PROCESSES ==============================================
+# =============================== INITIALIZING PROCESSES =================================
 allProcesses = list()
 
-# =============================== HARDWARE PROCC =========================================
-# ------------------- camera + streamer ----------------------
+# =============================== HARDWARE ===============================================
 if enableStream:
     camStR, camStS = Pipe(duplex = False)           # camera  ->  streamer
 
@@ -72,11 +65,8 @@ if enableStream:
         camProc = CameraProcess([],[camStS])
         allProcesses.append(camProc)
 
-    streamProc = CameraStreamer([camStR], [])
+    streamProc = CameraStreamerProcess([camStR], [])
     allProcesses.append(streamProc)
-
-
-
 
 
 # =============================== DATA ===================================================
@@ -85,24 +75,26 @@ if enableStream:
 # allProcesses.append(gpsProc)
 
 
-
-# ===================================== CONTROL ==========================================
-#------------------- remote controller -----------------------
+# =============================== CONTROL =================================================
 if enableRc:
     rcShR, rcShS   = Pipe(duplex = False)           # rc      ->  serial handler
 
     # serial handler process
-    shProc = SerialHandler([rcShR], [])
+    shProc = SerialHandlerProcess([rcShR], [])
     allProcesses.append(shProc)
 
-    rcProc = RemoteControlReceiver([],[rcShS])
+    rcProc = RemoteControlReceiverProcess([],[rcShS])
     allProcesses.append(rcProc)
 
+
+# ===================================== START PROCESSES ==================================
 print("Starting the processes!",allProcesses)
 for proc in allProcesses:
     proc.daemon = True
     proc.start()
 
+
+# ===================================== STAYING ALIVE ====================================
 blocker = Event()  
 
 try:

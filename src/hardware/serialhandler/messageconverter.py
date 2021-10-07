@@ -34,27 +34,26 @@ class MessageConverter:
     a list of attributes types and optionally if enhanced precision is to be used(send more 
     digits after the decimal point).
 
-    Example:
+    Implemented commands:
         
-        | 'Command' : [ [ arg1 ,  arg2 ],   [type1, type2],  [ enhanced precision] ]
-        | 'MCTL'    : [ ['f_vel','f_angle'],[float, float],  [False] ]
-        | 'BRAK'    : [ ['f_angle' ],       [float],         [False] ]
+        | 'Command' : [ [ arg_list ],                [type_list],                    [enhanced precision]   ] 
+        | 'SPED'    : [ ['f_vel'],                   [float],                        [False]                ] - Speed command - 
+        | 'STER'    : [ ['f_angle'],                 [float],                        [False]                ] - Steer command - 
+        | 'BRAK'    : [ ['f_angle' ],                [float],                        [False]                ] - Brake command -
+        | 'PIDA'    : [ ['activate' ],               [bool],                         [False]                ] - Activate PID control -
+        | 'ENPB'    : [ ['activate' ],               [bool],                         [False]                ] - Activate encoder publisher -
+        | 'PIDS'    : [ ['kp', 'ki', 'kd', 'tf' ],   [float, float, float, float],   [True]                 ] - Pass PID values -
 
     """
 
     
     commands = {
-                'MCTL' : [ ['speed','steerAngle'],[float, float],  [False]  ],
-                'BRAK' : [ ['steerAngle' ],       [float],         [False] ],
-                'PIDA' : [ ['activate'],       [ bool],         [False] ],
-                'SFBR' : [ ['activate'],       [ bool],         [False] ],
-                'DSPB' : [ ['activate'],       [ bool],         [False] ],
-                'ENPB' : [ ['activate'],       [ bool],         [False] ],
-
-                # optional commands
-                'PIDS' : [ ['kp','ki','kd','tf'],[ float, float, float, float], [True] ],
-                'SPLN' : [ ['A','B','C','D', 'dur_sec', 'isForward'], 
-                           [complex, complex, complex, complex, float, bool], [False] ],
+                'SPED' : [ ['speed'],               [ float ],                        [False]     ],
+                'STER' : [ ['steerAngle'],          [ float ],                        [False]     ],
+                'BRAK' : [ ['steerAngle'],          [ float ],                        [False]     ],
+                'PIDA' : [ ['activate'],            [ bool  ],                        [False]     ],
+                'ENPB' : [ ['activate'],            [ bool  ],                        [False]     ],
+                'PIDS' : [ ['kp','ki','kd','tf'],   [ float, float, float, float ],   [True]      ]
             }
     """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """   
 
@@ -86,15 +85,11 @@ class MessageConverter:
             value = kwargs.get(key)
             valType = type(value)
 
-            if valType == int:
-                command += '{0:d};'.format(value)
-            elif valType == float:
+            if valType == float:
                 if enhPrec:
-                    command += '{0:.5f};'.format(value)
+                    command += '{0:.6f};'.format(value)
                 else:
                     command += '{0:.2f};'.format(value)
-            elif valType == complex:
-                command += '{0:.2f};{1:.2f};'.format(value.real, value.imag)   
             elif valType == bool:
                 command += '{0:d};'.format(value)   
                          

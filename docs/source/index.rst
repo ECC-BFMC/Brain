@@ -1,20 +1,19 @@
-Welcome to BFMC Startup Project's documentation!
-================================================
+Welcome to BFMC Computer Project's documentation!
+==================================================
 
-This documentation describes a startup project for BFMC, which helps in the first steps and can give some ideas for implementation. 
-The startup project uses concepts of multi-processing and distribuited system and tt implements a basic flexible structure, which can be extended with new features. The project is realized in Python3 with following libraries: multi-processing, 
-picamera, opencv, pyserial. The concept and architectures are specified in the first part of documentations. In the second part you can find code documentation. 
+This project describes the given code for the RPi platform. It includes the startup code and the documentation for the provided API's, 
+which will help you interact with our V2X systems. The start-up code helps in the first steps and can give some ideas for implementation. 
+The project uses concepts of multi-processing and distribuited system and it implements a basic flexible structure, which can be extended 
+with new features. The concept and architectures are specified in the introduction. On the layer, you can find the code documentation itself. 
 
 You can access to other documentation:
-    - `Main <https://bfmcmain.readthedocs.io/en/stable/>`_
-    - `Embedded Platform <https://bfmcembeddedplatform.readthedocs.io/en/stable/>`_ 
+    - `Documentation Project <https://bfmcdocumentation.readthedocs.io/en/stable/>`_
+    - `Embedded Project <https://bfmcembedded.readthedocs.io/en/stable/>`_ 
 
 .. toctree::
    :maxdepth: 2
 
-   readme_link
+   introduction
    utils_layer
-   dataacquisition_layer/index
-   hardware_layer/index
-   tools/index
-
+   hardware_layer
+   dataacquisition_layer

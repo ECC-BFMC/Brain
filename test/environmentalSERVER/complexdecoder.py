@@ -26,38 +26,18 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-from threading import Thread
-from src.hardware.serialhandler.messageconverter    import MessageConverter
+import json
 
-class WriteThread(Thread):
-    # ===================================== INIT =========================================
-    def __init__(self, inP, serialCom, logFile):
-        """The purpose of this thread is to redirectionate the received through input pipe to an other device by using serial communication. 
-        
-        Parameters
-        ----------
-        inP : multiprocessing.Pipe 
-            Input pipe to receive the command from an other process.
-        serialCom : serial.Serial
-            The serial connection interface between the two device.
-        logFile : FileHandler
-            The log file handler to save the commands. 
-        """
-        super(WriteThread,self).__init__()
-        self.inP        =  inP
-        self.serialCom  =  serialCom
-        self.logFile    =  logFile
-        self.messageConverter = MessageConverter()
+class ComplexDecoder(json.JSONDecoder):
+	""" Json decoder for complex numbers. The decodeable message consists of two float number and a type marking, like below:
+			{'type':'complex','real':1.0,'imag':1/0}
+		It will return a complex number object.
+	"""
+	def __init__(self,*args,**kwargs):
+		super(ComplexDecoder,self).__init__(object_hook=self.object_hook,*args,**kwargs)
 
-    # ===================================== RUN ==========================================
-    def run(self):
-        """ Represents the thread activity to redirectionate the message.
-        """
-        while True:
-            command = self.inP.recv()
-            # Unpacking the dictionary into action and values
-            command_msg = self.messageConverter.get_command(**command)
-            self.serialCom.write(command_msg.encode('ascii'))
-            self.logFile.write(command_msg)
-
-
+	def object_hook(self,dct):
+		# Checking the parameters of dictionary. 
+		if 'type' in dct and dct['type'] == 'complex' :	
+			return complex(dct['real'],dct['imag'])
+		return dct

@@ -25,16 +25,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-import multiprocessing
-from multiprocessing import Process
 
-from src.utils.templates.workerprocess import WorkerProcess
-from src.hardware.camera.camerapublisher import CameraPublisher
+from src.templates.workerprocess            import WorkerProcess
+from src.hardware.camera.CameraThread       import CameraThread
 
 class CameraProcess(WorkerProcess):
     #================================ CAMERA PROCESS =====================================
     def __init__(self, inPs, outPs, daemon = True):
-        """Process that start the camera streaming.
+        """Process that start the raspicam and pipes it to the output pipe, to another process.
 
         Parameters
         ----------
@@ -47,9 +45,15 @@ class CameraProcess(WorkerProcess):
         """
         super(CameraProcess,self).__init__( inPs, outPs, daemon = True)
 
+    # ===================================== RUN ==========================================
+    def run(self):
+        """Apply the initializing methods and start the threads.
+        """
+        super(CameraProcess,self).run()
+
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads.
         """
-        camTh = CameraPublisher(self.outPs) 
+        camTh = CameraThread(self.outPs) 
         self.threads.append(camTh)

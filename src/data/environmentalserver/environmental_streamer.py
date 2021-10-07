@@ -26,38 +26,54 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-from threading import Thread
-from src.hardware.serialhandler.messageconverter    import MessageConverter
+import sys
+sys.path.insert(0,'.')
 
-class WriteThread(Thread):
-    # ===================================== INIT =========================================
-    def __init__(self, inP, serialCom, logFile):
-        """The purpose of this thread is to redirectionate the received through input pipe to an other device by using serial communication. 
-        
-        Parameters
-        ----------
-        inP : multiprocessing.Pipe 
-            Input pipe to receive the command from an other process.
-        serialCom : serial.Serial
-            The serial connection interface between the two device.
-        logFile : FileHandler
-            The log file handler to save the commands. 
-        """
-        super(WriteThread,self).__init__()
-        self.inP        =  inP
-        self.serialCom  =  serialCom
-        self.logFile    =  logFile
-        self.messageConverter = MessageConverter()
-
-    # ===================================== RUN ==========================================
-    def run(self):
-        """ Represents the thread activity to redirectionate the message.
-        """
-        while True:
-            command = self.inP.recv()
-            # Unpacking the dictionary into action and values
-            command_msg = self.messageConverter.get_command(**command)
-            self.serialCom.write(command_msg.encode('ascii'))
-            self.logFile.write(command_msg)
+import socket
+import json
+import time
 
 
+
+class EnvironmentalStreamer:
+	
+	def __init__(self,server_data):
+		"""EnvironmentalStreamer aims to send all message to the server. 
+		"""
+		
+		self.__server_data = server_data 
+		self.socket_pos = None
+		
+		self.sent = False
+
+	def stop(self):
+		self.sent = False
+		
+	def stream(self, obstacle_id, x, y):
+		""" 
+		After the subscription on the server, it's publishing the messages on the 
+		previously initialed socket.
+		"""
+		if self.__server_data.socket != None: 
+			try:
+				data = {'OBS': obstacle_id, 'x': x, "y": y}
+				msg = json.dumps((data))
+				try:
+					self.__server_data.socket.sendall(msg.encode('utf-8'))
+				except:
+					self.__server_data.socket.sendall(msg)
+				time.sleep(0.25)
+				self.sent = True
+			except Exception as e:
+				self.__server_data.socket.close()
+				self.__server_data.is_new_server = False
+				self.__server_data.socket = None
+				print("Sending data to server " + str(self.__server_data.serverip) + " failed with error: " + str(e))
+				self.__server_data.serverip = None
+			finally: 
+				pass
+			
+		else:
+			self.__server_data.is_new_server = False
+			self.__server_data.socket = None
+			self.__server_data.serverip = None
