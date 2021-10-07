@@ -1,2 +1,2 @@
 ## Release notes:
-[Documentation](https://bfmcstartup.readthedocs.io/en/stable/)
+[Documentation](https://boschfuturemobilitychallenge.readthedocs.io/en/stable/)
