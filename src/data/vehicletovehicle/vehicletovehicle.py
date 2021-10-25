@@ -38,15 +38,12 @@ import json
 #  Class used for running port listener algorithm 
 class vehicletovehicle(Thread):
     
-    ## Constructor.
-	#  @param self          The object pointer.
     def __init__(self):
+        """listener class. 
         
-        # Flag indincating thread state
-        self.RUN_LISTENER = False
-
-        # Debug msg
-        print("Created listener ")
+        Class used for running port listener algorithm 
+        """
+        super(vehicletovehicle,self).start()
 
         # Values extracted from message
         self.ID = 0
@@ -54,36 +51,10 @@ class vehicletovehicle(Thread):
         self.pos = complex(0,0)
         self.ang = complex(0,0)
 
-        Thread.__init__(self) 
+        self._init_socket()
 
-    ## Method for starting listener process.
-    #  @param self          The object pointer.
-    def start(self):
-        self.RUN_LISTENER = True
-
-        super(vehicletovehicle,self).start()
-
-    ## Method for running listener algorithm.
-    #  @param self        The object pointer.
-    def run(self):
-        # Listen for incomming commands
-        while self.RUN_LISTENER:
-            # wait for data
-            try:
-                data,_ = self.sock.recvfrom(4096) # buffer size is 1024 bytes
-                # Decode received data
-                data = data.decode("utf-8") 
-                data = json.loads(data)
-                # Process data and extract ID, position coordinates and orientation
-                self.ID = int(data['id'])
-                 # Get timestamp
-                self.timestamp = complex(data['timestamp'])
-                # Get position
-                self.pos = complex(data['coor'])
-                # Get orientation
-                self.ang = complex(data['rot'])
-            except Exception as e:
-                print("Receiving data failed with error: " + str(e))
+        # Flag indincating thread state
+        self.__running = True
 
     def _init_socket(self):
         # Communication parameters, create and bind socket
@@ -94,7 +65,25 @@ class vehicletovehicle(Thread):
         self.sock.bind(('', self.PORT))
         self.sock.settimeout(1)
 
+
+    def run(self):
+        while self.__running:
+            try:
+                data,_ = self.sock.recvfrom(4096)
+                data = data.decode("utf-8") 
+                data = json.loads(data)
+
+                self.ID = int(data['id'])
+
+                self.timestamp = complex(data['timestamp'])
+
+                self.pos = complex(data['coor'])
+
+                self.ang = complex(data['rot'])
+            except Exception as e:
+                print("Receiving data failed with error: " + str(e))
+
     ## Method for stopping listener process.
     #  @param self          The object pointer.
     def stop(self):
-        self.RUN_LISTENER = False
+        self.__running = False

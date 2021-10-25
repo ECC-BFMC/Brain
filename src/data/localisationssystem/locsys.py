@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import threading
+from threading import Thread
 import server_data
 import server_listener
 import server_subscriber
@@ -34,7 +34,7 @@ import position_listener
 
 import time
 
-class LocalisationSystem(threading.Thread):
+class LocalisationSystem(Thread):
     
     def __init__(self, ID):
         """ LocalisationSystem targets to connect on the server and to receive the messages, which incorporates 

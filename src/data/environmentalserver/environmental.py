@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import threading
+from threading import Thread
 import server_data
 import server_listener
 import server_subscriber
@@ -35,7 +35,7 @@ import environmental_streamer
 import time
 import random
 
-class EnvironmentalHandler(threading.Thread):
+class EnvironmentalHandler(Thread):
     
     def __init__(self, ID):
         """ EnvironmentalHandler targets to connect on the server and to send messages, which incorporates 
