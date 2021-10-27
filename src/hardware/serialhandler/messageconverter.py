@@ -48,12 +48,12 @@ class MessageConverter:
 
     
     commands = {
-                'SPED' : [ ['speed'],               [ float ],                        [False]     ],
-                'STER' : [ ['steerAngle'],          [ float ],                        [False]     ],
-                'BRAK' : [ ['steerAngle'],          [ float ],                        [False]     ],
-                'PIDA' : [ ['activate'],            [ bool  ],                        [False]     ],
-                'ENPB' : [ ['activate'],            [ bool  ],                        [False]     ],
-                'PIDS' : [ ['kp','ki','kd','tf'],   [ float, float, float, float ],   [True]      ]
+                '1' : [ ['speed'],               [ float ],                        [False]     ],
+                '2' : [ ['steerAngle'],          [ float ],                        [False]     ],
+                '3' : [ ['brake (steerAngle)'],  [ float ],                        [False]     ],
+                '4' : [ ['activate'],            [ bool  ],                        [False]     ],
+                '5' : [ ['activate'],            [ bool  ],                        [False]     ],
+                '6' : [ ['kp','ki','kd','tf'],   [ float, float, float, float ],   [True]      ]
             }
     """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """   
 

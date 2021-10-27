@@ -117,28 +117,34 @@ class RcBrainThread:
             It contains the robot current control state, speed and angle. 
         """
         data = {}
+        # BRAKE command
         if self.currentState[4]:
-            data['action']        =  'BRAK'
+            data['action']        =  '3'
             data['steerAngle']    =  float(self.steerAngle)
+        # SPEED command
         elif self.currentState[0] or self.currentState[1]:
-            data['action']        =  'SPED'
+            data['action']        =  '1'
             data['speed']         =  float(self.speed/100.0)
+        # STEERING command
         elif self.currentState[2] or self.currentState[3]:
-            data['action']        =  'STER'
+            data['action']        =  '2'
             data['steerAngle']    =  float(self.steerAngle)
+        # PID activation command
         elif self.currentState[5]:
-            data['action']        =  'PIDA'
+            data['action']        =  '4'
             data['activate']      =  self.pida
             self.currentState[5]  = False
+        # PID tunning command
         elif self.currentState[6]:
-            data['action']        =  'PIDS'
+            data['action']        =  '6'
             data['kp']      =  self.pids_kp
             data['ki']      =  self.pids_ki
             data['kd']      =  self.pids_kd
             data['tf']      =  self.pids_tf
             self.currentState[6]  = False
+        # Steering command (release)
         elif self.currentState[7]:
-            data['action']        =  'STER'
+            data['action']        =  '2'
             data['steerAngle']    =  0.0
             self.currentState[7] = False
         else:

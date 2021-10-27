@@ -37,7 +37,7 @@ import random
 
 class EnvironmentalHandler(Thread):
     
-    def __init__(self, ID):
+    def __init__(self, ID = 120):
         """ EnvironmentalHandler targets to connect on the server and to send messages, which incorporates 
         the coordinate of the encountered obstacles on the race track. It has two main state, the setup state and the streaming state. 
         In the setup state, it creates the connection with server. It's sending the messages to the server in the streaming
@@ -98,7 +98,7 @@ class EnvironmentalHandler(Thread):
         self.__environmental_streamer.stop()
 
 if __name__ == '__main__':
-    envhandler = EnvironmentalHandler(120)
+    envhandler = EnvironmentalHandler()
     envhandler.start()
     for x in range(1, 10):
         try:
