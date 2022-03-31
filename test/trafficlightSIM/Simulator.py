@@ -94,6 +94,7 @@ class sim(Thread):
                 self.sendState(1,main_state)
                 self.sendState(2,main_state)
                 self.sendState(3,start_state)
+                self.sendState(4,start_state)
             except Exception as e:
                 print("Sending data failed with error: " + str(e))
 

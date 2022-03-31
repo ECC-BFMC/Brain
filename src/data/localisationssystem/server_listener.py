@@ -36,15 +36,11 @@ class ServerListener:
 	The broadcast message contains a port, where the server listens the car clients. If the message is correct,
 	it finishes the listening and a subscriber object tries to connect on server.
 	"""
-
-
-
 	def __init__(self, server_data):
 		#: ServerData object, which contains all parameter of the server.
 		self.__server_data = server_data
 
 		self.__running = True
-
 
 	def stop(self):
 		self.__running = False
@@ -75,10 +71,10 @@ class ServerListener:
 					# waiting for the beacon.
 					# Receive data from the socket. Buffer size = 1500 bytes
 					data, server_ip = s.recvfrom(1500, 0)
-					
+
 					# convert the received message
 					subscriptionPort = int(data.decode("utf-8"))
-	
+					
 					# actualize the parameter of server_data with new IP address and communication port
 					self.__server_data.serverip = server_ip[0]
 					self.__server_data.carSubscriptionPort = subscriptionPort

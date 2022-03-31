@@ -27,17 +27,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 from threading import Thread
-import server_data
-import server_listener
-import server_subscriber
-import environmental_streamer
+from multiprocessing import Pipe
+from server_data import ServerData
+from server_listener import ServerListener
+from server_subscriber import ServerSubscriber
+from  environmental_streamer import EnvironmentalStreamer
 
 import time
 import random
 
 class EnvironmentalHandler(Thread):
     
-    def __init__(self, ID = 120):
+    def __init__(self, ID, beacon, serverpublickey, streamPipe, clientprivatekey):
         """ EnvironmentalHandler targets to connect on the server and to send messages, which incorporates 
         the coordinate of the encountered obstacles on the race track. It has two main state, the setup state and the streaming state. 
         In the setup state, it creates the connection with server. It's sending the messages to the server in the streaming
@@ -49,13 +50,13 @@ class EnvironmentalHandler(Thread):
         """
         super(EnvironmentalHandler, self).__init__()
         #: serverData object with server parameters
-        self.__server_data = server_data.ServerData()
+        self.__server_data = ServerData(beacon)
         #: discover the parameters of server
-        self.__server_listener = server_listener.ServerListener(self.__server_data)
+        self.__server_listener = ServerListener(self.__server_data)
         #: connect to the server
-        self.__subscriber = server_subscriber.ServerSubscriber(self.__server_data,ID)
+        self.__subscriber = ServerSubscriber(self.__server_data, ID, serverpublickey, clientprivatekey)
         #: receive and decode the messages from the server
-        self.__environmental_streamer = environmental_streamer.EnvironmentalStreamer(self.__server_data)
+        self.__environmental_streamer = EnvironmentalStreamer(self.__server_data, streamPipe)
         
         self.__running = True
 
@@ -70,25 +71,15 @@ class EnvironmentalHandler(Thread):
                 # connect to the server 
                 self.__subscriber.subscribe()
         
-    
-    def stream(self, obstacle_id, x, y):
+    def stream(self):
         """ Listening the coordination of robot
         """
-        ob_id=obstacle_id
-        self.__environmental_streamer.stream(ob_id, x, y)
+        self.__environmental_streamer.stream()
 
-    def send(self, obstacle_id, x, y):
-        try:
-            self.__environmental_streamer.sent = False
-            while self.__environmental_streamer.sent == False and self.__running:
-                self.setup()
-                self.stream(obstacle_id, x, y)
-            return "sent: "
-        except:
-            return "not returned: "
-
-    def ID(self):
-        return self.__subscriber.ID()
+    def run(self):
+        while(self.__running):
+            self.setup()
+            self.stream()
     
     def stop(self):
         """Terminate the thread running.
@@ -98,14 +89,20 @@ class EnvironmentalHandler(Thread):
         self.__environmental_streamer.stop()
 
 if __name__ == '__main__':
-    envhandler = EnvironmentalHandler()
-    envhandler.start()
-    for x in range(1, 10):
-        try:
-            res = envhandler.send(int(random.uniform(0,25)), random.uniform(0,15), random.uniform(0,15))
-            print(res)
-        except: pass
-        time.sleep(random.uniform(1,5))
-    envhandler.stop()
+    beacon = 23456
+    id = 120
+    serverpublickey = 'publickey_server_test.pem'
+    clientprivatekey = 'privatekey_client_test.pem'
+    
+    gpsStR, gpsStS = Pipe(duplex = False)
 
+    envhandler = EnvironmentalHandler(id, beacon, serverpublickey, gpsStR, clientprivatekey)
+    envhandler.start()
+    time.sleep(5)
+    for x in range(1, 10):
+        time.sleep(random.uniform(1,5))
+        a = {"obstacle_id": int(random.uniform(0,25)), "x": random.uniform(0,15), "y": random.uniform(0,15)}
+        gpsStS.send(a)
+        
+    envhandler.stop()
     envhandler.join()

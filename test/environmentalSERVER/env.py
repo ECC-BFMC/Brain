@@ -29,7 +29,7 @@
 from serverconfig import ServerConfig
 from carclientserver import CarClientServerThread
 from serverbeacon import ServerBeaconThread
-from data_saver import DataSaver
+from data_collector import MarkerDataSet
 
 import logging
 import time
@@ -42,12 +42,17 @@ class ObstacleHandlerSystemServer:
     CarClientServerThread are serving the car clients. 
     In this examples, a object of GenerateData is added for create coordinates of a robots, which are moving on circle.
     """
-    def __init__(self,logger):
-        self.serverconfig = ServerConfig('<broadcast>',23456,23466)
-        self.data_saver = DataSaver()
-        
-        self.__carclientserverThread = CarClientServerThread(self.serverconfig, self.data_saver, logger)
-        self.__beaconserverThread =  ServerBeaconThread(self.serverconfig,1.0,logger)
+    def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+        self.__logger = logging.getLogger('root')
+
+        self.markerSet = MarkerDataSet()
+        self.serverconfig = ServerConfig('<broadcast>', 23456, 23466)
+        privateKeyFile = "privatekey_server_test.pem"
+        clientkeys = "keys/"
+
+        self.__carclientserverThread = CarClientServerThread(self.serverconfig, self.__logger, keyfile = privateKeyFile, markerSet = self.markerSet, clientkeys = clientkeys)
+        self.__beaconserverThread =  ServerBeaconThread(self.serverconfig, 1.0, self.__logger)
      
     def run(self):    
         self.__carclientserverThread.start()
@@ -55,7 +60,8 @@ class ObstacleHandlerSystemServer:
  
         try:
             while(True):
-                time.sleep(2.0)
+                time.sleep(1.0)
+                self.__logger(self.markerSet.getlist())
         except KeyboardInterrupt:
             pass
              
@@ -66,7 +72,5 @@ class ObstacleHandlerSystemServer:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger('root')
-    ObsHanServer = ObstacleHandlerSystemServer(logger)
+    ObsHanServer = ObstacleHandlerSystemServer()
     ObsHanServer.run()

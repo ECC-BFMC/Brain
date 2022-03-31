@@ -1,3 +1,4 @@
+
 # Copyright (c) 2019, Bosch Engineering Center Cluj and BFMC organizers
 # All rights reserved.
 
@@ -34,7 +35,7 @@ import traceback
 
 import socket
 
-from utils import load_public_key,verify_data
+from utils import load_public_key, verify_data
 
 class ServerSubscriber:
 	""" It has role to subscribe on the server, to create a connection and verify the server authentication.
@@ -42,16 +43,13 @@ class ServerSubscriber:
 	of robot and receives two message to authorize the server. For authentication it bases on the public key of server. This 
 	key is stored in 'publickey.pem' file.
 	"""
-	def __init__(self, server_data, carId):
+	def __init__(self, server_data, carId, publickey):
 		#: id number of the robot
 		self.__carId = carId
 		#: object with server parameters
 		self.__server_data = server_data
 		#: public key of the server for authentication
-		#: for testing purposes, with the provided simulated localisation system, use the "publickey_server_test.pem"
-		#: At Bosch location, during the competition and during the testing on the track, please use the "publickey_server.pem"
-# 		self.__public_key = load_public_key('publickey_server.pem')
-		self.__public_key = load_public_key('publickey_server_test.pem')
+		self.__public_key = load_public_key(publickey)
 
 	def ID(self):
 		return self.__carId
@@ -67,21 +65,17 @@ class ServerSubscriber:
 			sock.settimeout(2.0)
 			
 			# sending car id to the server
-			if(sys.version_info[0] < 3 ): #Compatible with python 2 or 3
-				msg = bytes("{}".format(self.__carId)).encode('utf-8')
-			else:
-				msg = "{}".format(self.__carId).encode('utf-8')
+			msg = "{}".format(self.__carId).encode('utf-8')
 			
 			sock.sendall(msg)
 			
 			# receiving response from the server
-			msg = sock.recv(4096).decode('utf-8')
+			msg = sock.recv(4096)
 			# receiving signature from the server
 			signature = sock.recv(4096)
 			
 			# verifying server authentication
 			is_signature_correct = verify_data(self.__public_key,msg,signature)
-			
 			# Validate server
 			if (msg == '' or signature == '' or not is_signature_correct):
 				msg = "Authentication not ok".encode('utf-8')

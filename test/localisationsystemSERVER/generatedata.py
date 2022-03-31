@@ -36,7 +36,7 @@ class GenerateData(threading.Thread):
     for 40 robot on the race track. So car client can subscribe on a car id number between 1 and 40. 
     """ 
 
-    def __init__(self,carclientserver, r = 1.0):
+    def __init__(self, markerdataset = {}, r = 1.0):
         super(GenerateData,self).__init__()
         #: circle radius
         self.__r = complex(1.0,0.0)
@@ -45,10 +45,11 @@ class GenerateData(threading.Thread):
         #: current angular position based on circle center
         self.__angularPosition = complex(1.0,0.0)
         #: angular velocity (angular/second) based on circle center
-        self.__angularVelocity = complex(0.9848,0.1736)
+        self.__angularVelocity = complex(0.9848, 0.1736)
 
-        #: car client server
-        self.__carclientserver  = carclientserver
+        self._marker_dic = markerdataset
+
+        self.locker = threading.Lock()
 
         self.__running = True
         
@@ -63,17 +64,28 @@ class GenerateData(threading.Thread):
 
         while self.__running:
             # waiting a period
-            time.sleep(1.0)
+            time.sleep(0.25)
             # calculating the position of robot
             position = self.__circleCenter+self.__r * self.__angularPosition
             # calculation the orientation of robot.
-            orientation = self.__angularPosition*complex(0.0,1.0)
+            orientation = self.__angularPosition*complex(0.0, 1.0)
             # update the dictionary, which contains coordinates of detected robots
-            for carId in range( self.__startCarid,self.__endCarid):
-                self.__carclientserver._carMap[carId] = {'timestamp':time.time(),'coor':(position,orientation)}
+            for carId in range( self.__startCarid, self.__endCarid):
+                with self.locker:
+                    self._marker_dic[carId] = {'timestamp':time.time(), 'coor':(position, orientation)}
             # update angular position
             self.__angularPosition *= self.__angularVelocity
 
+    def getitem(self, markerId):
+        """Get timestamp and pose of markerId
+        
+        Parameters
+        ----------
+        markerId : int
+            The identification number of marker.
+        """
+        with self.locker:
+            return self._marker_dic[markerId]
 
     def stop(self):
         self.__running = False

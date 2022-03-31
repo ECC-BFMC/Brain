@@ -34,7 +34,7 @@ The parameters is updated by other class, like ServerListener and SubscribeToSer
 """
 class ServerData:
 
-	def __init__(self, server_IP = None, beacon_port = 23456):
+	def __init__(self, beacon_port, server_IP = None):
 		#: ip address of server 
 		self.__server_ip = server_IP 
 		#: flag to mark, that the server is new. It becomes false, when the client subscribed on the server.
@@ -59,5 +59,5 @@ class ServerData:
 	def serverip(self, server_ip):
 		if self.__server_ip != server_ip:
 			self.__server_ip = server_ip
-			self.is_new_server = True
+			self.is_new_server = False
 	

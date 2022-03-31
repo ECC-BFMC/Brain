@@ -31,24 +31,28 @@ sys.path.insert(0,'.')
 
 import socket
 import json
-from complexdecoder import ComplexDecoder
+from complexDealer import ComplexDecoder
 
 
 
 class PositionListener:
 	"""PositionListener aims to receive all message from the server. 
 	"""
-	def __init__(self,server_data):
+	def __init__(self, server_data, streamPipe):
 		
 		self.__server_data = server_data 
+		
+		self.__streamP_pipe = streamPipe
+		
 		self.socket_pos = None
-
-		self.coor = None
 
 		self.__running = True
 
 	def stop(self):
 		self.__running = False
+		try :
+			self.__server_data.socket.close()
+		except: pass
 	
 	def listen(self):
 		""" 
@@ -62,14 +66,14 @@ class PositionListener:
 			if self.__server_data.socket != None: 
 				try:
 					msg = self.__server_data.socket.recv(4096)
-
+					
 					msg = msg.decode('utf-8')
 					if(msg == ''):
 						print('Invalid message. Connection can be interrupted.')
 						break
 					
 					coor = json.loads((msg),cls=ComplexDecoder)
-					self.coor = coor
+					self.__streamP_pipe.send(coor)
 				except socket.timeout:
 					print("position listener socket_timeout")
 					# the socket was created successfully, but it wasn't received any message. Car with id wasn't detected before. 

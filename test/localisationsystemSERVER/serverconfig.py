@@ -32,9 +32,9 @@ import os
 class ServerConfig:
     """ ServerConfig contains all data for creating and running the server. 
     """
-    def __init__(self,broadcast_ip,negotiation_port,carClientPort):
-        self.negotiation_port=negotiation_port
-        self.broadcast_ip=broadcast_ip
+    def __init__(self, broadcast_ip, negotiation_port, carClientPort):
+        self.broadcast_ip = broadcast_ip
+        self.negotiation_port = negotiation_port
         self.carClientPort = carClientPort
         self.localip = ServerConfig.getlocalip()
 

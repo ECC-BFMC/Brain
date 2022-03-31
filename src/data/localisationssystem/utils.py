@@ -159,7 +159,7 @@ def verify_data(public_key,plain_text,signature):
     try:
         public_key.verify(
             signature=signature,
-            data=plain_text.encode('utf-8'),
+            data=plain_text,
             padding=padding.PSS(
                 mgf=padding.MGF1(hashes.MD5()),
                 salt_length=padding.PSS.MAX_LENGTH

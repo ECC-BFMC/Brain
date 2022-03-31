@@ -44,13 +44,19 @@ class LocalizationSystemServer:
 
     In this examples, a object of GenerateData is added for create coordinates of a robots, which are moving on circle.
     """
-    def __init__(self,logger):
-        self.serverconfig = ServerConfig('<broadcast>',12345,12356)
-        
-        self.__carclientserverThread = CarClientServerThread(self.serverconfig,logger)
-        self.__beaconserverThread =  ServerBeaconThread(self.serverconfig,1.0,logger)
+    def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger('root')
 
-        self.__generateData = GenerateData(self.__carclientserverThread.carclientserver)
+        self.serverconfig = ServerConfig('<broadcast>', 12345, 12356)
+        
+        self.__generateData = GenerateData()
+        privateKeyFile = "privatekey_server_test.pem"
+        
+        self.__carclientserverThread = CarClientServerThread(self.serverconfig, logger, keyfile=privateKeyFile, markerSet=self.__generateData)
+        self.__beaconserverThread =  ServerBeaconThread(self.serverconfig, 1.0, logger)
+
+        
     
     def run(self):    
         self.__carclientserverThread.start()
@@ -72,9 +78,8 @@ class LocalizationSystemServer:
         self.__generateData.join()
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger('root')
-    locSysServer = LocalizationSystemServer(logger)
+    
+    locSysServer = LocalizationSystemServer()
     locSysServer.run()
 
     

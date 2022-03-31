@@ -26,18 +26,19 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+from multiprocessing import Pipe
 from threading import Thread
-import server_data
-import server_listener
-import server_subscriber
-import position_listener
+from server_data import ServerData
+from server_listener import ServerListener
+from server_subscriber import ServerSubscriber
+from position_listener import PositionListener
 
 import time
 
 class LocalisationSystem(Thread):
     
-    def __init__(self, ID):
-        """ LocalisationSystem targets to connect on the server and to receive the messages, which incorporates 
+    def __init__(self, ID, beacon, serverpublickey, streamPipe):
+        """ GpsTracker targets to connect on the server and to receive the messages, which incorporates 
         the coordinate of the robot on the race track. It has two main state, the setup state and the listening state. 
         In the setup state, it creates the connection with server. It's receiving  the messages from the server in the listening
         state. 
@@ -47,13 +48,13 @@ class LocalisationSystem(Thread):
         """
         super(LocalisationSystem, self).__init__()
         #: serverData object with server parameters
-        self.__server_data = server_data.ServerData()
+        self.__server_data = ServerData(beacon)
         #: discover the parameters of server
-        self.__server_listener = server_listener.ServerListener(self.__server_data)
+        self.__server_listener = ServerListener(self.__server_data)
         #: connect to the server
-        self.__subscriber = server_subscriber.ServerSubscriber(self.__server_data,ID)
+        self.__subscriber = ServerSubscriber(self.__server_data, ID, serverpublickey)
         #: receive and decode the messages from the server
-        self.__position_listener = position_listener.PositionListener(self.__server_data)
+        self.__position_listener = PositionListener(self.__server_data, streamPipe)
         
         self.__running = True
 
@@ -68,7 +69,6 @@ class LocalisationSystem(Thread):
                 # connect to the server 
                 self.__subscriber.subscribe()
         
-    
     def listen(self):
         """ Listening the coordination of robot
         """
@@ -79,19 +79,6 @@ class LocalisationSystem(Thread):
             self.setup()
             self.listen()
     
-    def coor(self):
-        """Access to the last receive coordinate
-        
-        Returns
-        -------
-        dictionary
-            coordinate and timestamp
-        """
-        return self.__position_listener.coor
-
-    def ID(self):
-        return self.__subscriber.ID()
-    
     def stop(self):
         """Terminate the thread running.
         """
@@ -100,18 +87,23 @@ class LocalisationSystem(Thread):
         self.__position_listener.stop()
 
 if __name__ == '__main__':
-    LocalisationSystem = LocalisationSystem(4)
-    LocalisationSystem.start()
+    beacon = 12345
+    id = 4
+    serverpublickey = 'publickey_server_test.pem'
+    
+    gpsStR, gpsStS = Pipe(duplex = False)
+    
+    LocalisationSystem = LocalisationSystem(id, beacon, serverpublickey, gpsStS)
+    LocalisationSystem.start()  
     
     time.sleep(5)
     while True:
         try:
-            coora = LocalisationSystem.coor()
-            print(LocalisationSystem.ID(), coora['timestamp'], coora['coor'][0], coora['coor'][1])
-            time.sleep(1)
+            coora = gpsStR.recv()
+            print(coora['timestamp'], coora['coor'][0].real, coora['coor'][0].imag, coora['coor'][1].real, coora['coor'][1].imag)
         except KeyboardInterrupt:
             break
-
+        
     LocalisationSystem.stop()
 
     LocalisationSystem.join()

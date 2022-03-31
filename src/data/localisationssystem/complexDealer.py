@@ -26,30 +26,25 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import os
 import json
-import datetime
-from time import strftime
 
-class DataSaver:
-    
-    def __init__(self):
+class ComplexEncoder(json.JSONEncoder):
+    def default(self, z):
+        if isinstance(z, complex):
+            return {'type':'complex', 'real':z.real, 'imag':z.imag}
+        else:
+            return super().default(z)
 
-        dirname = os.path.dirname(__file__)
-        fulltime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.filename = dirname + "/savings/" + fulltime + ".json"
-        self.data = {}
-        
-    def existing_car(self, carID):
-        if not self.data.has_key(carID):
-            self.data[carID] = []
-        
-    def ADDobstacle(self, carID, obstacleID, x, y):
-        self.existing_car(carID)
-        self.data[carID].append([obstacleID, x, y])
-    
-    def saving(self):
-        json_object = json.dumps(self.data, indent=4)
-        with open(self.filename, 'w') as f:
-            f.writelines(json_object)
-        
+class ComplexDecoder(json.JSONDecoder):
+	""" Json decoder for complex numbers. The decodeable message consists of two float number and a type marking, like below:
+			{'type':'complex','real':1.0,'imag':1/0}
+		It will return a complex number object.
+	"""
+	def __init__(self,*args,**kwargs):
+		super(ComplexDecoder,self).__init__(object_hook=self.object_hook,*args,**kwargs)
+
+	def object_hook(self,dct):
+		# Checking the parameters of dictionary. 
+		if 'type' in dct and dct['type'] == 'complex' :	
+			return complex(dct['real'],dct['imag'])
+		return dct

@@ -66,9 +66,9 @@ class PositionListener(Thread):
 		"""
 		while self.__running:
 			# Generate some coordinates
-			self.i = self.i + 2
-			self.j = self.j + 3
-			self.coor = (complex(self.i,self.j),complex(self.i+5,self.j+5))
+			self.i = self.i + 0.01
+			self.j = self.j + 0.01
+			self.coor = (complex(self.i,self.j),complex(self.i,self.j))
 
 			# Wait for 0.1 s before next adv
 			time.sleep(0.1)
