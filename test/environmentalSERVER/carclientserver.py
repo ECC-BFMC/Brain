@@ -33,7 +33,7 @@ import socketserver
 import socket
 import time
 
-from env_inf_server.server.utils import load_private_key, load_public_key, sign_data, verify_data
+from utils import load_private_key, load_public_key, sign_data, verify_data
 
 class CarClientServerThread(threading.Thread):
     
