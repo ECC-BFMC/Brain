@@ -73,7 +73,7 @@ class CarClientServer (socketserver.ThreadingTCPServer, object):
         connection = (serverConfig.localip, serverConfig.carClientPort)
         super(CarClientServer,self).__init__(connection, requestHandler)
     
-     def getCarPipe(self, id, timestamp):
+    def getCarPipe(self, id, timestamp):
 
         """Check the existence of robot in dictionary. It returns false, if the robot wasn't detected yet. 
         Parameters

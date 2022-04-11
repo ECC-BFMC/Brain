@@ -28,6 +28,10 @@
 
 import time
 import threading
+from multiprocessing import Pipe
+
+from complexDealer import ComplexEncoder
+import json
 
 class GenerateData(threading.Thread):
     """ It aims to generate coordinates for server. The object of this class simulates
@@ -47,8 +51,8 @@ class GenerateData(threading.Thread):
         #: angular velocity (angular/second) based on circle center
         self.__angularVelocity = complex(0.9848, 0.1736)
 
-        self._marker_dic = markerdataset
-
+        self._streamPipe = {}
+        self._readPipe = {}
         self.locker = threading.Lock()
 
         self.__running = True
@@ -69,24 +73,56 @@ class GenerateData(threading.Thread):
             position = self.__circleCenter+self.__r * self.__angularPosition
             # calculation the orientation of robot.
             orientation = self.__angularPosition*complex(0.0, 1.0)
-            # update the dictionary, which contains coordinates of detected robots
-            for carId in range( self.__startCarid, self.__endCarid):
-                with self.locker:
-                    self._marker_dic[carId] = {'timestamp':time.time(), 'coor':(position, orientation)}
+
+            with self.locker:
+                for id in self._streamPipe:
+                    for pipe in self._streamPipe[id]:
+                        msg = {'timestamp':time.time(), 'coor':(position, orientation)}
+                        self._streamPipe[id][pipe].send(msg)  
             # update angular position
             self.__angularPosition *= self.__angularVelocity
 
-    def getitem(self, markerId):
-        """Get timestamp and pose of markerId
-        
+    def getPipe(self, id, tme):
+        """Creates a pipe for the client.
         Parameters
         ----------
-        markerId : int
-            The identification number of marker.
+        id : int
+            Id of car
+        tme : float 
+            the time of detectection
+        Returns
+        -------
+        Pipe: pipe receiving side
         """
         with self.locker:
-            return self._marker_dic[markerId]
+            if not id in self._readPipe:
+                self._readPipe[id]   = {}
+                self._streamPipe[id] = {}
+
+            gpsStR, gpsStS = Pipe(duplex = False)
+            self._readPipe[id][tme]   = gpsStR
+            self._streamPipe[id][tme] = gpsStS
+
+            return self._readPipe[id][tme]
+
+
+    def removePipeS(self):
+        """Deletes the pipe for the client.
+        Parameters
+        ----------
+        id : int
+            Id of car
+        tme : float 
+            the time of detectection
+        """
+
+        with self.locker:
+            for markerId in self._readPipe:
+                for timestamp in self._readPipe[markerId]:
+                    del self._readPipe[markerId][timestamp]
+                    del self._streamPipe[markerId][timestamp]
 
     def stop(self):
+        self.removePipeS()
         self.__running = False
     
