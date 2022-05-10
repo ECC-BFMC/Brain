@@ -32,8 +32,8 @@ import socketserver
 import socket
 import time
 
-from loc_sys_server.server.utils import load_private_key, sign_data
-from loc_sys_server.server.complexDealer import ComplexEncoder
+from utils import load_private_key, sign_data
+from complexDealer import ComplexEncoder
 
 
 class CarClientServerThread(threading.Thread):
@@ -121,6 +121,9 @@ class CarClientHandler(socketserver.BaseRequestHandler):
         
         # Authentication of server        
         self.request.sendall(msg)
+        # Required such that the signature is not sent immediately after the message.
+        # That situation would result in a loss of information 
+        time.sleep(0.1)
         self.request.sendall(signature)
         time.sleep(0.1)
         
@@ -136,7 +139,10 @@ class CarClientHandler(socketserver.BaseRequestHandler):
             CarRecpPipe = self.server.getCarPipe(carId, timestamp)
             while(self.server.isRunning):
                 msg = CarRecpPipe.recv()
+                msg = json.dumps((msg),cls=ComplexEncoder)
+                self.server.logger.info('Sending message {} to client {} '.format(msg,self.client_address))
                 self.request.sendall(msg.encode('utf-8'))
+
                 
         except Exception as e:
             self.server.logger.warn("Close serving for {}. Error: {}".format(self.client_address, e))
