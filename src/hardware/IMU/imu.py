@@ -28,54 +28,74 @@
 
 import sys
 sys.path.append('.')
-import RTIMU
 import os.path
 import time
 import math
 import threading
 
+sensorType = "BNO055"
+
+if sensorType == "BNO055":
+    import RTIMU
+elif sensorType == "MPU6050":
+    from mpu6050 import mpu6050
+
+
 class imu(threading.Thread):
     def __init__(self): 
         threading.Thread.__init__(self)
         self.running = True
-
-        self.SETTINGS_FILE = "RTIMULib"
-        print("Using settings file " + self.SETTINGS_FILE + ".ini")
-        if not os.path.exists(self.SETTINGS_FILE + ".ini"):
-            print("Settings file does not exist, will be created")
-        self.s = RTIMU.Settings(self.SETTINGS_FILE)
-        self.imu = RTIMU.RTIMU(self.s)
-        print("IMU Name: " + self.imu.IMUName())
-        if (not self.imu.IMUInit()):
-            print("IMU Init Failed")
-            self.stop()
-            sys.exit(1)
+        if sensorType == "BNO055":
+            
+            self.SETTINGS_FILE = "RTIMULib"
+            print("Using settings file " + self.SETTINGS_FILE + ".ini")
+            if not os.path.exists(self.SETTINGS_FILE + ".ini"):
+                print("Settings file does not exist, will be created")
+            self.s = RTIMU.Settings(self.SETTINGS_FILE)
+            self.imu = RTIMU.RTIMU(self.s)
+            print("IMU Name: " + self.imu.IMUName())
+            if (not self.imu.IMUInit()):
+                print("IMU Init Failed")
+                self.stop()
+                sys.exit(1)
+            else:
+                print("IMU Init Succeeded")
+            self.imu.setSlerpPower(0.02)
+            self.imu.setGyroEnable(True)
+            self.imu.setAccelEnable(True)
+            self.imu.setCompassEnable(True)
+            self.poll_interval = self.imu.IMUGetPollInterval()
         else:
-            print("IMU Init Succeeded")
-        self.imu.setSlerpPower(0.02)
-        self.imu.setGyroEnable(True)
-        self.imu.setAccelEnable(True)
-        self.imu.setCompassEnable(True)
-
-        self.poll_interval = self.imu.IMUGetPollInterval()
+            
+            self.imu = mpu6050(0x68)
+            self.poll_interval = 100
+        
         print("Recommended Poll Interval: %dmS\n" % self.poll_interval)
         
     def run(self):
         while self.running == True:
-            if self.imu.IMURead():
-                self.data = self.imu.getIMUData()
-                self.fusionPose = self.data["fusionPose"]
-                self.accel = self.data["accel"]
-                self.roll  =  math.degrees(self.fusionPose[0])
-                self.pitch =  math.degrees(self.fusionPose[1])
-                self.yaw   =  math.degrees(self.fusionPose[2])
-                self.accelx =  self.accel[0]
-                self.accely =  self.accel[1]
-                self.accelz =  self.accel[2]
-
-
-                print("roll = %f pitch = %f yaw = %f" % (self.roll,self.pitch,self.yaw))
-                time.sleep(self.poll_interval*1.0/1000.0)
-
+            if sensorType == "BNO055":
+                if self.imu.IMURead():
+                    data = self.imu.getIMUData()
+                    fusionPose = data["fusionPose"]
+                    self.accel = data["accel"]
+                    self.roll  =  math.degrees(fusionPose[0])
+                    self.pitch =  math.degrees(fusionPose[1])
+                    self.yaw   =  math.degrees(fusionPose[2])
+                    self.accelx =  self.accel[0]
+                    self.accely =  self.accel[1]
+                    self.accelz =  self.accel[2]
+            else:
+                data = self.imu.get_accel_data()
+                self.accelx =  data["x"]
+                self.accely =  data["y"]
+                self.accelz =  data["z"]
+                dataa = self.imu.get_gyro_data()
+                self.roll  =  math.degrees(dataa["x"])
+                self.pitch =  math.degrees(dataa["y"])
+                self.yaw   =  math.degrees(dataa["z"])
+            print("roll = %f pitch = %f yaw = %f" % (self.roll,self.pitch,self.yaw))
+            time.sleep(self.poll_interval*1.0/1000.0)
+                
     def stop(self): 
         self.running = False

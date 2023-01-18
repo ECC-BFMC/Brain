@@ -43,6 +43,7 @@ class MessageConverter:
         | 'PIDA'    : [ ['activate' ],               [bool],                         [False]                ] - Activate PID control -
         | 'ENPB'    : [ ['activate' ],               [bool],                         [False]                ] - Activate encoder publisher -
         | 'PIDS'    : [ ['kp', 'ki', 'kd', 'tf' ],   [float, float, float, float],   [True]                 ] - Pass PID values -
+        | 'MOVE'    : [ ['distance', 'speed'],       [float, float],                 [True]                 ] - Set distance to travel and the speed -
 
     """
 
@@ -53,7 +54,8 @@ class MessageConverter:
                 '3' : [ ['brake (steerAngle)'],  [ float ],                        [False]     ],
                 '4' : [ ['activate'],            [ bool  ],                        [False]     ],
                 '5' : [ ['activate'],            [ bool  ],                        [False]     ],
-                '6' : [ ['kp','ki','kd','tf'],   [ float, float, float, float ],   [True]      ]
+                '6' : [ ['kp','ki','kd','tf'],   [ float, float, float, float ],   [True]      ],
+                '7' : [ ['distance','speed'],    [ float, float],                  [True]      ]
             }
     """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """   
 

@@ -48,7 +48,7 @@ def runListener():
         print("\033c")
         print("Example program that gets the info of the last car infos\n")
         # Print each received msg
-        print("ID " + vehicle.ID + ", timestamp " + vehicle.timestamp + ", coor " + vehicle.pos + ", angle " + vehicle.ang)
+        print("ID ", vehicle.ID, ", timestamp", vehicle.timestamp, ", coor ", vehicle.pos, ", angle ", vehicle.ang)
         time.sleep(0.5)
     # Stop the listener
     vehicle.stop()

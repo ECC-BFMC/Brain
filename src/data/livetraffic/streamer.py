@@ -33,10 +33,10 @@ import socket
 import json
 import time
 
-class EnvironmentalStreamer:
+class Streamer:
 	
 	def __init__(self,server_data, streamPipe):
-		"""EnvironmentalStreamer aims to send all message to the server. 
+		"""Streamer aims to send all message to the server. 
 		"""
 		
 		self.__server_data = server_data 

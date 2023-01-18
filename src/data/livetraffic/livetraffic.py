@@ -31,7 +31,7 @@ from multiprocessing import Pipe
 from server_data import ServerData
 from server_listener import ServerListener
 from server_subscriber import ServerSubscriber
-from  environmental_streamer import EnvironmentalStreamer
+from streamer import Streamer
 
 import time
 import random
@@ -56,7 +56,7 @@ class EnvironmentalHandler(Thread):
         #: connect to the server
         self.__subscriber = ServerSubscriber(self.__server_data, ID, serverpublickey, clientprivatekey)
         #: receive and decode the messages from the server
-        self.__environmental_streamer = EnvironmentalStreamer(self.__server_data, streamPipe)
+        self.__streamer = Streamer(self.__server_data, streamPipe)
         
         self.__running = True
 
@@ -74,7 +74,7 @@ class EnvironmentalHandler(Thread):
     def stream(self):
         """ Listening the coordination of robot
         """
-        self.__environmental_streamer.stream()
+        self.__streamer.stream()
 
     def run(self):
         while(self.__running):
@@ -86,13 +86,31 @@ class EnvironmentalHandler(Thread):
         """
         self.__running = False
         self.__server_listener.stop()
-        self.__environmental_streamer.stop()
+        self.__streamer.stop()
 
 if __name__ == '__main__':
     beacon = 23456
+
     id = 120
-    serverpublickey = 'publickey_server_test.pem'
-    clientprivatekey = 'privatekey_client_test.pem'
+    serverpublickey = 'publickey_livetraffic_server_test.pem'
+    clientprivatekey = 'privatekey_livetraffic_client_test.pem'
+
+    #: For testing purposes, with the provided simulated livetraffic_system, the pair of keys above is used
+    #       -   "publickey_livetraffic_server_test.pem"     --> Ensure by the client that the server is the actual server
+    #       -   "privatekey_livetraffic_client_test.pem"    --> Ensure by the server that the client is the actual client
+
+    #: At Bosch location during the competition 
+    #       -   Use the "publickey_livetraffic_server.pem" instead of the "publickey_livetraffic_server_test.pem" 
+    #       -   As for the "publickey_livetraffic_client.pem", you will have to generate a pair of keys, private and public, using the following terminal lines.  Before the competition, instruction of where to send your publickey_livetraffic_client.pem will be given.
+
+    #: openssl genrsa -out privateckey_livetraffic_client.pem 2048 ----> Creates a private ssh key and stores it in the current dir with the given name
+    #: openssl rsa -in privateckey_livetraffic_client.pem -pubout -out publickey_livetraffic_client.pem ----> Creates the corresponding public key out of the private one. 
+
+    #:
+    #: To test the functionality, 
+    #       -   copy the generated public key under test/livetrafficSERVER/keys 
+    #       -   rename the key using this format: "id_publickey.pem" ,where the id is the id of the key you are trying to connect with
+    #       -   The given example connects with the id 120 and the same key is saved with "120_publickey.pem"
     
     gpsStR, gpsStS = Pipe(duplex = False)
 
