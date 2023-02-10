@@ -29,9 +29,7 @@
 
 import sys
 import time
-from cryptography.utils import signature
 sys.path.insert(0,'.')
-import traceback
 
 import socket
 
@@ -61,7 +59,8 @@ class ServerSubscriber:
 		try:
 			# creating and initializing the socket
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.connect((self.__server_data.serverip,self.__server_data.carSubscriptionPort ))
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			sock.connect((self.__server_data.serverip,self.__server_data.serverSubscriptionPort ))
 			sock.settimeout(2.0)
 			
 			# sending car id to the server
@@ -75,7 +74,7 @@ class ServerSubscriber:
 			signature = sock.recv(4096)
 			
 			# verifying server authentication
-			is_signature_correct = verify_data(self.__public_key,msg,signature)
+			is_signature_correct = verify_data(self.__public_key, msg, signature)
 			# Validate server
 			if (msg == '' or signature == '' or not is_signature_correct):
 				msg = "Authentication not ok".encode('utf-8')
@@ -86,9 +85,21 @@ class ServerSubscriber:
 			
 			sock.sendall(msg)
 			 
-			print("Connected to ",self.__server_data.serverip)
-			self.__server_data.socket = sock
-			self.__server_data.is_new_server = False
+			msg_s = sock.recv(4096)
+			msg = msg_s.decode('utf-8')
+			
+			if  msg != 'gpsId not ok':
+				devicedata = msg.split(":")
+				sockDev = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				sockDev.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				sockDev.connect((devicedata[0], int(devicedata[1]) ))
+				sock.settimeout(5.0)
+				
+				print("Got deviceId from ",self.__server_data.serverip)
+				self.__server_data.socket = sockDev
+				self.__server_data.is_new_server = False
+			else:
+				raise Exception(msg)
 		
 		except Exception as e:
 			print("Failed to connect on server with error: " + str(e))

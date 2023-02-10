@@ -74,7 +74,6 @@ def load_public_key(filename):
 
 
 def sign_data(private_key, plain_text):
-    # SIGN DATA/STRING
     signature = private_key.sign(
         data=plain_text,
         padding=padding.PSS(

@@ -75,7 +75,7 @@ class PositionListener:
 					coor = json.loads((msg),cls=ComplexDecoder)
 					self.__streamP_pipe.send(coor)
 				except socket.timeout:
-					print("position listener socket_timeout")
+					print("position listener socket_timeout. Check if device is working")
 					# the socket was created successfully, but it wasn't received any message. Car with id wasn't detected before. 
 					pass
 				except Exception as e:

@@ -30,7 +30,7 @@ from carclientserver import CarClientServerThread
 from serverconfig import ServerConfig
 from serverbeacon import ServerBeaconThread
 
-from generatedata import GenerateData
+from LocalizationDevice_sim import LocalizationDevice
 
 import logging
 import time
@@ -46,37 +46,39 @@ class LocalizationSystemServer:
     """
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger('root')
+        self.__logger = logging.getLogger('root')
 
         self.serverconfig = ServerConfig('<broadcast>', 12345, 12356)
-        
-        self.__generateData = GenerateData()
-        privateKeyFile = "privatekey_server_test.pem"
-        
-        self.__carclientserverThread = CarClientServerThread(self.serverconfig, logger, keyfile=privateKeyFile, markerSet=self.__generateData)
-        self.__beaconserverThread =  ServerBeaconThread(self.serverconfig, 1.0, logger)
 
+        devices = {
+            1: [self.serverconfig.localip, "22311"]
+        }
+
+        self.__LocalizationDevice = LocalizationDevice(self.serverconfig)
+        privateKeyFile = "privatekey_server_test.pem"
+
+        self.__carclientserverThread = CarClientServerThread(self.serverconfig, self.__logger, keyfile = privateKeyFile, devices = devices)
+        self.__beaconserverThread =  ServerBeaconThread(self.serverconfig, 1.0, self.__logger)
         
     
     def run(self):    
+        self.__LocalizationDevice.start()
         self.__carclientserverThread.start()
         self.__beaconserverThread.start()
-        self.__generateData.start()
 
         try:
             while(True):
                 time.sleep(2.0)
         except KeyboardInterrupt:
             pass
-            
+        
+        self.__LocalizationDevice.stop()
+        self.__LocalizationDevice.join()
         self.__carclientserverThread.stop()
         self.__carclientserverThread.join()
         self.__beaconserverThread.stop()
         self.__beaconserverThread.join()
-
-        self.__generateData.stop()
-        self.__generateData.join()
-
+        
 if __name__ == '__main__':
     
     locSysServer = LocalizationSystemServer()

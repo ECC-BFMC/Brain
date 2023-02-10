@@ -42,7 +42,7 @@ class ServerData:
 		#: port, where the beacon server send broadcast messages
 		self.__beacon_port = beacon_port
 		#: port, where the server listen the car clients
-		self.carSubscriptionPort = None
+		self.serverSubscriptionPort = None
 		#: connection, which used to communicate with the server
 		self.socket = None
 

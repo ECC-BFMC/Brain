@@ -88,7 +88,7 @@ class LocalisationSystem(Thread):
 
 if __name__ == '__main__':
     beacon = 12345
-    id = 4
+    id = 1
     serverpublickey = 'publickey_server_test.pem'
     
     gpsStR, gpsStS = Pipe(duplex = False)
@@ -99,8 +99,9 @@ if __name__ == '__main__':
     time.sleep(5)
     while True:
         try:
-            coora = gpsStR.recv()
-            print(coora['timestamp'], coora['coor'][0].real, coora['coor'][0].imag, coora['coor'][1].real, coora['coor'][1].imag)
+            if gpsStR.poll():
+                coora = gpsStR.recv()
+                print(coora['timestamp'], coora['pos'].real, coora['pos'].imag)
         except KeyboardInterrupt:
             break
         

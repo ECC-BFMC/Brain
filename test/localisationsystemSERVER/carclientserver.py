@@ -26,23 +26,20 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import json
 import threading
 import socketserver
 import socket
 import time
 
 from loc_sys_server.server.utils import load_private_key, sign_data
-from loc_sys_server.server.complexDealer import ComplexEncoder
-
 
 class CarClientServerThread(threading.Thread):
     
-    def __init__(self, serverConfig, logger, keyfile, markerSet):
+    def __init__(self, serverConfig, logger, keyfile, devices):
         """ It's a thread to run the server for serving the car clients. By function 'stop' can terminate the client serving.
         """
         super(CarClientServerThread,self).__init__()
-        self.carclientserver = CarClientServer(serverConfig, CarClientHandler, logger, keyfile, markerSet)
+        self.carclientserver = CarClientServer(serverConfig, CarClientHandler, logger, keyfile, devices)
         self.carclientserver.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def run(self):
@@ -54,55 +51,34 @@ class CarClientServerThread(threading.Thread):
 
 
 class CarClientServer (socketserver.ThreadingTCPServer, object):
-    """ It has role to serve the car client with coordination of detected robots. It's a subclass of 'SocketServer.ThreadingTCPServer',
-    so it creates a new thread for communicating the client. The server use a private key for authentication itself and has a dictionary named 
-    '_markerSet', which contains the last detected coordinate and time.stamp for reach car identification number. The identification number of car 
-    is equal with id of Aruco marker placed on robot. The client requests are handled by objects of 'CarClientHandler' class. 
-    
+    """ It's a subclass of 'SocketServer.ThreadingTCPServer', so it creates a new thread for communicating with each new client. 
+    The server use a private key for authentication itself. After the server is authenticated, it shares with the client car the ip and port of the desiredlocalisation device. 
     """
-    def __init__(self, serverConfig, requestHandler, logger, keyfile, markerSet):
+    def __init__(self, serverConfig, requestHandler, logger, keyfile, devices):
         # This map contains the last recorded data
         self.private_key = load_private_key(keyfile)
-        #: contains the last received coordination fo the carId.
-        self._markerSet = markerSet
+        self.devices = devices
+
         self.logger = logger
 
         #: shutdown mechanism
         self.isRunning = True
         # initialize the connection parameters
         connection = (serverConfig.localip, serverConfig.carClientPort)
-        super(CarClientServer,self).__init__(connection, requestHandler)
-    
-    def getCarPipe(self, id, timestamp):
-
-        """Check the existence of robot in dictionary. It returns false, if the robot wasn't detected yet. 
-        Parameters
-        ----------
-        id : int
-            id number of robot
-        """
-        return self._markerSet.getPipe(id, timestamp)
-
-    
-
-    def removeCarPipe(self, id, timestamp):
-        """Check the existence of robot in dictionary. It returns false, if the robot wasn't detected yet. 
-        Parameters
-        ----------
-        id : int
-            id number of robot
-        """
-        self._markerSet.removePipe(id, timestamp)
+        super(CarClientServer,self).__init__(connection, requestHandler)   
     
     def shutdown(self):
         self.isRunning = False
         super(CarClientServer,self).shutdown()
 
 class CarClientHandler(socketserver.BaseRequestHandler):
-    """CarClientHandler responds for a client. Firstly it requests a identification number of robot and the information related this id
-    will be sent to client. After receiving the id of robot, it will send a message and a signature, which can help for authenticating the server.
-    While the connection is alive and the process isn't stopped, the handler will send the last coordinate in each second, where the robot was detected.
-    
+    """CarClientHandler responds for a client. 
+    Firstly it requests a identification number of the localisation device from the car client.
+    Then, information related this id  will be sent to client, together with a crypted message, which will help validate the authenticity of the server.
+    The client then confirms the server is valid.
+    The server sends the ip and connection port of the device to the client, which will then close the communication with the server.
+    The car client will connect to the localisation device.
+
     Parameters
     ----------
     SocketServer : [type]
@@ -111,7 +87,7 @@ class CarClientHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # receiving car id from client 
-        carId = int(self.request.recv(1024).decode())
+        gpsId = int(self.request.recv(1024).decode())
         
         # Authentication
         timestamp = time.time()
@@ -121,8 +97,8 @@ class CarClientHandler(socketserver.BaseRequestHandler):
         
         # Authentication of server        
         self.request.sendall(msg)
-        self.request.sendall(signature)
         time.sleep(0.1)
+        self.request.sendall(signature)
         
         # receiving ok response from the client
         msg = self.request.recv(4096)
@@ -130,13 +106,13 @@ class CarClientHandler(socketserver.BaseRequestHandler):
         if  msg.decode('utf-8') != 'Authentication ok':
             raise Exception("Authentication broken")
         
-        self.server.logger.info('Connecting with {}. CarId is {}'.format(self.client_address, carId))
+         self.server.logger.info('Connecting client {}. with gps {}'.format(self.client_address, gpsId))
         # Sending the coordinates for car client
         try:
-            CarRecpPipe = self.server.getCarPipe(carId, timestamp)
-            while(self.server.isRunning):
-                msg = CarRecpPipe.recv()
-                self.request.sendall(msg.encode('utf-8'))
-                
-        except Exception as e:
-            self.server.logger.warn("Close serving for {}. Error: {}".format(self.client_address, e))
+            msg_s = self.server.devices[gpsId][0] + ":" + self.server.devices[gpsId][1]
+            msg = msg_s.encode('utf-8')
+            self.request.sendall(msg)
+        except:
+            msg_s = "gpsId not ok"
+            msg = msg_s.encode('utf-8')
+            self.request.sendall(msg)
