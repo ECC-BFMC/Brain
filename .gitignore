@@ -1,4 +1,4 @@
-docs/
+docs/build/
 .vscode/
 __pycache__
 **/*.pyc
