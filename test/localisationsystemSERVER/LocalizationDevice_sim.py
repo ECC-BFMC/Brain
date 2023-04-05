@@ -41,9 +41,9 @@ class LocalizationDevice(threading.Thread):
     when they are executing a circle movement.
     """ 
 
-    def __init__(self, serverConfig):
+    def __init__(self, deviceConfig):
         super(LocalizationDevice,self).__init__()
-        self.carclientserver = LocalizationDeviceServer(serverConfig, ConnectionHandler)
+        self.carclientserver = LocalizationDeviceServer(deviceConfig, ConnectionHandler)
         self.carclientserver.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def run(self):
@@ -56,11 +56,11 @@ class LocalizationDevice(threading.Thread):
     
 class LocalizationDeviceServer (socketserver.ThreadingTCPServer, object):
 
-    def __init__(self, serverConfig, ConnectionHandlerr):
+    def __init__(self, deviceConfig, ConnectionHandlerr):
         #: shutdown mechanism
         self.isRunning = True
         # initialize the connection parameters
-        connection = (serverConfig.localip, serverConfig.carClientPort)
+        connection = (deviceConfig["ip"], deviceConfig["port"])
         super(LocalizationDeviceServer,self).__init__(connection, ConnectionHandlerr)
     
     def shutdown(self):

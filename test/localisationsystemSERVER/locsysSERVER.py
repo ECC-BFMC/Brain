@@ -51,10 +51,10 @@ class LocalizationSystemServer:
         self.serverconfig = ServerConfig('<broadcast>', 12345, 12356)
 
         devices = {
-            1: [self.serverconfig.localip, "22311"]
+            1: {"ip": self.serverconfig.localip, "port": "22311"}
         }
 
-        self.__LocalizationDevice = LocalizationDevice(self.serverconfig)
+        self.__LocalizationDevice = LocalizationDevice(devices[1])
         privateKeyFile = "privatekey_server_test.pem"
 
         self.__carclientserverThread = CarClientServerThread(self.serverconfig, self.__logger, keyfile = privateKeyFile, devices = devices)
