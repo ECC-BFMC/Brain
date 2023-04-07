@@ -71,6 +71,7 @@ class CarClientServer (socketserver.ThreadingTCPServer, object):
         self.isRunning = True
         # initialize the connection parameters
         connection = (serverConfig.localip, serverConfig.carClientPort)
+        self.allow_reuse_address = True
         super(CarClientServer,self).__init__(connection, requestHandler)
     
     def savePosition(self, id, obs, x, y):
@@ -92,6 +93,7 @@ class CarClientServer (socketserver.ThreadingTCPServer, object):
     
     def shutdown(self):
         self.isRunning = False
+        self.server_close()
         super(CarClientServer,self).shutdown()
 
 class CarClientHandler(socketserver.BaseRequestHandler):

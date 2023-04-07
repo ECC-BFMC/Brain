@@ -51,8 +51,6 @@ class LocalizationDevice(threading.Thread):
     
     def stop(self):
         self.carclientserver.shutdown()
-
-        self.__running = True
     
 class LocalizationDeviceServer (socketserver.ThreadingTCPServer, object):
 
@@ -61,10 +59,12 @@ class LocalizationDeviceServer (socketserver.ThreadingTCPServer, object):
         self.isRunning = True
         # initialize the connection parameters
         connection = (deviceConfig["ip"], deviceConfig["port"])
+        self.allow_reuse_address = True
         super(LocalizationDeviceServer,self).__init__(connection, ConnectionHandlerr)
     
     def shutdown(self):
         self.isRunning = False
+        self.server_close()
         super(LocalizationDeviceServer,self).shutdown()
 
 
@@ -77,14 +77,18 @@ class ConnectionHandler(socketserver.BaseRequestHandler):
         self.__angularVelocity = complex(0.9848, 0.1736)
 
     def handle(self):
-        while self.server.__running:
+        while self.server.isRunning:
             # calculating the position of robot
             position = self.__circleCenter+self.__r * self.__angularPosition
 
             car = {'timestamp':time.time(), 'pos':position}
-            msg = json.dumps((car), cls=ComplexEncoder)
-
-            self.request.sendall(msg)
+            msg_s = json.dumps((car), cls=ComplexEncoder)
+            
+            msg = msg_s.encode('utf-8')
+            try:
+                self.request.sendall(msg)
+            except:
+                break
 
             self.__angularPosition *= self.__angularVelocity
             time.sleep(0.1)

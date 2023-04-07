@@ -51,7 +51,7 @@ class LocalizationSystemServer:
         self.serverconfig = ServerConfig('<broadcast>', 12345, 12356)
 
         devices = {
-            1: {"ip": self.serverconfig.localip, "port": "22311"}
+            1: {"ip": self.serverconfig.localip, "port": 22311}
         }
 
         self.__LocalizationDevice = LocalizationDevice(devices[1])

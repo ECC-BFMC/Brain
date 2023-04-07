@@ -62,11 +62,12 @@ class PositionListener:
 		result (robot's coordination) of last detection. If the robot was detected by the localization 
 		system, the client will receive the same coordinate and timestamp. 
 		"""
+		missing = 0
 		while self.__running:
 			if self.__server_data.socket != None: 
 				try:
 					msg = self.__server_data.socket.recv(4096)
-					
+					missing = 0
 					msg = msg.decode('utf-8')
 					if(msg == ''):
 						print('Invalid message. Connection can be interrupted.')
@@ -76,12 +77,13 @@ class PositionListener:
 					self.__streamP_pipe.send(coor)
 				except socket.timeout:
 					print("position listener socket_timeout. Check if device is working")
-					# the socket was created successfully, but it wasn't received any message. Car with id wasn't detected before. 
+					missing =+1 
+					if missing > 4: raise Exception
 					pass
 				except Exception as e:
 					self.__server_data.socket.close()
 					self.__server_data.socket = None
-					print("Receiving position data from server " + str(self.__server_data.serverip) + " failed with error: " + str(e))
+					print("connection with device failed with error: " + str(e))
 					self.__server_data.serverip = None
 					break
 		self.__server_data.is_new_server = False

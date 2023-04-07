@@ -31,7 +31,7 @@ import socketserver
 import socket
 import time
 
-from loc_sys_server.server.utils import load_private_key, sign_data
+from utils import load_private_key, sign_data
 
 class CarClientServerThread(threading.Thread):
     
@@ -65,10 +65,12 @@ class CarClientServer (socketserver.ThreadingTCPServer, object):
         self.isRunning = True
         # initialize the connection parameters
         connection = (serverConfig.localip, serverConfig.carClientPort)
+        self.allow_reuse_address = True
         super(CarClientServer,self).__init__(connection, requestHandler)   
     
     def shutdown(self):
         self.isRunning = False
+        self.server_close()
         super(CarClientServer,self).shutdown()
 
 class CarClientHandler(socketserver.BaseRequestHandler):
@@ -106,10 +108,10 @@ class CarClientHandler(socketserver.BaseRequestHandler):
         if  msg.decode('utf-8') != 'Authentication ok':
             raise Exception("Authentication broken")
         
-         self.server.logger.info('Connecting client {}. with gps {}'.format(self.client_address, gpsId))
+        self.server.logger.info('Connecting client {}. with gps {}'.format(self.client_address, gpsId))
         # Sending the coordinates for car client
         try:
-            msg_s = self.server.devices[gpsId][0] + ":" + self.server.devices[gpsId][1]
+            msg_s = self.server.devices[gpsId]["ip"] + ":" + str(self.server.devices[gpsId]["port"])
             msg = msg_s.encode('utf-8')
             self.request.sendall(msg)
         except:
