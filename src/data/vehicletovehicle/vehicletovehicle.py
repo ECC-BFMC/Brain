@@ -46,9 +46,7 @@ class vehicletovehicle(Thread):
 
         # Values extracted from message
         self.ID = 0
-        self.timestamp = 0.0
         self.pos = complex(0,0)
-        self.ang = complex(0,0)
 
         self._init_socket()
 
@@ -74,11 +72,7 @@ class vehicletovehicle(Thread):
 
                 self.ID = int(data['id'])
 
-                self.timestamp = float(data['timestamp'])
-
                 self.pos = complex(data['coor'])
-
-                self.ang = complex(data['rot'])
             except Exception as e:
                 print("Receiving data failed with error: " + str(e))
 
