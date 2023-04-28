@@ -70,7 +70,7 @@ class vehicletovehicle(Thread):
                 data = data.decode("utf-8") 
                 data = json.loads(data)
 
-                self.ID = int(data['id'])
+                self.pos = complex(data['coor'][0], data['coor'][1])
 
                 self.pos = complex(data['coor'])
             except Exception as e:
