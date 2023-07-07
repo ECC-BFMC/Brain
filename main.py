@@ -26,80 +26,53 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#========================================================================
-# SCRIPT USED FOR WIRING ALL COMPONENTS
-#========================================================================
+# ===================================== GENERAL IMPORTS ==================================
 import sys
-sys.path.append('.')
+sys.path.append(".")
+from multiprocessing import Queue, Event
+import logging
 
-import time
-import signal
-from multiprocessing import Pipe, Process, Event 
 
-# hardware imports
-from src.hardware.camera.CameraProcess                      import CameraProcess
-from src.hardware.camera.CameraSpooferProcess               import CameraSpooferProcess
-from src.hardware.serialhandler.SerialHandlerProcess        import SerialHandlerProcess
+# ===================================== PROCESS IMPORTS ==================================
+from src.gateway.processGateway import processGateway
+from src.hardware.camera.processCamera import processCamera
+# from src.hardware.serialhandler.processSerialHandler import processSerialHandler
+from src.utils.PCcommunication.processPCcommunication import processPCCommunication
 
-# utility imports
-from src.utils.camerastreamer.CameraStreamerProcess         import CameraStreamerProcess
-from src.utils.remotecontrol.RemoteControlReceiverProcess   import RemoteControlReceiverProcess
-
-# =============================== CONFIG =================================================
-enableStream        =  True
-enableCameraSpoof   =  False 
-enableRc            =  True
-
-# =============================== INITIALIZING PROCESSES =================================
+# ======================================== SETTING UP ====================================
 allProcesses = list()
 
-# =============================== HARDWARE ===============================================
-if enableStream:
-    camStR, camStS = Pipe(duplex = False)           # camera  ->  streamer
+queueList = {"Critical": Queue(),
+                "Warning": Queue(), 
+                "General": Queue(), 
+                "Config": Queue()}
 
-    if enableCameraSpoof:
-        camSpoofer = CameraSpooferProcess([],[camStS],'vid')
-        allProcesses.append(camSpoofer)
-
-    else:
-        camProc = CameraProcess([],[camStS])
-        allProcesses.append(camProc)
-
-    streamProc = CameraStreamerProcess([camStR], [])
-    allProcesses.append(streamProc)
-
-
-# =============================== DATA ===================================================
-#LocSys client process
-# LocStR, LocStS = Pipe(duplex = False)           # LocSys  ->  brain
-# from data.localisationsystem.locsys import LocalisationSystemProcess
-# LocSysProc = LocalisationSystemProcess([], [LocStS])
-# allProcesses.append(LocSysProc)
+logging  = logging.getLogger()
 
 
 
-# =============================== CONTROL =================================================
-if enableRc:
-    rcShR, rcShS   = Pipe(duplex = False)           # rc      ->  serial handler
+# ===================================== SETUP PROCESSES ==================================
+# Initializing gateway
+processGateway = processGateway(queueList, logging)
+allProcesses.append(processGateway)
 
-    # serial handler process
-    shProc = SerialHandlerProcess([rcShR], [])
-    allProcesses.append(shProc)
+# Initializing camera
+processCamera = processCamera(queueList, logging)
+allProcesses.append(processCamera)
 
-    rcProc = RemoteControlReceiverProcess([],[rcShS])
-    allProcesses.append(rcProc)
+# Initializing serialHandler
+processSerialHandler = processPCCommunication(queueList,logging)
+allProcesses.append(processSerialHandler)
 
+#process = serialHandler(queueList, messageList[2,3,4], logging)
 
 # ===================================== START PROCESSES ==================================
-print("Starting the processes!",allProcesses)
-for proc in allProcesses:
-    proc.daemon = True
-    proc.start()
-
+for process in allProcesses:
+    process.daemon = True
+    process.start()
 
 # ===================================== STAYING ALIVE ====================================
 blocker = Event()  
-
 try:
     blocker.wait()
 except KeyboardInterrupt:

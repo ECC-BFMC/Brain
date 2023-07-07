@@ -29,7 +29,7 @@
 from src.templates.threadwithstop import ThreadWithStop
 
 class ReadThread(ThreadWithStop):
-    def __init__(self,f_serialCon,f_logFile):
+    def __init__(self,f_serialCon,f_logFile,queueList):
         """ The role of this thread is to receive the messages from the micro-controller and to redirectionate them to the other processes or modules. 
         
         Parameters
@@ -44,72 +44,78 @@ class ReadThread(ThreadWithStop):
         self.logFile=f_logFile
         self.buff=""
         self.isResponse=False
-        self.__subscribers={}
+        self.queueList=queueList
     
     def run(self):
-        """ It's represent the activity of the read thread, to read the messages.
-        """
+        """ It's represent the activity of the read thread, to read the messages."""
         
         while(self._running):
             read_chr=self.serialCon.read()
             try:
-                read_chr=(read_chr.decode("ascii"))
+                # read_chr=(read_chr.decode("ascii"))
+                # if read_chr=='@':
+                #     self.isResponse=True
+                #     if len(self.buff)!=0:
+                #         self.__checkSubscriber(self.buff)
+                #     self.buff=""
+                # elif read_chr=='\r':   
+                #     self.isResponse=False
+                #     if len(self.buff)!=0:
+                #         self.__checkSubscriber(self.buff)
+                #     self.buff=""
+                # if self.isResponse:
+                #     self.buff+=read_chr
+                # self.logFile.write(read_chr)
                 if read_chr=='@':
                     self.isResponse=True
-                    if len(self.buff)!=0:
-                        self.__checkSubscriber(self.buff)
-                    self.buff=""
-                elif read_chr=='\r':   
+                elif read_chr=='\r':
                     self.isResponse=False
-                    if len(self.buff)!=0:
-                        self.__checkSubscriber(self.buff)
-                    self.buff=""
-                if self.isResponse:
-                    self.buff+=read_chr
-                self.logFile.write(read_chr)
-                 
+                if self.isResponse and len(self.buff)>0:
+                    if self.buff[1]=='1':
+                        self.queueList['General'].put({'msgId': 1,"msg": self.buff[2:-4]})
+
             except UnicodeDecodeError:
                 pass
 
-    def __checkSubscriber(self,f_response):
-        """ Checking the list of the waiting object to redirectionate the message to them. 
+    # def __checkSubscriber(self,f_response):
+    #     """ Checking the list of the waiting object to redirectionate the message to them. 
         
-        Parameters
-        ----------
-        f_response : string
-            The response received from the other device without the key. 
-        """
-        l_key=f_response[1:5]
-        if l_key in self.__subscribers:
-            subscribers = self.__subscribers[l_key]
-            for outP in subscribers:
-                outP.send(f_response)
+    #     Parameters
+    #     ----------
+    #     f_response : string
+    #         The response received from the other device without the key. 
+    #     """
+    #     l_key=f_response[1:5]
+    #     if l_key in self.__subscribers:
+    #         subscribers = self.__subscribers[l_key]
+    #         for outP in subscribers:
+    #             outP.send(f_response)
 
-    def subscribe(self, subscribing, f_key, outP):
-        """Subscribe a connection to specified response from the other device in order to check the delivery of the messages or feedback form car.. 
+    # def subscribe(self, subscribing, f_key, outP):
+    #     """Subscribe a connection to specified response from the other device in order to check the delivery of the messages or feedback form car.. 
         
-        Parameters
-        ----------
-        subscribing : bool
-            bool variable for subscribing or unsubscribing
-        f_key : string
-            the key word, which identify the source of the response 
-        outP : multiprocessing.Connection
-            The sender connection object, which represent the sending end of pipe. 
-        """
-        if subscribing:
-            if f_key in self.__subscribers:
-                if outP in self.__subscribers[f_key]:
-                    raise ValueError("%s pipe has already subscribed the %s command."%(outP,f_key))
-                else:
-                    self.__subscribers[f_key].append(outP)
-            else:
-                self.__subscribers[f_key] = [outP]
-        else:
-            if f_key in self.__subscribers:
-                if outP in self.__subscribers[f_key]:
-                    self.__subscribers[f_key].remove(outP)
-                else:
-                    raise ValueError("pipe %s wasn't subscribed to key %s"%(outP,f_key))
-            else:
-                raise ValueError("doesn't exist any subscriber with key %s"%(f_key))    
+    #     Parameters
+    #     ----------
+    #     subscribing : bool
+    #         bool variable for subscribing or unsubscribing
+    #     f_key : string
+    #         the key word, which identify the source of the response 
+    #     outP : multiprocessing.Connection
+    #         The sender connection object, which represent the sending end of pipe. 
+    #     """
+    #     if subscribing:
+    #         if f_key in self.__subscribers:
+    #             if outP in self.__subscribers[f_key]:
+    #                 raise ValueError("%s pipe has already subscribed the %s command."%(outP,f_key))
+    #             else:
+    #                 self.__subscribers[f_key].append(outP)
+    #         else:
+    #             self.__subscribers[f_key] = [outP]
+    #     else:
+    #         if f_key in self.__subscribers:
+    #             if outP in self.__subscribers[f_key]:
+    #                 self.__subscribers[f_key].remove(outP)
+    #             else:
+    #                 raise ValueError("pipe %s wasn't subscribed to key %s"%(outP,f_key))
+    #         else:
+    #             raise ValueError("doesn't exist any subscriber with key %s"%(f_key))    

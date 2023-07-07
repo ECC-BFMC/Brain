@@ -1,3 +1,0 @@
-RTIMULib
-picamera
-pyserial

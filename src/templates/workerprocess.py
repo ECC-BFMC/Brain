@@ -31,7 +31,7 @@ from multiprocessing import Process, Event
 
 class WorkerProcess(Process):
 
-    def __init__(self, inPs, outPs, daemon = True):
+    def __init__(self, queuesList, daemon = True):
         """WorkerProcess is an abstract class for description a general structure and interface a process.
         
         Parameters
@@ -45,8 +45,7 @@ class WorkerProcess(Process):
         """
         super(WorkerProcess,self).__init__()
 
-        self.inPs = inPs
-        self.outPs = outPs
+        self.queuesList = queuesList
 
         self.daemon = daemon
         self.threads = list()
@@ -87,6 +86,7 @@ class WorkerProcess(Process):
                 if th.is_alive():
                     print("The thread %s cannot normally stop, it's blocked somewhere!"%(th))
                     del th
+                print("one thread is stopped")
             else:
                 del th
     
