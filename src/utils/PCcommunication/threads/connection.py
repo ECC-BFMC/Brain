@@ -62,13 +62,22 @@ class SingleConnection(protocol.Protocol):
         else:
             print("Received from", self.factory.connectiondata, " : ", data.decode())
 
+    def decoder(self,message):
+        if message == 'base64':
+            return 1
+        elif message == 'table':
+            return 2
+        elif message == "Position":
+            return 3
+        elif message == "State&Position":
+            return 4
+
     # ===================================== SEND DATA ==========================================
-    def send_data(self, message, encode):
+    def send_data(self, message,message2, encode):
         if encode:
+            self.transport.write(self.decoder(message2).to_bytes(1,byteorder="big"))
             self.transport.write(len(message.encode("utf-8")).to_bytes(4, byteorder='big'))  # send size of image
             self.transport.write(message.encode("utf-8"))  # send image data
-        else:
-            self.transport.write(message)
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class FactoryDealer(protocol.Factory):
@@ -78,9 +87,9 @@ class FactoryDealer(protocol.Factory):
         self.isConnected = False
         self.connectiondata = None
 
-    def send_data_to_client(self, message, encode=True):
+    def send_data_to_client(self, message,message2, encode=True):
         if self.isConnected == True:
-            self.connection.send_data(message, encode)
+            self.connection.send_data(message,message2, encode)
         else:
             print("Client not connected")
 

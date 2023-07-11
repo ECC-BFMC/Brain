@@ -42,44 +42,44 @@ class threadGateway(ThreadWithStop):
 
     def subscribe(self, message):
         #Declaration of variables: 
-        From = message['From']
+        Owner = message["Owner"]
         Id = message['msgID']
         To = message["To"]["receiver"]
         Pipe = message["To"]['pipe']
-        print(From,Id,To,Pipe)
-        if not From in self.sendingList.keys():
-            self.sendingList[From] = {}
-        if not Id in self.sendingList[From].keys():
-            self.sendingList[From][Id] = {}
-        if not To in self.sendingList[From][Id].keys():
-            self.sendingList[From][Id][To] = Pipe
-        self.messageApproved.append(Id)
+        print(Owner,Id,To,Pipe)
+        if not Owner in self.sendingList.keys():
+            self.sendingList[Owner] = {}
+        if not Id in self.sendingList[Owner].keys():
+            self.sendingList[Owner][Id] = {}
+        if not To in self.sendingList[Owner][Id].keys():
+            self.sendingList[Owner][Id][To] = Pipe
+        self.messageApproved.append((Owner,Id))
         #Debugging( you can comment this):
         if self.debugging: self.printList()
 
 # ================================== UNSUBSCRIBE =====================================
 
     def unsubscribe(self, message):
-        From = message['From']
+        Owner = message["Owner"]
         Id = message['msgID']
         To = message["To"]["receiver"]
 
         #We delete the value from Dictionary
-        del self.sendingList[From][Id][To]
+        del self.sendingList[Owner][Id][To]
         self.messageApproved.remove(Id)
         if self.debugging: self.printList()
     
 # =================================== SENDING ========================================
       
     def send(self,message):
-        From= message['From']
+        Owner = message["Owner"]
         Id = message['msgID']
         Type = message['msgType']
         Value = message['msgValue']
-        if Id in self.messageApproved:
-            for element in self.sendingList[From][Id]:
+        if (Owner,Id) in self.messageApproved:
+            for element in self.sendingList[Owner][Id]:
                 #We send a dictionary that contain the type of the message and message
-                self.sendingList[From][Id][element].send({"Type":Type,"value":Value})
+                self.sendingList[Owner][Id][element].send({"Type":Type,"value":Value})
                 if self.debugging: self.logger.warning(message) 
                 
 

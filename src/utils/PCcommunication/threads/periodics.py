@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from twisted.internet import task
+import json
 
 class PeriodicTask(task.LoopingCall):
     # ===================================== INIT ===========================================
@@ -34,6 +35,7 @@ class PeriodicTask(task.LoopingCall):
         self.factory = factory
         self.interval = interval
         self.pipe = pipe
+        self.val=0
 
     # ===================================== START ==========================================
     def start(self):
@@ -43,10 +45,17 @@ class PeriodicTask(task.LoopingCall):
     def stop(self):
         if self.running:
             super().stop()
-            
+
+
     # ================================= PERIOD CHECK =======================================
     def periodicCheck(self):
             if self.pipe.poll():
                 msg = self.pipe.recv()
-                message2= msg['value']
-                self.factory.send_data_to_client(message2,encode=True)
+                messageValue= msg['value']
+                messageType= msg['Type']
+                if not messageType== "base64":
+                    messageValue2 = json.dumps(messageValue)
+                    self.factory.send_data_to_client(messageValue2,messageType,encode=True)
+                else: 
+                    self.factory.send_data_to_client(messageValue,messageType,encode=True)
+                self.val+=1

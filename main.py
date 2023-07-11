@@ -38,6 +38,7 @@ from src.gateway.processGateway import processGateway
 from src.hardware.camera.processCamera import processCamera
 # from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.utils.PCcommunication.processPCcommunication import processPCCommunication
+from src.data.CarsAndSemaphores.processCarsAndSemaphores import processCarsAndSemaphores
 
 # ======================================== SETTING UP ====================================
 allProcesses = list()
@@ -63,6 +64,11 @@ allProcesses.append(processCamera)
 # Initializing serialHandler
 processSerialHandler = processPCCommunication(queueList,logging)
 allProcesses.append(processSerialHandler)
+
+#initializing CarsAndSemaphores data receiver
+processCarsAndSemaphores = processCarsAndSemaphores(queueList)
+allProcesses.append(processCarsAndSemaphores)
+
 
 #process = serialHandler(queueList, messageList[2,3,4], logging)
 

@@ -40,7 +40,9 @@ class threadRemoteHandler(ThreadWithStop):
         self.queues = queuesList
         self.logging = logging
         self.pipe = pipeRecv
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"From": "processCamera", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})   
+        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCamera", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
+        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":1,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
+        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})   
         self.task = PeriodicTask(self.factory, 0.1, self.pipe)  # Replace X with the desired number of seconds
         print("before task")
 

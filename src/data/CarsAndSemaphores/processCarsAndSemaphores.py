@@ -25,88 +25,69 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.realpath(__file__)).split("Brain")[0] + "Brain/")
 
-import serial
+from src.templates.workerprocess                   import WorkerProcess
+from src.data.CarsAndSemaphores.threads.threadCarsAndSemaphores import threadCarsAndSemaphores
 
-from src.templates.workerprocess            import WorkerProcess
-from src.hardware.serialhandler.filehandler import FileHandler
-from src.hardware.serialhandler.readthread  import ReadThread
-from src.hardware.serialhandler.writethread import WriteThread
-
-
-class processSerialHandler(WorkerProcess):
-    # ===================================== INIT =========================================
-    def __init__(self,queueList, logging, debugging=False):
-        super(processSerialHandler,self).__init__(self.queuesList)
-
-        devFile = '/dev/ttyACM0'
-        logFile = 'historyFile.txt'
-        
-        # comm init       
-        self.serialCom = serial.Serial(devFile,19200,timeout=0.1)
-        self.serialCom.flushInput()
-        self.serialCom.flushOutput()
-
-        # log file init
-        self.historyFile = FileHandler(logFile)
-
-        self.queuesList = queueList
-        self.logger = logging
-        self.debugging = debugging
+class processCarsAndSemaphores(WorkerProcess):
+    #====================================== INIT ==========================================
+    def __init__(self, queueList, logging=False):
+        self.queuesList=queueList
+        self.logging= logging
+        super(processCarsAndSemaphores,self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
     def _stop(self):
         for thread in self.threads:
             thread.stop()
             thread.join()
-        super(processSerialHandler,self).stop()
+        super(processCarsAndSemaphores,self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
-        super(processSerialHandler,self).run()
-        #Post running process -> close the history file
-        self.historyFile.close()
+        """Apply the initializing methods and start the threads."""
+        super(processCarsAndSemaphores,self).run()
 
-    # ===================================== INIT TH =================================
+    # ===================================== INIT TH ======================================
     def _init_threads(self):
-        """ Initializes the read and the write thread.
-        """
-        # read write thread        
-        readTh  = ReadThread(self.serialCom,self.historyFile,self.queuesList)
-        self.threads.append(readTh)
-        writeTh = WriteThread(self.queuesList[0], self.serialCom, self.historyFile)
-        self.threads.append(writeTh)
-    
-# =================================== EXAMPLE ========================================= 
-#             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
-#                  in terminal:    python3 processSerialHandler.py
+        """Create the Camera Publisher thread and add to the list of threads."""
+        CarsSemTh = threadCarsAndSemaphores(self.queuesList)
+        self.threads.append(CarsSemTh)
+
+
+
+
+
 if __name__ == "__main__":
-    from multiprocessing import Queue, Event
-    import logging
+    from multiprocessing import Event, Queue
+    import time
 
-    allProcesses = list()
-
-    debugg = False
-
-    #We have a list of multiprocessing.Queue() which individualy represent a priority for processes.
     queueList = {"Critical": Queue(),
-                 "Warning": Queue(), 
-                 "General": Queue(), 
-                 "Config": Queue()}
-
-    logger  = logging.getLogger()
-    process = processSerialHandler(queueList, logger, debugg)
+                "Warning": Queue(), 
+                "General": Queue(), 
+                "Config": Queue()}
+    
+    allProcesses = list()
+    process= processCarsAndSemaphores(queueList)
     allProcesses.append(process)
+    print("Starting the processes!",allProcesses)
+    for proc in allProcesses:
+        proc.start()
 
-    for process in allProcesses:
-        process.daemon = True
-        process.start()
+    time.sleep(3)
+    print(queueList["General"].get())
 
-# ===================================== STAYING ALIVE ====================================
+
+
+
+    from multiprocessing import Event 
+
     blocker = Event()  
+
     try:
         blocker.wait()
     except KeyboardInterrupt:
@@ -120,11 +101,3 @@ if __name__ == "__main__":
                 print("Process witouth stop",proc)
                 proc.terminate()
                 proc.join()
-    
-
-    
-
-
-
-
-
