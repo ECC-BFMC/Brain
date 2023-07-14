@@ -5,6 +5,7 @@ on:
 
 jobs:
   dispatch:
+    if: github.event.commits[0].message != 'Automated update from GitHub Actions - Brain'
     runs-on: ubuntu-latest
     steps:
     - name: Dispatch update event
