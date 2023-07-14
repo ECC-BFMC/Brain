@@ -2,7 +2,7 @@ name: Update subtree
 
 on: 
   repository_dispatch:
-    types: [update-subtree]
+    types: [update-subtree-Data]
 
 jobs:
   pull:
