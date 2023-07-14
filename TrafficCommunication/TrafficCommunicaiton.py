@@ -116,7 +116,6 @@ if __name__ == "__main__":
             time.sleep(0.5)
 
 
-    
     except KeyboardInterrupt:
         traffic_communication.stop()
         traffic_communication.join()
