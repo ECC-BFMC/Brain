@@ -1,4 +1,4 @@
-name: Dispatch update
+name: Dispatch update - CompetitionPCing
 
 on: 
   push:
@@ -12,4 +12,4 @@ jobs:
       with:
         token: ${{ secrets.REPO_ACCESS_TOKEN }}
         repository: ECC-BFMC/CompetitionPCing
-        event-type: update-subtree
+        event-type: update-subtree-Data
