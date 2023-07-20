@@ -25,55 +25,57 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+from multiprocessing import Pipe
+from src.data.TrafficCommunication.useful.sharedMem           import sharedMem
 from src.templates.workerprocess                   import WorkerProcess
-from src.data.CarsAndSemaphores.threads.threadCarsAndSemaphores import threadCarsAndSemaphores
+from src.data.TrafficCommunication.threads.threadTrafficCommunicaiton  import threadTrafficCommunication
 
-class processCarsAndSemaphores(WorkerProcess):
+class processTrafficCommunication(WorkerProcess):
     #====================================== INIT ==========================================
-    def __init__(self, queueList, logging=False):
+    def __init__(self, queueList, logging):
         self.queuesList=queueList
         self.logging= logging
-        super(processCarsAndSemaphores,self).__init__(self.queuesList)
+        self.shared_memory = sharedMem()
+        self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
+        self.deviceID = 3
+        super(processTrafficCommunication,self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
     def _stop(self):
         for thread in self.threads:
             thread.stop()
             thread.join()
-        super(processCarsAndSemaphores,self).stop()
+        super(processTrafficCommunication,self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processCarsAndSemaphores,self).run()
+        super(processTrafficCommunication,self).run()
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
-        CarsSemTh = threadCarsAndSemaphores(self.queuesList)
-        self.threads.append(CarsSemTh)
+        TrafficComTh = threadTrafficCommunication(self.shared_memory, self.queuesList,self.deviceID,self.filename) 
+        self.threads.append(TrafficComTh)
 
 if __name__ == "__main__":
-    from multiprocessing import Event, Queue
-    import time
-
+    from multiprocessing import Queue,Event
+    import time 
+    shared_memory = sharedMem()
+    locsysReceivePipe, locsysSendPipe   = Pipe(duplex = False)
     queueList = {"Critical": Queue(),
-                "Warning": Queue(), 
-                "General": Queue(), 
-                "Config": Queue()}
-    
-    allProcesses = list()
-    process= processCarsAndSemaphores(queueList)
-    allProcesses.append(process)
-    print("Starting the processes!",allProcesses)
-    for proc in allProcesses:
-        proc.start()
-
+                 "Warning": Queue(), 
+                 "General": Queue(), 
+                 "Config": Queue()}
+    # filename = "useful/publickey_server.pem"
+    filename = "useful/publickey_server_test.pem"
+    deviceID = 3
+    traffic_communication = threadTrafficCommunication(shared_memory,queueList, deviceID, filename)
+    traffic_communication.start() 
     time.sleep(3)
     print(queueList["General"].get())
-
+    # ===================================== STAYING ALIVE ====================================
     blocker = Event()  
-
     try:
         blocker.wait()
     except KeyboardInterrupt:

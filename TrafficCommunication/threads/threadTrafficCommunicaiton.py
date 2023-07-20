@@ -25,27 +25,45 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-    
-from src.templates.threadwithstop   import ThreadWithStop
 from twisted.internet           import reactor
-from src.data.CarsAndSemaphores.threads.udpListener import udpListener
+from src.templates.threadwithstop   import ThreadWithStop
+from src.data.TrafficCommunication.threads.udpListener                import udpListener
+from src.data.TrafficCommunication.threads.tcpClient               import tcpClient
+from src.data.TrafficCommunication.threads.tcpLocsys               import tcpLocsys
+from src.data.TrafficCommunication.useful.periodicTask        import periodicTask
 
-class threadCarsAndSemaphores(ThreadWithStop):
+class threadTrafficCommunication(ThreadWithStop):
     #====================================== INIT ==========================================
-    def __init__(self, queueList, listenPort=5007):
-        super(threadCarsAndSemaphores,self).__init__()
-        self.listenPort = listenPort
-        self.queueList= queueList
-        self.udp_factory = udpListener(self.queueList["General"])
+    def __init__(self, shrd_mem, queueslist, deviceID, decrypt_key):
+        super(threadTrafficCommunication,self).__init__()
+        self.listenPort = 9000
+        self.tcp_factory = tcpClient(self.serverDisconnect, self.locsysConnect, deviceID)
+        self.udp_factory = udpListener(decrypt_key, self.serverFound)
+        self.tcp_factory_locsys = tcpLocsys(queueslist["General"])
+        self.period_task = periodicTask(1, shrd_mem, self.tcp_factory)
         self.reactor = reactor
         self.reactor.listenUDP(self.listenPort, self.udp_factory)
+        
+    #=================================== CONNECTION =======================================    
+    def serverDisconnect(self):
+        self.reactor.listenUDP(self.listenPort, self.udp_factory)
+        self.tcp_factory.stopListening()
 
-    #======================================= RUN ==========================================
+    def serverFound(self, address, port):
+        self.reactor.connectTCP(address, port, self.tcp_factory)
+        self.udp_factory.stopListening()
+        self.period_task.start()
+
+    def locsysConnect(self, IPandPORT):
+        ip, port = IPandPORT.split(":")
+        self.reactor.connectTCP(ip, int(port), self.tcp_factory_locsys)
+
+    #======================================= RUN ==========================================    
     def run(self):
         self.reactor.run(installSignalHandlers=False)
 
     #====================================== STOP ==========================================
     def stop(self):
         self.reactor.stop()
-        super(threadCarsAndSemaphores,self).stop()
+        super(threadTrafficCommunication,self).stop()
         
