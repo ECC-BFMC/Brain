@@ -25,32 +25,31 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from twisted.internet import task
+from twisted.internet import protocol
+import src.data.TrafficCommunication.useful.keyDealer as keyDealer
 
-class periodicTask(task.LoopingCall):
-    def __init__(self, interval, shrd_mem, tcp_factory):
-        super().__init__(self.periodicCheck)
-        self.interval = interval
-        self.shrd_mem = shrd_mem
-        self.tcp_factory = tcp_factory
+class udpListener(protocol.DatagramProtocol):
+    def __init__(self, decrypt_key, serverfound):
+        decrypt_key = decrypt_key
+        self.pub_key = keyDealer.load_public_key(decrypt_key)
+        self.serverfoundCllback = serverfound     
 
-    def start(self):
-        super().start(self.interval)
+    def startProtocol(self):
+        print("Looking for Traffic Communicaiton Server")
 
-    def stop(self):
-        if self.running:
-            super().stop()
-
-    def periodicCheck(self):
-        # Will create one of the following structures:
-        # {"reqORinfo": "req",  "type":"locsysDevice"}
-        # {"reqORinfo": "info", "type":"devicePos", "value1":x, "value2":y}
-        # {"reqORinfo": "info", "type":"deviceRot", "value1": theta}
-        # {"reqORinfo": "info", "type":"deviceSpeed", "value1":km/h}
-        # {"reqORinfo": "info", "type":"historyData", "value1":id, "value2":x, "value3":y}
+    def datagramReceived(self, datagram, address):
+        try:
+            dat = datagram.split(b"(-.-)")
+            if len(dat) != 2:
+                raise Exception('Plaintext or signature not present')
+            a = keyDealer.verify_data(self.pub_key,dat[1],dat[0])
+            if not a:
+                raise Exception('signature not valid')
+            msg = dat[1].decode().split(":")
+            port= int(msg[1])
+            self.serverfoundCllback(address[0], port)
+        except Exception as e:
+            print(e)
         
-        if self.tcp_factory.isConnected():
-            tosend = self.shrd_mem.get()
-            for mem in tosend:
-                self.tcp_factory.send_data_to_server(mem)
-            
+    def stopListening(self):
+        self.transport.stopListening()
