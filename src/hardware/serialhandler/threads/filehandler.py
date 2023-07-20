@@ -25,34 +25,18 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from twisted.internet import task
-import json
+from threading import Lock
 
-class PeriodicTask(task.LoopingCall):
-    # ===================================== INIT ===========================================
-    def __init__(self, factory, interval, pipe):
-        super().__init__(self.periodicCheck)
-        self.factory = factory
-        self.interval = interval
-        self.pipe = pipe
+class FileHandler:
 
-    # ===================================== START ==========================================
-    def start(self):
-        super().start(self.interval)
+    def __init__(self,f_fileName):
+        self.outFile = open(f_fileName,'w')
+        self.lock    = Lock()
 
-    # ===================================== STOP ===========================================
-    def stop(self):
-        if self.running:
-            super().stop()
-
-    # ================================= PERIOD CHECK =======================================
-    def periodicCheck(self):
-            if self.pipe.poll():
-                msg = self.pipe.recv()
-                messageValue= msg['value']
-                messageType= msg['Type']
-                if not messageType== "base64":
-                    messageValue2 = json.dumps(messageValue)
-                    self.factory.send_data_to_client(messageValue2,messageType)
-                else: 
-                    self.factory.send_data_to_client(messageValue,messageType)
+    def write(self,f_str):
+        self.lock.acquire()
+        self.outFile.write(f_str)
+        self.lock.release()        
+    
+    def close(self):
+        self.outFile.close()

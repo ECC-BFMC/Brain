@@ -29,20 +29,20 @@
 # ===================================== GENERAL IMPORTS ==================================
 import sys
 sys.path.append(".")
-from multiprocessing import Queue, Event
+from multiprocessing import Queue, Event,Pipe
 import logging
 
 
 # ===================================== PROCESS IMPORTS ==================================
 from src.gateway.processGateway import processGateway
 from src.hardware.camera.processCamera import processCamera
-# from src.hardware.serialhandler.processSerialHandler import processSerialHandler
+from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.utils.PCcommunication.processPCcommunication import processPCCommunication
 from src.data.CarsAndSemaphores.processCarsAndSemaphores import processCarsAndSemaphores
+from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 
 # ======================================== SETTING UP ====================================
 allProcesses = list()
-
 queueList = {"Critical": Queue(),
                 "Warning": Queue(), 
                 "General": Queue(), 
@@ -50,27 +50,35 @@ queueList = {"Critical": Queue(),
 
 logging  = logging.getLogger()
 
-
-
+Traffic = True
+Camera = True
+PCComm = True
+SemsAndCars = True
+SerialHandler = True
 # ===================================== SETUP PROCESSES ==================================
 # Initializing gateway
 processGateway = processGateway(queueList, logging)
 allProcesses.append(processGateway)
 
-# Initializing camera
-processCamera = processCamera(queueList, logging)
-allProcesses.append(processCamera)
+if Camera:
+    processCamera = processCamera(queueList, logging)
+    allProcesses.append(processCamera)
 
-# Initializing serialHandler
-processSerialHandler = processPCCommunication(queueList,logging)
-allProcesses.append(processSerialHandler)
+if PCComm:
+    processPCCommunication = processPCCommunication(queueList,logging)
+    allProcesses.append(processPCCommunication)
 
-#initializing CarsAndSemaphores data receiver
-processCarsAndSemaphores = processCarsAndSemaphores(queueList)
-allProcesses.append(processCarsAndSemaphores)
+if SemsAndCars:
+    processCarsAndSemaphores = processCarsAndSemaphores(queueList)
+    allProcesses.append(processCarsAndSemaphores)
 
+if Traffic:
+    processTrafficCommunication= processTrafficCommunication(queueList,logging)
+    allProcesses.append(processTrafficCommunication)
 
-#process = serialHandler(queueList, messageList[2,3,4], logging)
+if SerialHandler:
+    processSerialHandler = processSerialHandler(queueList, logging)
+    allProcesses.append(processSerialHandler)
 
 # ===================================== START PROCESSES ==================================
 for process in allProcesses:

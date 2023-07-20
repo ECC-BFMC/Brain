@@ -25,11 +25,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.realpath(__file__)).split("Brain")[0] + "Brain/")
-
 from src.templates.workerprocess                   import WorkerProcess
 from src.data.CarsAndSemaphores.threads.threadCarsAndSemaphores import threadCarsAndSemaphores
 
@@ -58,10 +53,6 @@ class processCarsAndSemaphores(WorkerProcess):
         CarsSemTh = threadCarsAndSemaphores(self.queuesList)
         self.threads.append(CarsSemTh)
 
-
-
-
-
 if __name__ == "__main__":
     from multiprocessing import Event, Queue
     import time
@@ -80,11 +71,6 @@ if __name__ == "__main__":
 
     time.sleep(3)
     print(queueList["General"].get())
-
-
-
-
-    from multiprocessing import Event 
 
     blocker = Event()  
 

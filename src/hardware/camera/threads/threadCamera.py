@@ -60,12 +60,11 @@ class threadCamera(ThreadWithStop):
             if var:
               request2= self.camera.capture_array("lores") # Will capture an array that can be used by OpenCV library
               request2= request2[:120,:]
-              img = cv2.cvtColor(request2, cv2.COLOR_RGB2BGR)
-              _, encoded_img = cv2.imencode('.jpg', img)
+              _, encoded_img = cv2.imencode('.jpg', request2)
               image_data_encoded = base64.b64encode(encoded_img).decode('utf-8')
+              self.queuesList[mainCamera.Queue.value].put({ "Owner" : mainCamera.Owner.value , "msgID": mainCamera.msgID.value, "msgType" :mainCamera.msgType.value,"msgValue":request })
               self.queuesList[serialCamera.Queue.value].put({ "Owner"  :serialCamera.Owner.value , "msgID": serialCamera.msgID.value, "msgType" : serialCamera.msgType.value,"msgValue":image_data_encoded })
             var= not var  
-            self.queuesList[mainCamera.Queue.value].put({ "Owner" : mainCamera.Owner.value , "msgID": mainCamera.msgID.value, "msgType" :mainCamera.msgType.value,"msgValue":request })
 
   #=============================== START ===============================================
     def start(self):
@@ -74,7 +73,7 @@ class threadCamera(ThreadWithStop):
   #================================ INIT CAMERA ========================================
     def _init_camera(self):
         self.camera= picamera2.Picamera2()                                                            
-        config = self.camera.create_preview_configuration(buffer_count=1,queue=False,main={"format": 'XRGB8888',"size":(1920,1080)},lores ={"size": (200,120)},encode="lores")
+        config = self.camera.create_preview_configuration(buffer_count=1,queue=False,main={"format": 'XRGB8888',"size":(2048,1080)},lores ={"size": (200,120)},encode="lores")
         self.camera.configure(config)
         # if we activate the recordMode flag we will be able to get a 5 second video in h264 format of what the camera see
         if self.recordMode:
@@ -85,7 +84,7 @@ class threadCamera(ThreadWithStop):
             self.camera.start_recording(encoder, output)
             output.fileoutput="file.h264"
             output.start()
-            time.sleep(5)
+            time.sleep(20)
             self.camera.stop_recording()
             output.stop()
         self.camera.start()

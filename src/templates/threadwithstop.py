@@ -28,7 +28,6 @@
 
 from threading import Thread
 from functools import partial
-from inspect import signature
 
 class ThreadWithStop(Thread):
     def __init__(self,*args,**kwargs):

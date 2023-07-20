@@ -34,7 +34,7 @@ class threadRemoteHandler(ThreadWithStop):
     # ===================================== INIT =====================================
     def __init__(self, queuesList, logging, pipeRecv, pipeSend):
         super(threadRemoteHandler,self).__init__()
-        self.factory = FactoryDealer()
+        self.factory = FactoryDealer(queuesList)
         self.reactor = reactor
         self.reactor.listenTCP(5000, self.factory)    
         self.queues = queuesList
@@ -42,17 +42,19 @@ class threadRemoteHandler(ThreadWithStop):
         self.pipe = pipeRecv
         self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCamera", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
         self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":1,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})   
-        self.task = PeriodicTask(self.factory, 0.1, self.pipe)  # Replace X with the desired number of seconds
+        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
+        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processSerialHandler", "msgID":1,"To":{"receiver": "processPCCommunication","pipe":pipeSend}}) 
+        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processSerialHandler", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})  
+        self.task = PeriodicTask(self.factory, 0.001, self.pipe)  # Replace X with the desired number of seconds
         print("before task")
 
     # ===================================== RUN ======================================
     def run(self):
         self.task.start()
-
         print("before run")
         self.reactor.run(installSignalHandlers=False)
         print("after run")
+        
     # ==================================== STOP ======================================
     def stop(self):
         self.reactor.stop()
