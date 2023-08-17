@@ -28,8 +28,9 @@
 
 # ===================================== GENERAL IMPORTS ==================================
 import sys
+
 sys.path.append(".")
-from multiprocessing import Queue, Event,Pipe
+from multiprocessing import Queue, Event, Pipe
 import logging
 
 
@@ -37,22 +38,31 @@ import logging
 from src.gateway.processGateway import processGateway
 from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
-from src.utils.PCcommunication.processPCcommunication import processPCCommunication
+from src.utils.PCcommunicationDemo.processPCcommunication import (
+    processPCCommunicationDemo,
+)
+from src.utils.PCcommunicationDashBoard.processPCcommunication import (
+    processPCCommunicationDashBoard,
+)
 from src.data.CarsAndSemaphores.processCarsAndSemaphores import processCarsAndSemaphores
-from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
+from src.data.TrafficCommunication.processTrafficCommunication import (
+    processTrafficCommunication,
+)
 
 # ======================================== SETTING UP ====================================
 allProcesses = list()
-queueList = {"Critical": Queue(),
-                "Warning": Queue(), 
-                "General": Queue(), 
-                "Config": Queue()}
+queueList = {
+    "Critical": Queue(),
+    "Warning": Queue(),
+    "General": Queue(),
+    "Config": Queue(),
+}
 
-logging  = logging.getLogger()
+logging = logging.getLogger()
 
 Traffic = True
 Camera = True
-PCComm = True
+PCCommDemo = False
 SemsAndCars = True
 SerialHandler = True
 # ===================================== SETUP PROCESSES ==================================
@@ -64,16 +74,21 @@ if Camera:
     processCamera = processCamera(queueList, logging)
     allProcesses.append(processCamera)
 
-if PCComm:
-    processPCCommunication = processPCCommunication(queueList,logging)
+if PCCommDemo:
+    processPCCommunication = processPCCommunicationDemo(queueList, logging)
     allProcesses.append(processPCCommunication)
+else:
+    processPCCommunicationDashBoard = processPCCommunicationDashBoard(
+        queueList, logging
+    )
+    allProcesses.append(processPCCommunicationDashBoard)
 
 if SemsAndCars:
     processCarsAndSemaphores = processCarsAndSemaphores(queueList)
     allProcesses.append(processCarsAndSemaphores)
 
 if Traffic:
-    processTrafficCommunication= processTrafficCommunication(queueList,logging)
+    processTrafficCommunication = processTrafficCommunication(queueList, logging)
     allProcesses.append(processTrafficCommunication)
 
 if SerialHandler:
@@ -86,17 +101,17 @@ for process in allProcesses:
     process.start()
 
 # ===================================== STAYING ALIVE ====================================
-blocker = Event()  
+blocker = Event()
 try:
     blocker.wait()
 except KeyboardInterrupt:
     print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
     for proc in allProcesses:
-        if hasattr(proc,'stop') and callable(getattr(proc,'stop')):
-            print("Process with stop",proc)
+        if hasattr(proc, "stop") and callable(getattr(proc, "stop")):
+            print("Process with stop", proc)
             proc.stop()
             proc.join()
         else:
-            print("Process witouth stop",proc)
+            print("Process witouth stop", proc)
             proc.terminate()
             proc.join()

@@ -27,18 +27,35 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from enum import Enum
 
+
 ####################################### processCamera #######################################
-class mainCamera(Enum): 
-    Queue= "General"
+class mainCamera(Enum):
+    Queue = "General"
     Owner = "processCamera"
     msgID = 1
-    msgType  = "numpyArray"
+    msgType = "base64"
 
-class serialCamera(Enum): 
-    Queue= "General"
+
+class serialCamera(Enum):
+    Queue = "General"
     Owner = "processCamera"
     msgID = 2
-    msgType  = "base64"
+    msgType = "base64"
+
+
+class Recording(Enum):
+    Queue = "General"
+    Owner = "processCamera"
+    msgID = 3
+    msgType = "Boolean3"
+
+
+class Signal(Enum):
+    Queue = "General"
+    Owner = "processCamera"
+    msgID = 4
+    msgType = "String"
+
 
 ################################# processCarsAndSemaphores ##################################
 class Cars(Enum):
@@ -47,11 +64,13 @@ class Cars(Enum):
     msgID = 1
     msgType = "Position"
 
+
 class Semaphores(Enum):
     Queue = "General"
     Owner = "processCarsAndSemaphores"
     msgID = 2
     msgType = "State&Position"
+
 
 ################################# From PC ##################################
 class EngineRun(Enum):
@@ -60,11 +79,13 @@ class EngineRun(Enum):
     msgID = 1
     msgType = "EngineFlag"
 
+
 class SpeedMotor(Enum):
     Queue = "General"
     Owner = "PC"
     msgID = 2
     msgType = "Speed"
+
 
 class SteerMotor(Enum):
     Queue = "General"
@@ -72,17 +93,34 @@ class SteerMotor(Enum):
     msgID = 3
     msgType = "SteerAngle"
 
+
 class Control(Enum):
     Queue = "General"
     Owner = "PC"
     msgID = 4
     msgType = "Tasks"
 
+
 class Brake(Enum):
     Queue = "General"
     Owner = "PC"
     msgID = 5
     msgType = "Speed"
+
+
+class Record(Enum):
+    Queue = "General"
+    Owner = "PC"
+    msgID = 6
+    msgType = "Record"
+
+
+class Config(Enum):
+    Queue = "General"
+    Owner = "PC"
+    msgID = 7
+    msgType = "Dict"
+
 
 ################################# From Nucleo ##################################
 class BatteryLvl(Enum):
@@ -91,17 +129,20 @@ class BatteryLvl(Enum):
     msgID = 1
     msgType = "BatteryLVL"
 
+
 class ImuData(Enum):
     Queue = "General"
     Owner = "threadReadSerial"
     msgID = 2
     msgType = "IMUData"
 
+
 class InstantConsumption(Enum):
     Queue = "General"
     Owner = "threadReadSerial"
     msgID = 3
     msgType = "Consumption"
+
 
 ################################# From Locsys ##################################
 class Location(Enum):
@@ -110,6 +151,7 @@ class Location(Enum):
     msgID = 1
     msgType = "dict"
 
+
 ######################    From processSerialHandler  ###########################
 class EnableButton(Enum):
     Queue = "General"
@@ -117,8 +159,9 @@ class EnableButton(Enum):
     msgID = 1
     msgType = "Boolean"
 
+
 class SignalRunning(Enum):
     Queue = "General"
     Owner = "processSerialHandler"
     msgID = 2
-    msgType = "Boolean2"    
+    msgType = "Boolean2"

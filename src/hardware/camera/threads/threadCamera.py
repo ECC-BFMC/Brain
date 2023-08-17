@@ -26,76 +26,147 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 import cv2
-import time
+import threading
 import base64
 import picamera2
-from picamera2.encoders import H264Encoder
-from picamera2.outputs import CircularOutput
-
-from src.utils.messages.allMessages import mainCamera,serialCamera
+import time
+from multiprocessing import Pipe
+from src.utils.messages.allMessages import mainCamera, serialCamera, Recording
 from src.templates.threadwithstop import ThreadWithStop
 
+
 class threadCamera(ThreadWithStop):
-    
-  #================================ INIT ===============================================
-    def __init__(self,queuesList,logger,debugger,recordMode):
-        super(threadCamera,self).__init__()
+    # ================================ INIT ===============================================
+    def __init__(self, pipeRecv, pipeSend, queuesList, logger, debugger):
+        super(threadCamera, self).__init__()
         self.queuesList = queuesList
         self.logger = logger
+        self.pipeRecvConfig = pipeRecv
+        self.pipeSendConfig = pipeSend
         self.debugger = debugger
-        self.recordMode = recordMode
+        self.frame_rate = 5
+        self.recording = False
+        pipeRecvRecord, pipeSendRecord = Pipe(duplex=False)
+        self.pipeRecvRecord = pipeRecvRecord
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 6,
+                "To": {"receiver": "processCamera", "pipe": pipeSendRecord},
+            }
+        )
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 7,
+                "To": {"receiver": "processCamera", "pipe": self.pipeSendConfig},
+            }
+        )
+        self.video_writer = ""
         self._init_camera()
-    
-  #=============================== STOP ================================================
+        self.Queue_Sending()
+        self.Configs()
+
+    def Queue_Sending(self):
+        self.queuesList[Recording.Queue.value].put(
+            {
+                "Owner": Recording.Owner.value,
+                "msgID": Recording.msgID.value,
+                "msgType": Recording.msgType.value,
+                "msgValue": self.recording,
+            }
+        )
+        threading.Timer(1, self.Queue_Sending).start()
+
+    # =============================== STOP ================================================
     def stop(self):
-        super(threadCamera,self).stop()
+        self.video_writer.release()
+        super(threadCamera, self).stop()
 
-  #================================ RUN ================================================
+    # =============================== CONFIG ==============================================
+    def Configs(self):
+        while self.pipeRecvConfig.poll():
+            message = self.pipeRecvConfig.recv()
+            message = message["value"]
+            self.camera.set_controls(
+                {
+                    "AeEnable": False,
+                    "AwbEnable": False,
+                    message["action"]: float(message["value"]),
+                }
+            )
+        threading.Timer(1, self.Configs).start()
+
+    # ================================ RUN ================================================
     def run(self):
-        var=True
+        var = True
         while self._running:
-            if self.debugger==True:
+            try:
+                if self.pipeRecvRecord.poll():
+                    msg = self.pipeRecvRecord.recv()
+                    self.recording = msg["value"]
+                    if msg["value"] == False:
+                        self.video_writer.release()
+                    else:
+                        fourcc = cv2.VideoWriter_fourcc(
+                            *"MJPG"
+                        )  # You can choose different codecs, e.g., 'MJPG', 'XVID', 'H264', etc.
+                        self.video_writer = cv2.VideoWriter(
+                            "output_video" + str(time.time()) + ".avi",
+                            fourcc,
+                            self.frame_rate,
+                            (2048, 1080),
+                        )
+            except Exception as e:
+                print(e)
+            if self.debugger == True:
                 self.logger.warning("getting image")
-            request= self.camera.capture_array("main")
+            request = self.camera.capture_array("main")
             if var:
-              request2= self.camera.capture_array("lores") # Will capture an array that can be used by OpenCV library
-              request2= request2[:120,:]
-              _, encoded_img = cv2.imencode('.jpg', request2)
-              image_data_encoded = base64.b64encode(encoded_img).decode('utf-8')
-              self.queuesList[mainCamera.Queue.value].put({ "Owner" : mainCamera.Owner.value , "msgID": mainCamera.msgID.value, "msgType" :mainCamera.msgType.value,"msgValue":request })
-              self.queuesList[serialCamera.Queue.value].put({ "Owner"  :serialCamera.Owner.value , "msgID": serialCamera.msgID.value, "msgType" : serialCamera.msgType.value,"msgValue":image_data_encoded })
-            var= not var  
+                if self.recording == True:
+                    cv2_image = cv2.cvtColor(request, cv2.COLOR_RGB2BGR)
+                    self.video_writer.write(cv2_image)
+                request2 = self.camera.capture_array(
+                    "lores"
+                )  # Will capture an array that can be used by OpenCV library
+                request2 = request2[:360, :]
+                _, encoded_img = cv2.imencode(".jpg", request2)
+                _, encoded_big_img = cv2.imencode(".jpg", request)
+                image_data_encoded = base64.b64encode(encoded_img).decode("utf-8")
+                image_data_encoded2 = base64.b64encode(encoded_big_img).decode("utf-8")
+                self.queuesList[mainCamera.Queue.value].put(
+                    {
+                        "Owner": mainCamera.Owner.value,
+                        "msgID": mainCamera.msgID.value,
+                        "msgType": mainCamera.msgType.value,
+                        "msgValue": image_data_encoded2,
+                    }
+                )
+                self.queuesList[serialCamera.Queue.value].put(
+                    {
+                        "Owner": serialCamera.Owner.value,
+                        "msgID": serialCamera.msgID.value,
+                        "msgType": serialCamera.msgType.value,
+                        "msgValue": image_data_encoded,
+                    }
+                )
+            var = not var
 
-  #=============================== START ===============================================
+    # =============================== START ===============================================
     def start(self):
-        super(threadCamera,self).start()
+        super(threadCamera, self).start()
 
-  #================================ INIT CAMERA ========================================
+    # ================================ INIT CAMERA ========================================
     def _init_camera(self):
-        self.camera= picamera2.Picamera2()                                                            
-        config = self.camera.create_preview_configuration(buffer_count=1,queue=False,main={"format": 'XRGB8888',"size":(2048,1080)},lores ={"size": (200,120)},encode="lores")
+        self.camera = picamera2.Picamera2()
+        config = self.camera.create_preview_configuration(
+            buffer_count=1,
+            queue=False,
+            main={"format": "XBGR8888", "size": (2048, 1080)},
+            lores={"size": (480, 360)},
+            encode="lores",
+        )
         self.camera.configure(config)
-        # if we activate the recordMode flag we will be able to get a 5 second video in h264 format of what the camera see
-        if self.recordMode:
-            video_config =self.camera.create_video_configuration()
-            self.camera.configure(video_config)
-            encoder = H264Encoder()
-            output = CircularOutput()
-            self.camera.start_recording(encoder, output)
-            output.fileoutput="file.h264"
-            output.start()
-            time.sleep(20)
-            self.camera.stop_recording()
-            output.stop()
         self.camera.start()
-        
-  #=========================== INIT CAMERA CONTROLS ====================================
-    def _camera_controls_config(self):
-        # If we want to see all the things that we can change in camera_controls
-        if self.debugger==True:
-            self.logger.warning(self.camera.camera_controls) 
-        FrameRate = 30
-        frameTime=1000000//FrameRate
-        self.camera.set_controls({"FrameDurationLimits":(frameTime,frameTime),"Brightness": 0.1,"Contrast":0.0})
-
-
