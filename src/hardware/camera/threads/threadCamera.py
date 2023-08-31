@@ -30,8 +30,15 @@ import threading
 import base64
 import picamera2
 import time
+
 from multiprocessing import Pipe
-from src.utils.messages.allMessages import mainCamera, serialCamera, Recording
+from src.utils.messages.allMessages import (
+    mainCamera,
+    serialCamera,
+    Recording,
+    Record,
+    Config,
+)
 from src.templates.threadwithstop import ThreadWithStop
 
 
@@ -51,16 +58,16 @@ class threadCamera(ThreadWithStop):
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 6,
+                "Owner": Record.Owner.value,
+                "msgID": Record.msgID.value,
                 "To": {"receiver": "processCamera", "pipe": pipeSendRecord},
             }
         )
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 7,
+                "Owner": Config.Owner.value,
+                "msgID": Config.msgID.value,
                 "To": {"receiver": "processCamera", "pipe": self.pipeSendConfig},
             }
         )
@@ -82,7 +89,8 @@ class threadCamera(ThreadWithStop):
 
     # =============================== STOP ================================================
     def stop(self):
-        self.video_writer.release()
+        if self.recording:
+            self.video_writer.release()
         super(threadCamera, self).stop()
 
     # =============================== CONFIG ==============================================
@@ -90,6 +98,7 @@ class threadCamera(ThreadWithStop):
         while self.pipeRecvConfig.poll():
             message = self.pipeRecvConfig.recv()
             message = message["value"]
+            print(message)
             self.camera.set_controls(
                 {
                     "AeEnable": False,

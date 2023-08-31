@@ -28,6 +28,7 @@
 from twisted.internet import task
 import json
 
+
 class PeriodicTask(task.LoopingCall):
     # ===================================== INIT ===========================================
     def __init__(self, factory, interval, pipe):
@@ -47,12 +48,12 @@ class PeriodicTask(task.LoopingCall):
 
     # ================================= PERIOD CHECK =======================================
     def periodicCheck(self):
-            if self.pipe.poll():
-                msg = self.pipe.recv()
-                messageValue= msg['value']
-                messageType= msg['Type']
-                if not messageType== "base64":
-                    messageValue2 = json.dumps(messageValue)
-                    self.factory.send_data_to_client(messageValue2,messageType)
-                else: 
-                    self.factory.send_data_to_client(messageValue,messageType)
+        if self.pipe.poll():
+            msg = self.pipe.recv()
+            messageValue = msg["value"]
+            messageType = msg["Type"]
+            if not messageType == "base64":
+                messageValue2 = json.dumps(messageValue)
+                self.factory.send_data_to_client(messageValue2, messageType)
+            else:
+                self.factory.send_data_to_client(messageValue, messageType)

@@ -27,63 +27,102 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 import threading
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import BatteryLvl,ImuData,InstantConsumption
+from src.utils.messages.allMessages import (
+    BatteryLvl,
+    ImuData,
+    InstantConsumption,
+    EnableButton,
+)
+
 
 class threadRead(ThreadWithStop):
     # ===================================== INIT =========================================
-    def __init__(self,f_serialCon,f_logFile,queueList):
-        super(threadRead,self).__init__()
-        self.serialCon=f_serialCon
-        self.logFile=f_logFile
-        self.buff=""
-        self.isResponse=False
-        self.queuesList=queueList
-        self.acumulator=0
+    def __init__(self, f_serialCon, f_logFile, queueList):
+        super(threadRead, self).__init__()
+        self.serialCon = f_serialCon
+        self.logFile = f_logFile
+        self.buff = ""
+        self.isResponse = False
+        self.queuesList = queueList
+        self.acumulator = 0
         self.Queue_Sending()
 
     # ====================================== RUN ==========================================
     def run(self):
-        while(self._running):
-            read_chr=self.serialCon.read()
+        while self._running:
+            read_chr = self.serialCon.read()
             try:
-                read_chr=read_chr.decode("ascii")
-                if read_chr=='@':
-                    self.isResponse=True
-                    if len(self.buff)!=0:
+                read_chr = read_chr.decode("ascii")
+                if read_chr == "@":
+                    self.isResponse = True
+                    if len(self.buff) != 0:
                         self.sendqueue(self.buff)
-                    self.buff=""
-                elif read_chr=='\r':   
-                    self.isResponse=False
-                    if len(self.buff)!=0:
+                    self.buff = ""
+                elif read_chr == "\r":
+                    self.isResponse = False
+                    if len(self.buff) != 0:
                         self.sendqueue(self.buff)
-                    self.buff=""
+                    self.buff = ""
                 if self.isResponse:
-                    self.buff+=read_chr        
+                    self.buff += read_chr
             except UnicodeDecodeError:
                 pass
+
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
-        self.queuesList["General"].put({ "Owner" : "processSerialHandler" , "msgID": 1, "msgType" :"Boolean","msgValue":True})
+        self.queuesList[EnableButton.Queue.value].put(
+            {
+                "Owner": EnableButton.Owner.value,
+                "msgID": EnableButton.msgID.value,
+                "msgType": EnableButton.msgType.value,
+                "msgValue": True,
+            }
+        )
         threading.Timer(1, self.Queue_Sending).start()
-        
+
     def sendqueue(self, buff):
-        if buff[0] == 1 :
+        if buff[0] == 1:
             print(buff[2:-2])
-        elif buff[0] == 2 :
+        elif buff[0] == 2:
             print(buff[2:-2])
-        elif buff[0] == 3 :
+        elif buff[0] == 3:
             print(buff[2:-2])
-        elif buff[0] == 4 :
+        elif buff[0] == 4:
             print(buff[2:-2])
-        elif buff[0] == 5 :
-            self.queuesList[BatteryLvl.Queue].put({ "Owner" : BatteryLvl.Owner , "msgID": BatteryLvl.msgID, "msgType" :BatteryLvl.msgType,"msgValue":int(buff[2:-3])})
-        elif buff[0] == 6 :
-            self.queuesList[InstantConsumption.Queue].put({ "Owner" : InstantConsumption.Owner , "msgID": InstantConsumption.msgID, "msgType" :InstantConsumption.msgType,"msgValue":int(buff[2:-3])})
-        elif buff[0] == 7: 
+        elif buff[0] == 5:
+            self.queuesList[BatteryLvl.Queue].put(
+                {
+                    "Owner": BatteryLvl.Owner,
+                    "msgID": BatteryLvl.msgID,
+                    "msgType": BatteryLvl.msgType,
+                    "msgValue": int(buff[2:-3]),
+                }
+            )
+        elif buff[0] == 6:
+            self.queuesList[InstantConsumption.Queue].put(
+                {
+                    "Owner": InstantConsumption.Owner,
+                    "msgID": InstantConsumption.msgID,
+                    "msgType": InstantConsumption.msgType,
+                    "msgValue": int(buff[2:-3]),
+                }
+            )
+        elif buff[0] == 7:
             buff = buff[2:-2]
             splitedBuffer = buff.split(";")
-            data={"roll":splitedBuffer[0],"pitch": splitedBuffer[1],"yaw":splitedBuffer[2],"accelx":splitedBuffer[3],"accely":splitedBuffer[4],"accelz":splitedBuffer[5]}
-            self.queuesList[ImuData.Queue].put({ "Owner" : ImuData.Owner , "msgID": ImuData.msgID, "msgType" :ImuData.msgType,"msgValue":data})
-
-
-
+            data = {
+                "roll": splitedBuffer[0],
+                "pitch": splitedBuffer[1],
+                "yaw": splitedBuffer[2],
+                "accelx": splitedBuffer[3],
+                "accely": splitedBuffer[4],
+                "accelz": splitedBuffer[5],
+            }
+            self.queuesList[ImuData.Queue].put(
+                {
+                    "Owner": ImuData.Owner,
+                    "msgID": ImuData.msgID,
+                    "msgType": ImuData.msgType,
+                    "msgValue": data,
+                }
+            )

@@ -25,40 +25,63 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from src.templates.workerprocess                   import WorkerProcess
-from src.hardware.camera.threads.threadCamera      import threadCamera
-from multiprocessing                               import Pipe
+
+if __name__ == "__main__":
+    import sys
+
+    sys.path.insert(0, "../../..")
+
+from src.templates.workerprocess import WorkerProcess
+from src.hardware.camera.threads.threadCamera import threadCamera
+from multiprocessing import Pipe
+
 
 class processCamera(WorkerProcess):
-    #====================================== INIT ==========================================
-    def __init__(self,queueList, logging, debugging=False):
-        self.queuesList=queueList
-        self.logging= logging
-        pipeRecv,pipeSend = Pipe(duplex=False)
+    """_summary_
+
+    Args:
+        WorkerProcess (_type_): _description_
+    """
+
+    # ====================================== INIT ==========================================
+    def __init__(self, queueList, logging, debugging=False):
+        """_summary_
+
+        Args:
+            queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+            logging (_type_): _description_
+            debugging (bool, optional): _description_. Defaults to False.
+        """
+        self.queuesList = queueList
+        self.logging = logging
+        pipeRecv, pipeSend = Pipe(duplex=False)
         self.pipeRecv = pipeRecv
-        self.pipeSend = pipeSend 
-        self.debugging= debugging
-        super(processCamera,self).__init__(self.queuesList)
+        self.pipeSend = pipeSend
+        self.debugging = debugging
+        super(processCamera, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
-    def _stop(self):
+    def stop(self):
         for thread in self.threads:
             thread.stop()
             thread.join()
-        super(processCamera,self).stop()
+        super(processCamera, self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processCamera,self).run()
+        super(processCamera, self).run()
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
-        camTh = threadCamera(self.pipeRecv, self.pipeSend, self.queuesList, self.logging, self.debugging) 
+        camTh = threadCamera(
+            self.pipeRecv, self.pipeSend, self.queuesList, self.logging, self.debugging
+        )
         self.threads.append(camTh)
 
-# =================================== EXAMPLE ========================================= 
+
+# =================================== EXAMPLE =========================================
 #             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
 #                  in terminal:    python3 processCamera.py
 if __name__ == "__main__":
@@ -66,44 +89,38 @@ if __name__ == "__main__":
     import time
     import logging
     import cv2
+    import base64
+    import numpy as np
 
     allProcesses = list()
 
-    debugg = False
+    debugg = True
 
-    #We have a list of multiprocessing.Queue() which individualy represent a priority for processes.
-    queueList = {"Critical": Queue(),
-                 "Warning": Queue(), 
-                 "General": Queue(), 
-                 "Config": Queue()}
+    # We have a list of multiprocessing.Queue() which individualy represent a priority for processes.
+    queueList = {
+        "Critical": Queue(),
+        "Warning": Queue(),
+        "General": Queue(),
+        "Config": Queue(),
+    }
 
-    logger  = logging.getLogger()
+    logger = logging.getLogger()
+
     process = processCamera(queueList, logger, debugg)
-    allProcesses.append(process)
 
-    for process in allProcesses:
-        process.daemon = True
-        process.start()
+    process.daemon = True
+    process.start()
 
-    time.sleep(4) 
-    if debugg: logger.warning("getting")
-    img = queueList["General"].get()
-    if debugg: logger.warning("got")
-    cv2.imwrite("test.jpg", img["msgValue"])
-
-# ===================================== STAYING ALIVE ====================================
-    blocker = Event()  
-    try:
-        blocker.wait()
-    except KeyboardInterrupt:
-        print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
-        for proc in allProcesses:
-            if hasattr(proc,'stop') and callable(getattr(proc,'stop')):
-                print("Process with stop",proc)
-                proc.stop()
-                proc.join()
-            else:
-                print("Process witouth stop",proc)
-                proc.terminate()
-                proc.join()
-
+    time.sleep(4)
+    if debugg:
+        logger.warning("getting")
+    img = {"msgValue": 1}
+    while type(img["msgValue"]) != type(":text"):
+        img = queueList["General"].get()
+    image_data = base64.b64decode(img["msgValue"])
+    img = np.frombuffer(image_data, dtype=np.uint8)
+    image = cv2.imdecode(img, cv2.IMREAD_COLOR)
+    if debugg:
+        logger.warning("got")
+    cv2.imwrite("test.jpg", image)
+    process.stop()

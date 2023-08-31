@@ -26,60 +26,62 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from multiprocessing import Pipe
-from src.templates.workerprocess                   import WorkerProcess
-from src.utils.PCcommunicationDemo.threads.threadRemoteHandler import threadRemoteHandler
+from src.templates.workerprocess import WorkerProcess
+from src.utils.PCcommunicationDemo.threads.threadRemoteHandler import (
+    threadRemoteHandler,
+)
+
 
 class processPCCommunicationDemo(WorkerProcess):
-    #====================================== INIT ==========================================
+    # ====================================== INIT ==========================================
     def __init__(self, queueList, logging):
-        self.queuesList=queueList
-        self.logging= logging
+        self.queuesList = queueList
+        self.logging = logging
         pipeRecv, pipeSend = Pipe(duplex=False)
-        self.pipeRecv= pipeRecv
-        self.pipeSend= pipeSend 
-        super(processPCCommunicationDemo,self).__init__(self.queuesList)
+        self.pipeRecv = pipeRecv
+        self.pipeSend = pipeSend
+        super(processPCCommunicationDemo, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
     def _stop(self):
         for thread in self.threads:
             thread.stop()
             thread.join()
-        super(processPCCommunicationDemo,self).stop()
+        super(processPCCommunicationDemo, self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processPCCommunicationDemo,self).run()
+        super(processPCCommunicationDemo, self).run()
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
-        PCTh = threadRemoteHandler(self.queuesList, self.logging,self.pipeRecv,self.pipeSend) 
+        PCTh = threadRemoteHandler(
+            self.queuesList, self.logging, self.pipeRecv, self.pipeSend
+        )
         self.threads.append(PCTh)
-
-
-
 
 
 if __name__ == "__main__":
     from multiprocessing import Event
 
     allProcesses = list()
-    print("Starting the processes!",allProcesses)
+    print("Starting the processes!", allProcesses)
     for proc in allProcesses:
         proc.start()
-        
-    blocker = Event()  
+
+    blocker = Event()
     try:
         blocker.wait()
     except KeyboardInterrupt:
         print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
         for proc in allProcesses:
-            if hasattr(proc,'stop') and callable(getattr(proc,'stop')):
-                print("Process with stop",proc)
+            if hasattr(proc, "stop") and callable(getattr(proc, "stop")):
+                print("Process with stop", proc)
                 proc.stop()
                 proc.join()
             else:
-                print("Process witouth stop",proc)
+                print("Process witouth stop", proc)
                 proc.terminate()
                 proc.join()

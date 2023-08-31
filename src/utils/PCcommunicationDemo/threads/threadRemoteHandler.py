@@ -27,27 +27,79 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.PCcommunicationDemo.threads.connection import FactoryDealer
-from src.utils.PCcommunicationDemo.threads.periodics import  PeriodicTask
+from src.utils.PCcommunicationDemo.threads.periodics import PeriodicTask
 from twisted.internet import reactor
+
 
 class threadRemoteHandler(ThreadWithStop):
     # ===================================== INIT =====================================
     def __init__(self, queuesList, logging, pipeRecv, pipeSend):
-        super(threadRemoteHandler,self).__init__()
+        super(threadRemoteHandler, self).__init__()
         self.factory = FactoryDealer(queuesList)
         self.reactor = reactor
-        self.reactor.listenTCP(5000, self.factory)    
+        self.reactor.listenTCP(5000, self.factory)
         self.queues = queuesList
         self.logging = logging
         self.pipe = pipeRecv
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCamera", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":1,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCarsAndSemaphores", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processSerialHandler", "msgID":1,"To":{"receiver": "processPCCommunication","pipe":pipeSend}}) 
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processSerialHandler", "msgID":2,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})  
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "processCamera", "msgID":3,"To":{"receiver": "processPCCommunication","pipe":pipeSend}}) 
-        self.queues["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "tcpLocsys", "msgID":1,"To":{"receiver": "processPCCommunication","pipe":pipeSend}})  
-        self.task = PeriodicTask(self.factory, 0.001, self.pipe)  # Replace X with the desired number of seconds
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "processCamera",
+                "msgID": 2,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "processCarsAndSemaphores",
+                "msgID": 1,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "processCarsAndSemaphores",
+                "msgID": 2,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "processSerialHandler",
+                "msgID": 1,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "processSerialHandler",
+                "msgID": 2,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "processCamera",
+                "msgID": 3,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.queues["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "tcpLocsys",
+                "msgID": 1,
+                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+            }
+        )
+        self.task = PeriodicTask(
+            self.factory, 0.001, self.pipe
+        )  # Replace X with the desired number of seconds
         print("before task")
 
     # ===================================== RUN ======================================
@@ -56,14 +108,8 @@ class threadRemoteHandler(ThreadWithStop):
         print("before run")
         self.reactor.run(installSignalHandlers=False)
         print("after run")
-        
+
     # ==================================== STOP ======================================
     def stop(self):
         self.reactor.stop()
-        super(threadRemoteHandler,self).stop()
-        
-
-
-
-
-
+        super(threadRemoteHandler, self).stop()

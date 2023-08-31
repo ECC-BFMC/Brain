@@ -25,15 +25,21 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+if __name__ == "__main__":
+    import sys
+
+    sys.path.insert(0, "../../..")
 import serial
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.serialhandler.threads.filehandler import FileHandler
 from src.hardware.serialhandler.threads.threadRead import threadRead
 from src.hardware.serialhandler.threads.threadWrite import threadWrite
+from src.utils.messages.allMessages import EngineRun, SpeedMotor, SteerMotor
+
 
 class processSerialHandler(WorkerProcess):
     # ===================================== INIT =========================================
-    def __init__(self, queueList, logging, debugging=False):
+    def __init__(self, queueList, logging, debugging=False, example=False):
         devFile = "/dev/ttyACM0"
         logFile = "historyFile.txt"
 
@@ -47,11 +53,11 @@ class processSerialHandler(WorkerProcess):
         self.queuesList = queueList
         self.logger = logging
         self.debugging = debugging
-        
+        self.example = example
         super(processSerialHandler, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
-    def _stop(self):
+    def stop(self):
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -60,14 +66,17 @@ class processSerialHandler(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         super(processSerialHandler, self).run()
+
         self.historyFile.close()
 
     # ===================================== INIT TH =================================
     def _init_threads(self):
         """Initializes the read and the write thread."""
-        readTh  = threadRead(self.serialCom,self.historyFile,self.queuesList)
+        readTh = threadRead(self.serialCom, self.historyFile, self.queuesList)
         self.threads.append(readTh)
-        writeTh = threadWrite(self.queuesList, self.serialCom, self.historyFile)
+        writeTh = threadWrite(
+            self.queuesList, self.serialCom, self.historyFile, self.example
+        )
         self.threads.append(writeTh)
 
 
@@ -90,41 +99,8 @@ if __name__ == "__main__":
     }
     logger = logging.getLogger()
     pipeRecv, pipeSend = Pipe(duplex=False)
-    process = processSerialHandler(queueList, logger, debugg)
-    allProcesses.append(process)
-
-    for process in allProcesses:
-        process.daemon = True
-        process.start()
-
-    i = 0.0
-    j = -1.0
-    s=0.0
-    while True:
-        time.sleep(0.05)
-        pipeSend.send({"msgType": "dict", "value": {"action": "2", "steerAngle": i}})
-        pipeSend.send({"msgType": "dict", "value": {"action": "1", "speed": s}})
-        i += j
-        if i >= 21.0:
-            i = 21.0
-            s = i/7
-            j *= -1
-        if i <= -21.0:
-            i = -21.0
-            s = i /7
-            j *= -1.0
-    # ===================================== STAYING ALIVE ====================================
-    blocker = Event()
-    try:
-        blocker.wait()
-    except KeyboardInterrupt:
-        print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
-        for proc in allProcesses:
-            if hasattr(proc, "stop") and callable(getattr(proc, "stop")):
-                print("Process with stop", proc)
-                proc.stop()
-                proc.join()
-            else:
-                print("Process witouth stop", proc)
-                proc.terminate()
-                proc.join()
+    process = processSerialHandler(queueList, logger, debugg, True)
+    process.daemon = True
+    process.start()
+    time.sleep(4)
+    process.stop()

@@ -27,38 +27,93 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 import threading
 from multiprocessing import Pipe
-from src.hardware.serialhandler.threads.messageconverter    import MessageConverter
+from src.hardware.serialhandler.threads.messageconverter import MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
+
 
 class threadWrite(ThreadWithStop):
     # ===================================== INIT =========================================
-    def __init__(self, queues, serialCom, logFile):
-        super(threadWrite,self).__init__()
-        self.queuesList       =  queues
-        self.serialCom  =  serialCom
-        self.logFile    =  logFile
+    def __init__(self, queues, serialCom, logFile, example=False):
+        super(threadWrite, self).__init__()
+        self.queuesList = queues
+        self.serialCom = serialCom
+        self.logFile = logFile
+        self.exampleFlag = example
         self.messageConverter = MessageConverter()
         self.running = False
         pipeRecvBreak, pipeSendBreak = Pipe(duplex=False)
-        self.pipeRecvBreak= pipeRecvBreak
-        self.queuesList["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "PC", "msgID":5,"To":{"receiver": "processSerialHandler","pipe":pipeSendBreak}})
+        self.pipeRecvBreak = pipeRecvBreak
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 5,
+                "To": {"receiver": "processSerialHandler", "pipe": pipeSendBreak},
+            }
+        )
         pipeRecvSpeed, pipeSendSpeed = Pipe(duplex=False)
-        self.pipeRecvSpeed= pipeRecvSpeed
-        self.queuesList["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "PC", "msgID":2,"To":{"receiver": "processSerialHandler","pipe":pipeSendSpeed}})
+        self.pipeRecvSpeed = pipeRecvSpeed
+        self.pipeSendSpeed = pipeSendSpeed
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 2,
+                "To": {"receiver": "processSerialHandler", "pipe": pipeSendSpeed},
+            }
+        )
         pipeRecvSteer, pipeSendSteer = Pipe(duplex=False)
         self.pipeRecvSteer = pipeRecvSteer
-        self.queuesList["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "PC", "msgID":3,"To":{"receiver": "processSerialHandler","pipe":pipeSendSteer}})
+        self.pipeSendSteer = pipeSendSteer
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 3,
+                "To": {"receiver": "processSerialHandler", "pipe": pipeSendSteer},
+            }
+        )
         pipeRecvControl, pipeSendControl = Pipe(duplex=False)
-        self.pipeRecvControl= pipeRecvControl
-        self.queuesList["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "PC", "msgID":4,"To":{"receiver": "processSerialHandler","pipe":pipeSendControl}})
-        pipeRecvRunningSignal, pipeSendRunningSignal= Pipe(duplex = False )
-        self.pipeRecvRunningSignal= pipeRecvRunningSignal
-        self.queuesList["Config"].put({'Subscribe/Unsubscribe':1,"Owner": "PC", "msgID":1,"To":{"receiver": "processSerialHandler","pipe":pipeSendRunningSignal}})
+        self.pipeRecvControl = pipeRecvControl
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 4,
+                "To": {"receiver": "processSerialHandler", "pipe": pipeSendControl},
+            }
+        )
+        pipeRecvRunningSignal, pipeSendRunningSignal = Pipe(duplex=False)
+        self.pipeRecvRunningSignal = pipeRecvRunningSignal
+        self.pipeSendRunningSignal = pipeSendRunningSignal
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 1,
+                "To": {
+                    "receiver": "processSerialHandler",
+                    "pipe": pipeSendRunningSignal,
+                },
+            }
+        )
         self.Queue_Sending()
+        if example:
+            self.i = 0.0
+            self.j = -1.0
+            self.s = 0.0
+            self.example()
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
-        self.queuesList["General"].put({ "Owner" : "processSerialHandler" , "msgID": 2, "msgType" :"Boolean2","msgValue":self.running})
+        self.queuesList["General"].put(
+            {
+                "Owner": "processSerialHandler",
+                "msgID": 2,
+                "msgType": "Boolean2",
+                "msgValue": self.running,
+            }
+        )
         threading.Timer(1, self.Queue_Sending).start()
 
     # ===================================== RUN ==========================================
@@ -66,43 +121,67 @@ class threadWrite(ThreadWithStop):
         while self._running:
             try:
                 if self.pipeRecvRunningSignal.poll():
-                    msg= self.pipeRecvRunningSignal.recv()
+                    msg = self.pipeRecvRunningSignal.recv()
                     if msg["value"] == True:
                         self.running = True
                     else:
                         self.running = False
-                        command = {"action": "1" , "speed" : 0.0}  
+                        command = {"action": "1", "speed": 0.0}
                         command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode('ascii'))
-                        self.logFile.write(command_msg) 
-                        command = {"action": "2" , "steerAngle" : 0.0} 
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
+                        command = {"action": "2", "steerAngle": 0.0}
                         command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode('ascii'))
-                        self.logFile.write(command_msg)  
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
                 if self.running:
                     if self.pipeRecvBreak.poll():
                         message = self.pipeRecvBreak.recv()
-                        command = {"action": "1" , "speed" : float(message["value"])}
+                        command = {"action": "1", "speed": float(message["value"])}
                         command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode('ascii'))
+                        self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
                     elif self.pipeRecvSpeed.poll():
                         message = self.pipeRecvSpeed.recv()
-                        command = {"action": "1" , "speed" : float(message["value"])}
+                        command = {"action": "1", "speed": float(message["value"])}
                         command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode('ascii'))
+                        self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
                     elif self.pipeRecvSteer.poll():
                         message = self.pipeRecvSteer.recv()
-                        command = {"action": "2" , "steerAngle" : float(message["value"])}
+                        command = {"action": "2", "steerAngle": float(message["value"])}
                         command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode('ascii'))
+                        self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
-            except Exception as e: 
-                print(e) 
+            except Exception as e:
+                print(e)
+
     # ==================================== START =========================================
     def start(self):
-        super(threadWrite,self).start()
+        super(threadWrite, self).start()
+
     # ==================================== STOP ==========================================
     def stop(self):
-        super(threadWrite,self).stop()
+        import time
+
+        self.exampleFlag = False
+        self.pipeSendSteer.send({"Type": "Steer", "value": 0.0})
+        self.pipeSendSpeed.send({"Type": "Speed", "value": 0.0})
+        time.sleep(2)
+        super(threadWrite, self).stop()
+
+    def example(self):
+        if self.exampleFlag:
+            self.pipeSendRunningSignal.send({"Type": "Run", "value": True})
+            self.pipeSendSpeed.send({"Type": "Speed", "value": self.s})
+            self.pipeSendSteer.send({"Type": "Steer", "value": self.i})
+            self.i += self.j
+            if self.i >= 21.0:
+                self.i = 21.0
+                self.s = self.i / 7
+                self.j *= -1
+            if self.i <= -21.0:
+                self.i = -21.0
+                self.s = self.i / 7
+                self.j *= -1.0
+            threading.Timer(0.01, self.example).start()
