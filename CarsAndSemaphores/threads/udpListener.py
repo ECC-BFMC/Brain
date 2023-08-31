@@ -27,24 +27,38 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import json
-from src.utils.messages.allMessages import Cars,Semaphores
+from src.utils.messages.allMessages import Cars, Semaphores
 from twisted.internet import protocol
+
 
 class udpListener(protocol.DatagramProtocol):
     def __init__(self, queue):
-        self.queue = queue  
+        self.queue = queue
 
     def datagramReceived(self, datagram, address):
-        dat = datagram.decode('utf-8')
+        dat = datagram.decode("utf-8")
         dat = json.loads(dat)
 
-        if dat['device'] == "semaphore":
-            tmp = {"state": dat["state"], "x":dat["x"], "y":dat["y"]}
-            self.queue.put({ "Owner" : Semaphores.Owner.value , "msgID": Semaphores.msgID.value, "msgType" :Semaphores.msgType.value,"msgValue":tmp })
-        elif dat['device'] == "car":
-            tmp = {"x":dat["x"], "y":dat["y"]}
-            self.queue.put({ "Owner" : Cars.Owner.value , "msgID": Cars.msgID.value, "msgType" :Cars.msgType.value,"msgValue":tmp })     
+        if dat["device"] == "semaphore":
+            tmp = {"state": dat["state"], "x": dat["x"], "y": dat["y"]}
+            self.queue.put(
+                {
+                    "Owner": Semaphores.Owner.value,
+                    "msgID": Semaphores.msgID.value,
+                    "msgType": Semaphores.msgType.value,
+                    "msgValue": tmp,
+                }
+            )
+        elif dat["device"] == "car":
+            tmp = {"x": dat["x"], "y": dat["y"]}
+            self.queue.put(
+                {
+                    "Owner": Cars.Owner.value,
+                    "msgID": Cars.msgID.value,
+                    "msgType": Cars.msgType.value,
+                    "msgValue": tmp,
+                }
+            )
 
-        
     def stopListening(self):
         super().stopListening()
