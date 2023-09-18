@@ -25,6 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+if __name__ == "__main__":
+    import sys
+
+    sys.path.insert(0, "../../..")
+
 from src.templates.workerprocess import WorkerProcess
 from src.data.CarsAndSemaphores.threads.threadCarsAndSemaphores import (
     threadCarsAndSemaphores,
@@ -32,6 +37,13 @@ from src.data.CarsAndSemaphores.threads.threadCarsAndSemaphores import (
 
 
 class processCarsAndSemaphores(WorkerProcess):
+    """This process will receive the location of the other cars and the location and the state of the semaphores.
+
+    Args:
+        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        logging (logging object): Made for debugging.
+    """
+
     # ====================================== INIT ==========================================
     def __init__(self, queueList, logging=False):
         self.queuesList = queueList
@@ -39,7 +51,8 @@ class processCarsAndSemaphores(WorkerProcess):
         super(processCarsAndSemaphores, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
-    def _stop(self):
+    def stop(self):
+        """Function for stopping threads and the process."""
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -52,13 +65,17 @@ class processCarsAndSemaphores(WorkerProcess):
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
-        """Create the Camera Publisher thread and add to the list of threads."""
+        """Create the thread and add to the list of threads."""
         CarsSemTh = threadCarsAndSemaphores(self.queuesList)
         self.threads.append(CarsSemTh)
 
 
+# =================================== EXAMPLE =========================================
+#             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
+#                  in terminal:    python3 processCarsAndSemaphores.py
+
 if __name__ == "__main__":
-    from multiprocessing import Event, Queue
+    from multiprocessing import Queue
     import time
 
     queueList = {
@@ -70,26 +87,9 @@ if __name__ == "__main__":
 
     allProcesses = list()
     process = processCarsAndSemaphores(queueList)
-    allProcesses.append(process)
-    print("Starting the processes!", allProcesses)
-    for proc in allProcesses:
-        proc.start()
+    process.start()
 
     time.sleep(3)
     print(queueList["General"].get())
 
-    blocker = Event()
-
-    try:
-        blocker.wait()
-    except KeyboardInterrupt:
-        print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
-        for proc in allProcesses:
-            if hasattr(proc, "stop") and callable(getattr(proc, "stop")):
-                print("Process with stop", proc)
-                proc.stop()
-                proc.join()
-            else:
-                print("Process witouth stop", proc)
-                proc.terminate()
-                proc.join()
+    process.stop()

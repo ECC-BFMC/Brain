@@ -32,10 +32,21 @@ from twisted.internet import protocol
 
 
 class udpListener(protocol.DatagramProtocol):
+    """This class is used to receive the information from the servers.
+
+    Args:
+        queue (multiprocessing.queues.Queue): the queue to send the info
+    """
+
     def __init__(self, queue):
         self.queue = queue
 
-    def datagramReceived(self, datagram, address):
+    def datagramReceived(self, datagram):
+        """Specific function for receiving the information. It will select and create different dictionary for each type of data we receive(car or semaphore)
+
+        Args:
+            datagram (dictionary): In this we store the data we get from servers.
+        """
         dat = datagram.decode("utf-8")
         dat = json.loads(dat)
 
