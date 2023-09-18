@@ -36,6 +36,14 @@ from src.utils.messages.allMessages import (
 
 
 class threadRead(ThreadWithStop):
+    """This thread read the data that NUCLEO send to Raspberry PI.\n
+
+    Args:
+        f_serialCon (serial.Serial): Serial connection between the two boards.
+        f_logFile (FileHandler): The path to the history file where you can find the logs from the connection.
+        queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+    """
+
     # ===================================== INIT =========================================
     def __init__(self, f_serialCon, f_logFile, queueList):
         super(threadRead, self).__init__()
@@ -70,6 +78,7 @@ class threadRead(ThreadWithStop):
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
+        """Callback function for enable button flag."""
         self.queuesList[EnableButton.Queue.value].put(
             {
                 "Owner": EnableButton.Owner.value,
@@ -81,6 +90,7 @@ class threadRead(ThreadWithStop):
         threading.Timer(1, self.Queue_Sending).start()
 
     def sendqueue(self, buff):
+        """This function select which type of message we receive from NUCLEO and send the data further."""
         if buff[0] == 1:
             print(buff[2:-2])
         elif buff[0] == 2:

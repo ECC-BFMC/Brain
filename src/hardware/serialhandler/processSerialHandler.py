@@ -34,10 +34,17 @@ from src.templates.workerprocess import WorkerProcess
 from src.hardware.serialhandler.threads.filehandler import FileHandler
 from src.hardware.serialhandler.threads.threadRead import threadRead
 from src.hardware.serialhandler.threads.threadWrite import threadWrite
-from src.utils.messages.allMessages import EngineRun, SpeedMotor, SteerMotor
 
 
 class processSerialHandler(WorkerProcess):
+    """This process handle connection between NUCLEO and Raspberry PI.\n
+    Args:
+        queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+        logging (logging object): Made for debugging.
+        debugging (bool, optional): A flag for debugging. Defaults to False.
+        example (bool, optional): A flag for running the example. Defaults to False.
+    """
+
     # ===================================== INIT =========================================
     def __init__(self, queueList, logging, debugging=False, example=False):
         devFile = "/dev/ttyACM0"
@@ -58,6 +65,7 @@ class processSerialHandler(WorkerProcess):
 
     # ===================================== STOP ==========================================
     def stop(self):
+        """Function for stopping threads and the process."""
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -65,6 +73,7 @@ class processSerialHandler(WorkerProcess):
 
     # ===================================== RUN ==========================================
     def run(self):
+        """Apply the initializing methods and start the threads."""
         super(processSerialHandler, self).run()
 
         self.historyFile.close()
@@ -84,7 +93,7 @@ class processSerialHandler(WorkerProcess):
 #             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
 #                  in terminal:    python3 processSerialHandler.py
 if __name__ == "__main__":
-    from multiprocessing import Queue, Event, Pipe
+    from multiprocessing import Queue, Pipe
     import logging
     import time
 
@@ -102,5 +111,5 @@ if __name__ == "__main__":
     process = processSerialHandler(queueList, logger, debugg, True)
     process.daemon = True
     process.start()
-    time.sleep(4)
+    time.sleep(4)  # modify the value to increase/decrease the time of the example
     process.stop()

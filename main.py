@@ -30,7 +30,7 @@
 import sys
 
 sys.path.append(".")
-from multiprocessing import Queue, Event, Pipe
+from multiprocessing import Queue, Event
 import logging
 
 
@@ -60,21 +60,24 @@ queueList = {
 
 logging = logging.getLogger()
 
-Traffic = True
+TrafficCommunication = True
 Camera = True
-PCCommDemo = False
-SemsAndCars = True
+PCCommunicationDemo = True
+CarsAndSemaphores = True
 SerialHandler = True
 # ===================================== SETUP PROCESSES ==================================
+
 # Initializing gateway
 processGateway = processGateway(queueList, logging)
 allProcesses.append(processGateway)
 
+# Initializing camera
 if Camera:
     processCamera = processCamera(queueList, logging)
     allProcesses.append(processCamera)
 
-if PCCommDemo:
+# Initializing interface
+if PCCommunicationDemo:
     processPCCommunication = processPCCommunicationDemo(queueList, logging)
     allProcesses.append(processPCCommunication)
 else:
@@ -83,14 +86,17 @@ else:
     )
     allProcesses.append(processPCCommunicationDashBoard)
 
-if SemsAndCars:
+# Initializing cars&sems
+if CarsAndSemaphores:
     processCarsAndSemaphores = processCarsAndSemaphores(queueList)
     allProcesses.append(processCarsAndSemaphores)
 
-if Traffic:
+# Initializing GPS
+if TrafficCommunication:
     processTrafficCommunication = processTrafficCommunication(queueList, logging)
     allProcesses.append(processTrafficCommunication)
 
+# Initializing serial connection NUCLEO - > PI
 if SerialHandler:
     processSerialHandler = processSerialHandler(queueList, logging)
     allProcesses.append(processSerialHandler)
@@ -107,11 +113,6 @@ try:
 except KeyboardInterrupt:
     print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
     for proc in allProcesses:
-        if hasattr(proc, "stop") and callable(getattr(proc, "stop")):
-            print("Process with stop", proc)
-            proc.stop()
-            proc.join()
-        else:
-            print("Process witouth stop", proc)
-            proc.terminate()
-            proc.join()
+        print("Process stopped", proc)
+        proc.stop()
+        proc.join()

@@ -29,6 +29,13 @@ from src.templates.threadwithstop import ThreadWithStop
 
 
 class threadGateway(ThreadWithStop):
+    """Thread which will handle processGateway functionalities.\n
+    Args:
+        queuesList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        logger (logging object): Made for debugging.
+        debugger (bool): A flag for debugging.
+    """
+
     # ===================================== INIT =========================================
 
     def __init__(self, queueList, logger, debugging):
@@ -42,6 +49,10 @@ class threadGateway(ThreadWithStop):
     # =================================== SUBSCRIBE ======================================
 
     def subscribe(self, message):
+        """This functin will add the pipe into the approved messages list and it will be added into the dictionary of sending
+        Args:
+            message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
+        """
         # Declaration of variables:
         Owner = message["Owner"]
         Id = message["msgID"]
@@ -62,6 +73,10 @@ class threadGateway(ThreadWithStop):
     # ================================== UNSUBSCRIBE =====================================
 
     def unsubscribe(self, message):
+        """This functin will remove the pipe into the approved messages list and it will be added into the dictionary of sending
+        Args:
+            message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
+        """
         Owner = message["Owner"]
         Id = message["msgID"]
         To = message["To"]["receiver"]
@@ -75,6 +90,10 @@ class threadGateway(ThreadWithStop):
     # =================================== SENDING ========================================
 
     def send(self, message):
+        """This functin will send the message on all the pipes that are in the sending list of the message ID.
+        Args:
+            message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
+        """
         Owner = message["Owner"]
         Id = message["msgID"]
         Type = message["msgType"]
@@ -83,7 +102,7 @@ class threadGateway(ThreadWithStop):
             for element in self.sendingList[Owner][Id]:
                 # We send a dictionary that contain the type of the message and message
                 self.sendingList[Owner][Id][element].send(
-                    {"Type": Type, "value": Value}
+                    {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
                 )
                 if self.debugging:
                     self.logger.warning(message)
@@ -92,11 +111,15 @@ class threadGateway(ThreadWithStop):
 
     # Function for debugging:
     def printList(self):
+        """Made for debugging"""
         self.logger.warning(self.sendingList)
 
     # ==================================== RUN ===========================================
 
     def run(self):
+        """This function will take the messages in priority order form the queues.\n
+        the prioirty is: Critical > Warning > General
+        """
         while self._running:
             message = None
             # We are using "elif" because we are processing one message at a time.

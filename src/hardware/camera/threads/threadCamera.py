@@ -43,6 +43,15 @@ from src.templates.threadwithstop import ThreadWithStop
 
 
 class threadCamera(ThreadWithStop):
+    """Thread which will handle camera functionalities.\n
+    Args:
+        pipeRecv (multiprocessing.queues.Pipe): A pipe where we can receive configs for camera. We will read from this pipe.
+        pipeSend (multiprocessing.queues.Pipe): A pipe where we can write configs for camera. Process Gateway will write on this pipe.
+        queuesList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+        logger (logging object): Made for debugging.
+        debugger (bool): A flag for debugging.
+    """
+
     # ================================ INIT ===============================================
     def __init__(self, pipeRecv, pipeSend, queuesList, logger, debugger):
         super(threadCamera, self).__init__()
@@ -55,12 +64,21 @@ class threadCamera(ThreadWithStop):
         self.recording = False
         pipeRecvRecord, pipeSendRecord = Pipe(duplex=False)
         self.pipeRecvRecord = pipeRecvRecord
+        self.pipeSendRecord = pipeSendRecord
+        self.video_writer = ""
+        self.subscribe()
+        self._init_camera()
+        self.Queue_Sending()
+        self.Configs()
+
+    def subscribe(self):
+        """Subscribe function. In this function we make all the required subscribe to process gateway"""
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
                 "Owner": Record.Owner.value,
                 "msgID": Record.msgID.value,
-                "To": {"receiver": "processCamera", "pipe": pipeSendRecord},
+                "To": {"receiver": "processCamera", "pipe": self.pipeSendRecord},
             }
         )
         self.queuesList["Config"].put(
@@ -71,12 +89,9 @@ class threadCamera(ThreadWithStop):
                 "To": {"receiver": "processCamera", "pipe": self.pipeSendConfig},
             }
         )
-        self.video_writer = ""
-        self._init_camera()
-        self.Queue_Sending()
-        self.Configs()
 
     def Queue_Sending(self):
+        """Callback function for recording flag."""
         self.queuesList[Recording.Queue.value].put(
             {
                 "Owner": Recording.Owner.value,
@@ -95,6 +110,7 @@ class threadCamera(ThreadWithStop):
 
     # =============================== CONFIG ==============================================
     def Configs(self):
+        """Callback function for receiving configs on the pipe."""
         while self.pipeRecvConfig.poll():
             message = self.pipeRecvConfig.recv()
             message = message["value"]
@@ -110,6 +126,7 @@ class threadCamera(ThreadWithStop):
 
     # ================================ RUN ================================================
     def run(self):
+        """This function will run while the running flag is True. It captures the image from camera and make the required modifies and then it send the data to process gateway."""
         var = True
         while self._running:
             try:
@@ -169,6 +186,7 @@ class threadCamera(ThreadWithStop):
 
     # ================================ INIT CAMERA ========================================
     def _init_camera(self):
+        """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
         self.camera = picamera2.Picamera2()
         config = self.camera.create_preview_configuration(
             buffer_count=1,

@@ -33,6 +33,13 @@ from src.utils.PCcommunicationDashBoard.threads.threadRemoteHandler import (
 
 
 class processPCCommunicationDashBoard(WorkerProcess):
+    """This process handle the connection between Dashboard and Raspberry PI.
+
+    Args:
+        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        logging (logging object): Made for debugging.
+    """
+
     # ====================================== INIT ==========================================
     def __init__(self, queueList, logging):
         self.queuesList = queueList
@@ -44,6 +51,7 @@ class processPCCommunicationDashBoard(WorkerProcess):
 
     # ===================================== STOP ==========================================
     def _stop(self):
+        """Function for stopping threads and the process."""
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -56,32 +64,8 @@ class processPCCommunicationDashBoard(WorkerProcess):
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
-        """Create the Camera Publisher thread and add to the list of threads."""
+        """Create the communication thread and add to the list of threads."""
         PCTh = threadRemoteHandler(
             self.queuesList, self.logging, self.pipeRecv, self.pipeSend
         )
         self.threads.append(PCTh)
-
-
-if __name__ == "__main__":
-    from multiprocessing import Event
-
-    allProcesses = list()
-    print("Starting the processes!", allProcesses)
-    for proc in allProcesses:
-        proc.start()
-
-    blocker = Event()
-    try:
-        blocker.wait()
-    except KeyboardInterrupt:
-        print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
-        for proc in allProcesses:
-            if hasattr(proc, "stop") and callable(getattr(proc, "stop")):
-                print("Process with stop", proc)
-                proc.stop()
-                proc.join()
-            else:
-                print("Process witouth stop", proc)
-                proc.terminate()
-                proc.join()

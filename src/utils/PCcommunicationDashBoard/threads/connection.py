@@ -94,14 +94,26 @@ class SingleConnection(protocol.Protocol):
             # print("Received from", self.factory.connectiondata, " : ", data.decode())
 
     # ===================================== SEND DATA ==========================================
-    def send_data(self, message, message2):
+    def send_data(self, messageValue, messageType, messageOwner, messageId):
+        """This function will send firstly an encoded message as an int represented in one byte after that it will send the lenght of the message and the message."""
         self.transport.write(
-            self.factory.encoder[message2].to_bytes(1, byteorder="big")
+            self.factory.encoder[(messageType, messageOwner, messageId)].to_bytes(
+                1, byteorder="big"
+            )
         )
         self.transport.write(
-            len(message.encode("utf-8")).to_bytes(4, byteorder="big")
+            len(messageValue.encode("utf-8")).to_bytes(4, byteorder="big")
         )  # send size of image
-        self.transport.write(message.encode("utf-8"))  # send image data
+        self.transport.write(messageValue.encode("utf-8"))  # send image data
+
+
+from src.utils.messages.allMessages import (
+    mainCamera,
+    EnableButton,
+    SignalRunning,
+    Location,
+    Signal,
+)
 
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
@@ -113,16 +125,39 @@ class FactoryDealer(protocol.Factory):
         self.connectiondata = None
         self.queues = queues
         self.encoder = {
-            "Boolean": 1,
-            "Boolean2": 2,
-            "dict": 3,
-            "String": 4,
-            "base64": 5,
+            (
+                EnableButton.msgType.value,
+                EnableButton.Owner.value,
+                EnableButton.msgID.value,
+            ): 1,
+            (
+                SignalRunning.msgType.value,
+                SignalRunning.Owner.value,
+                SignalRunning.msgID.value,
+            ): 2,
+            (
+                Location.msgType.value,
+                Location.Owner.value,
+                Location.msgID.value,
+            ): 3,
+            (
+                Signal.msgType.value,
+                Signal.Owner.value,
+                Signal.msgID.value,
+            ): 4,
+            (
+                mainCamera.msgType.value,
+                mainCamera.Owner.value,
+                mainCamera.msgID.value,
+            ): 5,
         }
 
-    def send_data_to_client(self, message, message2):
+    def send_data_to_client(self, messageValue, messageType, messageOwner, messageId):
+        """This function will try to send the information only if there is a connection between DashBoard and raspberry PI."""
         if self.isConnected == True:
-            self.connection.send_data(message, message2)
+            self.connection.send_data(
+                messageValue, messageType, messageOwner, messageId
+            )
         else:
             print("Client not connected")
 

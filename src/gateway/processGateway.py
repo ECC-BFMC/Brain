@@ -34,7 +34,12 @@ from src.gateway.threads.threadGateway import threadGateway
 
 
 class processGateway(WorkerProcess):
-    """_summary_"""
+    """This process handle all the data distribution\n
+    Args:
+        queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+        logger (logging object): Made for debugging.
+        debugging (bool, optional): A flag for debugging. Defaults to False.
+    """
 
     def __init__(self, queueList, logger, debugging=False):
         self.logger = logger
@@ -44,6 +49,7 @@ class processGateway(WorkerProcess):
     # ===================================== STOP ==========================================
 
     def stop(self):
+        """Function for stopping threads and the process."""
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -51,14 +57,14 @@ class processGateway(WorkerProcess):
 
     # ===================================== RUN ===========================================
     def run(self):
+        """Apply the initializing methods and start the threads."""
         super(processGateway, self).run()
 
     # ===================================== INIT TH ==========================================
     def _init_threads(self):
-        """Initializes the read and the write thread."""
-        # read write thread
-        readThread = threadGateway(self.queuesList, self.logger, self.debugging)
-        self.threads.append(readThread)
+        """Initializes the gateway thread."""
+        gatewayThread = threadGateway(self.queuesList, self.logger, self.debugging)
+        self.threads.append(gatewayThread)
 
 
 # =================================== EXAMPLE =========================================
@@ -82,20 +88,6 @@ if __name__ == "__main__":
     process = processGateway(queueList, logging, debugging=True)
     process.daemon = True
     process.start()
-
-    # We have two types of dictionaries that will be send to threadGateway.py
-    #   First format is the configDictionary:  -- {Subscribe/Unsubscribe, Owner, msgID, To{ receiver, pipe}} --
-    #       Subscribe/Unsubscribe key let us know which action to take;
-    #       Owner key let us know form who the config dictionary come;
-    #       msgID key let us see what message has been send( One process can send messages to multiple components);
-    #       To is also a dictionary in which we have two fields: receiver and pipe;
-    #           Receiver key represents the component that will receive the message;
-    #           Pipe key represents a multiprocessing.Pipe(the way of sending the message).
-    #   The second format is the mesageDictionary: -- {Owner, msgID, msgType, msgValue} --
-    #       Owner key let us know form who the config dictionary come;
-    #       msgID key let us know what message has been send( One process can send messages to multiple components);
-    #       msgType key let us know what is the type of the message;
-    #       msgValue key let us know the value that has to be send.
 
     pipeReceive1, pipeSend1 = Pipe()
 

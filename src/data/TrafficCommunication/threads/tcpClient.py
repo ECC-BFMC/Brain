@@ -25,9 +25,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from twisted.internet import  protocol
+from twisted.internet import protocol
 import json
 import time
+
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class tcpClient(protocol.ClientFactory):
@@ -38,18 +39,28 @@ class tcpClient(protocol.ClientFactory):
         self.connectionBrokenCllbck = connectionBrokenCllbck
         self.locsysConnectCllbck = locsysConnectCllbck
         self.locsysID = locsysID
-        
 
     def clientConnectionLost(self, connector, reason):
-        print("Connection lost with server ", self.connectiondata, " Retrying in ", self.retry_delay, " seconds... (Check password match, IP or server availability)")
+        print(
+            "Connection lost with server ",
+            self.connectiondata,
+            " Retrying in ",
+            self.retry_delay,
+            " seconds... (Check password match, IP or server availability)",
+        )
         try:
             self.connectiondata = None
             self.connection = None
             self.connectionBrokenCllbck()
-        except:pass
+        except:
+            pass
 
     def clientConnectionFailed(self, connector, reason):
-        print("Connection failed. Retrying in", self.retry_delay, "seconds... Possible server down or incorrect IP:port match")
+        print(
+            "Connection failed. Retrying in",
+            self.retry_delay,
+            "seconds... Possible server down or incorrect IP:port match",
+        )
         time.sleep(self.retry_delay)
         connector.connect()
 
@@ -57,7 +68,7 @@ class tcpClient(protocol.ClientFactory):
         conn = SingleConnection()
         conn.factory = self
         return conn
-    
+
     def isConnected(self):
         if self.connection == None:
             return False
@@ -66,7 +77,7 @@ class tcpClient(protocol.ClientFactory):
 
     def send_data_to_server(self, message):
         self.connection.send_data(message)
-    
+
     def receive_data_from_server(self, message):
         msg = json.loads(message)
         if msg["reqORinfo"] == "request":
@@ -83,17 +94,22 @@ class SingleConnection(protocol.Protocol):
         peer = self.transport.getPeer()
         self.factory.connectiondata = peer.host + ":" + str(peer.port)
         self.factory.connection = self
-        msg = {"reqORinfo": "request", "type":"locsysDevice", "DeviceID":self.factory.locsysID}
+        msg = {
+            "reqORinfo": "request",
+            "type": "locsysDevice",
+            "DeviceID": self.factory.locsysID,
+        }
         self.send_data(msg)
         print("Connection with server established : ", self.factory.connectiondata)
 
     def dataReceived(self, data):
         self.factory.receive_data_from_server(data.decode())
-        print("got message from trafficcommunication server: ", self.factory.connectiondata)
+        print(
+            "got message from trafficcommunication server: ",
+            self.factory.connectiondata,
+        )
 
     def send_data(self, message):
         print(message)
         msg = json.dumps(message)
         self.transport.write(msg.encode())
-
-    

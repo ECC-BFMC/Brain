@@ -32,6 +32,13 @@ from src.data.CarsAndSemaphores.threads.udpListener import udpListener
 
 
 class threadCarsAndSemaphores(ThreadWithStop):
+    """Thread which will handle processCarsAndSemaphores functionalities
+
+    Args:
+        queuesList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        listenPort (int, optional): Listening port. Defaults to 5007.
+    """
+
     # ====================================== INIT ==========================================
     def __init__(self, queueList, listenPort=5007):
         super(threadCarsAndSemaphores, self).__init__()

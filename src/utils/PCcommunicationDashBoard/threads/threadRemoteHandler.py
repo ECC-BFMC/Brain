@@ -32,6 +32,15 @@ from twisted.internet import reactor
 
 
 class threadRemoteHandler(ThreadWithStop):
+    """Thread which will handle processPCcommunicationDashboard functionalities. We will initailize a reactor with the factory class.
+
+    Args:
+        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        logging (logging object): Made for debugging.
+        pipeRecv (multiprocessing.pipes.Pipe): The receiving pipe. This pipe will get the information from process gateway.
+        pipeSend (multiprocessing.pipes.Pipe): The sending pipe. This pipe will be sent to process gateway as a way to send information.
+    """
+
     # ===================================== INIT =====================================
     def __init__(self, queuesList, logging, pipeRecv, pipeSend):
         super(threadRemoteHandler, self).__init__()
@@ -40,7 +49,18 @@ class threadRemoteHandler(ThreadWithStop):
         self.reactor.listenTCP(5000, self.factory)
         self.queues = queuesList
         self.logging = logging
-        self.pipe = pipeRecv
+        self.pipeRecv = pipeRecv
+        self.subscribe(pipeSend)
+        self.task = PeriodicTask(
+            self.factory, 0.001, self.pipeRecv
+        )  # Replace X with the desired number of seconds
+
+    def subscribe(self, pipeSend):
+        """Subscribing function
+
+        Args:
+            pipeSend (multiprocessing.pipes.Pipe): The sending pipe
+        """
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
@@ -81,10 +101,6 @@ class threadRemoteHandler(ThreadWithStop):
                 "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
             }
         )
-        self.task = PeriodicTask(
-            self.factory, 0.001, self.pipe
-        )  # Replace X with the desired number of seconds
-        print("before task")
 
     # ===================================== RUN ======================================
     def run(self):

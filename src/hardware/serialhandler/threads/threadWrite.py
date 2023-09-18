@@ -29,9 +29,19 @@ import threading
 from multiprocessing import Pipe
 from src.hardware.serialhandler.threads.messageconverter import MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
+from src.utils.messages.allMessages import SignalRunning
 
 
 class threadWrite(ThreadWithStop):
+    """This thread write the data that Raspberry PI send to NUCLEO.\n
+
+    Args:
+        queues (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+        serialCom (serial.Serial): Serial connection between the two boards.
+        logFile (FileHandler): The path to the history file where you can find the logs from the connection.
+        example (bool, optional): Flag for exmaple activation. Defaults to False.
+    """
+
     # ===================================== INIT =========================================
     def __init__(self, queues, serialCom, logFile, example=False):
         super(threadWrite, self).__init__()
@@ -43,60 +53,20 @@ class threadWrite(ThreadWithStop):
         self.running = False
         pipeRecvBreak, pipeSendBreak = Pipe(duplex=False)
         self.pipeRecvBreak = pipeRecvBreak
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 5,
-                "To": {"receiver": "processSerialHandler", "pipe": pipeSendBreak},
-            }
-        )
+        self.pipeSendBreak = pipeSendBreak
         pipeRecvSpeed, pipeSendSpeed = Pipe(duplex=False)
         self.pipeRecvSpeed = pipeRecvSpeed
         self.pipeSendSpeed = pipeSendSpeed
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 2,
-                "To": {"receiver": "processSerialHandler", "pipe": pipeSendSpeed},
-            }
-        )
         pipeRecvSteer, pipeSendSteer = Pipe(duplex=False)
         self.pipeRecvSteer = pipeRecvSteer
         self.pipeSendSteer = pipeSendSteer
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 3,
-                "To": {"receiver": "processSerialHandler", "pipe": pipeSendSteer},
-            }
-        )
         pipeRecvControl, pipeSendControl = Pipe(duplex=False)
         self.pipeRecvControl = pipeRecvControl
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 4,
-                "To": {"receiver": "processSerialHandler", "pipe": pipeSendControl},
-            }
-        )
+        self.pipeSendControl = pipeSendControl
         pipeRecvRunningSignal, pipeSendRunningSignal = Pipe(duplex=False)
         self.pipeRecvRunningSignal = pipeRecvRunningSignal
         self.pipeSendRunningSignal = pipeSendRunningSignal
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 1,
-                "To": {
-                    "receiver": "processSerialHandler",
-                    "pipe": pipeSendRunningSignal,
-                },
-            }
-        )
+        self.subscribe()
         self.Queue_Sending()
         if example:
             self.i = 0.0
@@ -104,13 +74,63 @@ class threadWrite(ThreadWithStop):
             self.s = 0.0
             self.example()
 
+    def subscribe(self):
+        """Subscribe function. In this function we make all the required subscribe to process gateway"""
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 1,
+                "To": {
+                    "receiver": "processSerialHandler",
+                    "pipe": self.pipeSendRunningSignal,
+                },
+            }
+        )
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 4,
+                "To": {
+                    "receiver": "processSerialHandler",
+                    "pipe": self.pipeSendControl,
+                },
+            }
+        )
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 3,
+                "To": {"receiver": "processSerialHandler", "pipe": self.pipeSendSteer},
+            }
+        )
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 2,
+                "To": {"receiver": "processSerialHandler", "pipe": self.pipeSendSpeed},
+            }
+        )
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": 1,
+                "Owner": "PC",
+                "msgID": 5,
+                "To": {"receiver": "processSerialHandler", "pipe": self.pipeSendBreak},
+            }
+        )
+
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
+        """Callback function for engine running flag."""
         self.queuesList["General"].put(
             {
-                "Owner": "processSerialHandler",
-                "msgID": 2,
-                "msgType": "Boolean2",
+                "Owner": SignalRunning.Owner.value,
+                "msgID": SignalRunning.msgID.value,
+                "msgType": SignalRunning.msgType.value,
                 "msgValue": self.running,
             }
         )
@@ -118,6 +138,7 @@ class threadWrite(ThreadWithStop):
 
     # ===================================== RUN ==========================================
     def run(self):
+        """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""
         while self._running:
             try:
                 if self.pipeRecvRunningSignal.poll():
@@ -162,6 +183,7 @@ class threadWrite(ThreadWithStop):
 
     # ==================================== STOP ==========================================
     def stop(self):
+        """This function will close the thread and will stop the car."""
         import time
 
         self.exampleFlag = False
@@ -170,7 +192,9 @@ class threadWrite(ThreadWithStop):
         time.sleep(2)
         super(threadWrite, self).stop()
 
+    # ================================== EXAMPLE =========================================
     def example(self):
+        """This function simulte the movement of the car."""
         if self.exampleFlag:
             self.pipeSendRunningSignal.send({"Type": "Run", "value": True})
             self.pipeSendSpeed.send({"Type": "Speed", "value": self.s})

@@ -37,21 +37,15 @@ from multiprocessing import Pipe
 
 
 class processCamera(WorkerProcess):
-    """_summary_
-
+    """This process handle camera.\n
     Args:
-        WorkerProcess (_type_): _description_
+            queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
+            logging (logging object): Made for debugging.
+            debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
     # ====================================== INIT ==========================================
     def __init__(self, queueList, logging, debugging=False):
-        """_summary_
-
-        Args:
-            queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-            logging (_type_): _description_
-            debugging (bool, optional): _description_. Defaults to False.
-        """
         self.queuesList = queueList
         self.logging = logging
         pipeRecv, pipeSend = Pipe(duplex=False)
@@ -62,6 +56,7 @@ class processCamera(WorkerProcess):
 
     # ===================================== STOP ==========================================
     def stop(self):
+        """Function for stopping threads and the process."""
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -96,7 +91,6 @@ if __name__ == "__main__":
 
     debugg = True
 
-    # We have a list of multiprocessing.Queue() which individualy represent a priority for processes.
     queueList = {
         "Critical": Queue(),
         "Warning": Queue(),

@@ -164,4 +164,4 @@ class SignalRunning(Enum):
     Queue = "General"
     Owner = "processSerialHandler"
     msgID = 2
-    msgType = "Boolean2"
+    msgType = "Boolean"

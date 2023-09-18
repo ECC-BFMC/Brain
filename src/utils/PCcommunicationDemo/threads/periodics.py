@@ -30,6 +30,14 @@ import json
 
 
 class PeriodicTask(task.LoopingCall):
+    """This period task will check if it is something to be send to Demo.
+
+    Args:
+        factory (protocol.Factory): This will handle what will happend tot he message to be send.
+        interval (int): Time to redo the task.
+        pipe (multiprocessing.pipes.Pipe): Pipe to receive information.
+    """
+
     # ===================================== INIT ===========================================
     def __init__(self, factory, interval, pipe):
         super().__init__(self.periodicCheck)
@@ -48,12 +56,19 @@ class PeriodicTask(task.LoopingCall):
 
     # ================================= PERIOD CHECK =======================================
     def periodicCheck(self):
+        """This function will check every interval of time if there is something to be send. If it is we will create the message and we will send it."""
         if self.pipe.poll():
             msg = self.pipe.recv()
             messageValue = msg["value"]
             messageType = msg["Type"]
+            messageOwner = msg["Owner"]
+            messageId = msg["id"]
             if not messageType == "base64":
                 messageValue2 = json.dumps(messageValue)
-                self.factory.send_data_to_client(messageValue2, messageType)
+                self.factory.send_data_to_client(
+                    messageValue2, messageType, messageOwner, messageId
+                )
             else:
-                self.factory.send_data_to_client(messageValue, messageType)
+                self.factory.send_data_to_client(
+                    messageValue, messageType, messageOwner, messageId
+                )
