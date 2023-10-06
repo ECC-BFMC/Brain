@@ -78,7 +78,7 @@ class threadCamera(ThreadWithStop):
                 "Subscribe/Unsubscribe": 1,
                 "Owner": Record.Owner.value,
                 "msgID": Record.msgID.value,
-                "To": {"receiver": "processCamera", "pipe": self.pipeSendRecord},
+                "To": {"receiver": "threadCamera", "pipe": self.pipeSendRecord},
             }
         )
         self.queuesList["Config"].put(
@@ -86,7 +86,7 @@ class threadCamera(ThreadWithStop):
                 "Subscribe/Unsubscribe": 1,
                 "Owner": Config.Owner.value,
                 "msgID": Config.msgID.value,
-                "To": {"receiver": "processCamera", "pipe": self.pipeSendConfig},
+                "To": {"receiver": "threadCamera", "pipe": self.pipeSendConfig},
             }
         )
 

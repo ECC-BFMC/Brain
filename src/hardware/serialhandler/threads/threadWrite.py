@@ -29,7 +29,14 @@ import threading
 from multiprocessing import Pipe
 from src.hardware.serialhandler.threads.messageconverter import MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import SignalRunning
+from src.utils.messages.allMessages import (
+    SignalRunning,
+    EngineRun,
+    Control,
+    SteerMotor,
+    SpeedMotor,
+    Brake,
+)
 
 
 class threadWrite(ThreadWithStop):
@@ -79,10 +86,10 @@ class threadWrite(ThreadWithStop):
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 1,
+                "Owner": EngineRun.Owner.value,
+                "msgID": EngineRun.msgID.value,
                 "To": {
-                    "receiver": "processSerialHandler",
+                    "receiver": "threadWrite",
                     "pipe": self.pipeSendRunningSignal,
                 },
             }
@@ -90,10 +97,10 @@ class threadWrite(ThreadWithStop):
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 4,
+                "Owner": Control.Owner.value,
+                "msgID": Control.msgID.value,
                 "To": {
-                    "receiver": "processSerialHandler",
+                    "receiver": "threadWrite",
                     "pipe": self.pipeSendControl,
                 },
             }
@@ -101,25 +108,25 @@ class threadWrite(ThreadWithStop):
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 3,
-                "To": {"receiver": "processSerialHandler", "pipe": self.pipeSendSteer},
+                "Owner": SteerMotor.Owner.value,
+                "msgID": SteerMotor.msgID.value,
+                "To": {"receiver": "threadWrite", "pipe": self.pipeSendSteer},
             }
         )
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 2,
-                "To": {"receiver": "processSerialHandler", "pipe": self.pipeSendSpeed},
+                "Owner": SpeedMotor.Owner.value,
+                "msgID": SpeedMotor.msgID.value,
+                "To": {"receiver": "threadWrite", "pipe": self.pipeSendSpeed},
             }
         )
         self.queuesList["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "PC",
-                "msgID": 5,
-                "To": {"receiver": "processSerialHandler", "pipe": self.pipeSendBreak},
+                "Owner": Brake.Owner.value,
+                "msgID": Brake.msgID.value,
+                "To": {"receiver": "threadWrite", "pipe": self.pipeSendBreak},
             }
         )
 

@@ -28,6 +28,15 @@
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.PCcommunicationDemo.threads.connection import FactoryDealer
 from src.utils.PCcommunicationDemo.threads.periodics import PeriodicTask
+from src.utils.messages.allMessages import (
+    serialCamera,
+    Cars,
+    Semaphores,
+    EnableButton,
+    SignalRunning,
+    Recording,
+    Location,
+)
 from twisted.internet import reactor
 
 
@@ -64,57 +73,57 @@ class threadRemoteHandler(ThreadWithStop):
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "processCamera",
-                "msgID": 2,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": serialCamera.Owner.value,
+                "msgID": serialCamera.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "processCarsAndSemaphores",
-                "msgID": 1,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": Cars.Owner.value,
+                "msgID": Cars.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "processCarsAndSemaphores",
-                "msgID": 2,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": Semaphores.Owner.value,
+                "msgID": Semaphores.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "processSerialHandler",
-                "msgID": 1,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": EnableButton.Owner.value,
+                "msgID": EnableButton.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "processSerialHandler",
-                "msgID": 2,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": SignalRunning.Owner.value,
+                "msgID": SignalRunning.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "processCamera",
-                "msgID": 3,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": Recording.Owner.value,
+                "msgID": Recording.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
         self.queues["Config"].put(
             {
                 "Subscribe/Unsubscribe": 1,
-                "Owner": "tcpLocsys",
-                "msgID": 1,
-                "To": {"receiver": "processPCCommunication", "pipe": pipeSend},
+                "Owner": Location.Owner.value,
+                "msgID": Location.msgID.value,
+                "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
             }
         )
 

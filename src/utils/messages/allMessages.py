@@ -31,28 +31,28 @@ from enum import Enum
 ####################################### processCamera #######################################
 class mainCamera(Enum):
     Queue = "General"
-    Owner = "processCamera"
+    Owner = "threadCamera"
     msgID = 1
     msgType = "base64"
 
 
 class serialCamera(Enum):
     Queue = "General"
-    Owner = "processCamera"
+    Owner = "threadCamera"
     msgID = 2
     msgType = "base64"
 
 
 class Recording(Enum):
     Queue = "General"
-    Owner = "processCamera"
+    Owner = "threadCamera"
     msgID = 3
-    msgType = "Boolean3"
+    msgType = "Boolean"
 
 
 class Signal(Enum):
     Queue = "General"
-    Owner = "processCamera"
+    Owner = "threadCamera"
     msgID = 4
     msgType = "String"
 
@@ -60,66 +60,85 @@ class Signal(Enum):
 ################################# processCarsAndSemaphores ##################################
 class Cars(Enum):
     Queue = "General"
-    Owner = "processCarsAndSemaphores"
+    Owner = "threadCarsAndSemaphores"
     msgID = 1
-    msgType = "Position"
+    msgType = "String"
 
 
 class Semaphores(Enum):
     Queue = "General"
-    Owner = "processCarsAndSemaphores"
+    Owner = "threadCarsAndSemaphores"
     msgID = 2
-    msgType = "State&Position"
+    msgType = "String"
 
 
 ################################# From PC ##################################
 class EngineRun(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 1
-    msgType = "EngineFlag"
+    msgType = "dictionary"
+
+
+# {"action": "startEngine", "value": self.started}
 
 
 class SpeedMotor(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 2
-    msgType = "Speed"
+    msgType = "dictionary"
+
+
+# "action": "speed", "value": val}
 
 
 class SteerMotor(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 3
-    msgType = "SteerAngle"
+    msgType = "dictionary"
+
+
+# {"action": "steer", "value": val}
 
 
 class Control(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 4
-    msgType = "Tasks"
+    msgType = "dictionary"
 
 
 class Brake(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 5
-    msgType = "Speed"
+    msgType = "dictionary"
+
+
+# {"action": "steer", "value": 0.0}
+# {"action": "speed", "value": 0.0}
 
 
 class Record(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 6
-    msgType = "Record"
+    msgType = "dictionary"
+
+
+# {"action": "startRecord", "value": self.startedRecord}
 
 
 class Config(Enum):
     Queue = "General"
-    Owner = "PC"
+    Owner = "threadRemoteHandler"
     msgID = 7
-    msgType = "Dict"
+    msgType = "dictionary"
+
+
+# {"action": key, "value": value}
 
 
 ################################# From Nucleo ##################################
@@ -127,41 +146,44 @@ class BatteryLvl(Enum):
     Queue = "General"
     Owner = "threadReadSerial"
     msgID = 1
-    msgType = "BatteryLVL"
+    msgType = "float"
 
 
 class ImuData(Enum):
     Queue = "General"
     Owner = "threadReadSerial"
     msgID = 2
-    msgType = "IMUData"
+    msgType = "String"
 
 
 class InstantConsumption(Enum):
     Queue = "General"
     Owner = "threadReadSerial"
     msgID = 3
-    msgType = "Consumption"
+    msgType = "float"
 
 
 ################################# From Locsys ##################################
 class Location(Enum):
     Queue = "General"
-    Owner = "tcpLocsys"
+    Owner = "threadTrafficCommunication"
     msgID = 1
-    msgType = "dict"
+    msgType = "dictionary"
+
+
+# {"x": value, "y": value}
 
 
 ######################    From processSerialHandler  ###########################
 class EnableButton(Enum):
     Queue = "General"
-    Owner = "processSerialHandler"
+    Owner = "threadWrite"
     msgID = 1
     msgType = "Boolean"
 
 
 class SignalRunning(Enum):
     Queue = "General"
-    Owner = "processSerialHandler"
+    Owner = "threadWrite"
     msgID = 2
     msgType = "Boolean"
