@@ -28,6 +28,9 @@
 from twisted.internet import protocol
 from src.utils.messages.allMessages import Location
 import time
+import json
+
+
 
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
@@ -38,10 +41,11 @@ class tcpLocsys(protocol.ClientFactory):
         sendQueue (multiprocessing.Queue): We place the information on this queue.
     """
 
-    def __init__(self, sendQueue):
+    def __init__(self, id, sendQueue):
         self.connection = None
         self.retry_delay = 1
         self.sendQueue = sendQueue
+        self.deviceID = id
 
     def clientConnectionLost(self, connector, reason):
         print(
@@ -72,6 +76,7 @@ class tcpLocsys(protocol.ClientFactory):
         super().stopListening()
 
     def receive_data_from_server(self, message):
+        message["id"] = self.deviceID
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,
@@ -79,7 +84,6 @@ class tcpLocsys(protocol.ClientFactory):
             "msgValue": message,
         }
         self.sendQueue.put(message_to_send)
-        print("Received data from ", message)
 
 
 # One class is generated for each new connection
@@ -91,4 +95,6 @@ class SingleConnection(protocol.Protocol):
         print("Connection with locsys established : ", self.factory.connectiondata)
 
     def dataReceived(self, data):
+        dat = data.decode()
+        da = json.loads(dat)
         self.factory.receive_data_from_server(data.decode())
