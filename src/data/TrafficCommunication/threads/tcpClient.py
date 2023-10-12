@@ -46,7 +46,7 @@ class tcpClient(protocol.ClientFactory):
             self.connectiondata,
             " Retrying in ",
             self.retry_delay,
-            " seconds... (Check password match, IP or server availability)",
+            " seconds... (Check Keypair, IP or server availability)",
         )
         try:
             self.connectiondata = None
@@ -79,13 +79,16 @@ class tcpClient(protocol.ClientFactory):
         self.connection.send_data(message)
 
     def receive_data_from_server(self, message):
-        msg = json.loads(message)
-        if msg["reqORinfo"] == "request":
-            if msg["type"] == "locsysDevice":
-                if "error" in msg:
-                    print(msg["error"], "on traffic communication")
-                else:
-                    self.locsysConnectCllbck(msg["response"])
+        msgPrepToList = message.replace("}{", "}}{{")
+        msglist = msgPrepToList.split("}{")
+        for msg in msglist:
+            msg = json.loads(msg)
+            if msg["reqORinfo"] == "request":
+                if msg["type"] == "locsysDevice":
+                    if "error" in msg:
+                        print(msg["error"], "on traffic communication")
+                    else:
+                        self.locsysConnectCllbck(msg["DeviceID"], msg["response"])
 
 
 # One class is generated for each new connection
@@ -110,6 +113,5 @@ class SingleConnection(protocol.Protocol):
         )
 
     def send_data(self, message):
-        print(message)
         msg = json.dumps(message)
         self.transport.write(msg.encode())

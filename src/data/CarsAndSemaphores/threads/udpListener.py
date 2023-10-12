@@ -51,7 +51,11 @@ class udpListener(protocol.DatagramProtocol):
         dat = json.loads(dat)
 
         if dat["device"] == "semaphore":
+<<<<<<< HEAD
             tmp = {"state": dat["state"], "x": dat["x"], "y": dat["y"]}
+=======
+            tmp = {"id":dat["id"], "state": dat["state"], "x": dat["x"], "y": dat["y"]}
+>>>>>>> 2aa2f04d62ee532a5c1b275250384a0c98391817
             self.queue.put(
                 {
                     "Owner": Semaphores.Owner.value,
@@ -61,7 +65,11 @@ class udpListener(protocol.DatagramProtocol):
                 }
             )
         elif dat["device"] == "car":
+<<<<<<< HEAD
             tmp = {"x": dat["x"], "y": dat["y"]}
+=======
+            tmp = {"id":dat["id"], "x": dat["x"], "y": dat["y"]}
+>>>>>>> 2aa2f04d62ee532a5c1b275250384a0c98391817
             self.queue.put(
                 {
                     "Owner": Cars.Owner.value,

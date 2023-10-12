@@ -45,12 +45,12 @@ class processTrafficCommunication(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging):
+    def __init__(self, queueList, logging, deviceID):
         self.queuesList = queueList
         self.logging = logging
         self.shared_memory = sharedMem()
         self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
-        self.deviceID = 3
+        self.deviceID = deviceID
         super(processTrafficCommunication, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
