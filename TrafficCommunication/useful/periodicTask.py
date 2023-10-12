@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from twisted.internet import task
 
+
 class periodicTask(task.LoopingCall):
     def __init__(self, interval, shrd_mem, tcp_factory):
         super().__init__(self.periodicCheck)
@@ -48,9 +49,8 @@ class periodicTask(task.LoopingCall):
         # {"reqORinfo": "info", "type":"deviceRot", "value1": theta}
         # {"reqORinfo": "info", "type":"deviceSpeed", "value1":km/h}
         # {"reqORinfo": "info", "type":"historyData", "value1":id, "value2":x, "value3":y}
-        
+
         if self.tcp_factory.isConnected():
             tosend = self.shrd_mem.get()
             for mem in tosend:
                 self.tcp_factory.send_data_to_server(mem)
-            

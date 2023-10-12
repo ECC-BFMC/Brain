@@ -25,24 +25,44 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from twisted.internet import  protocol
+from twisted.internet import protocol
 from src.utils.messages.allMessages import Location
 import time
+import json
+
+
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class tcpLocsys(protocol.ClientFactory):
-    def __init__(self, sendQueue):
+    """This handle the data received(position)
+
+    Args:
+        sendQueue (multiprocessing.Queue): We place the information on this queue.
+    """
+
+    def __init__(self, id, sendQueue):
         self.connection = None
         self.retry_delay = 1
-        print("aci")
         self.sendQueue = sendQueue
+        self.deviceID = id
 
     def clientConnectionLost(self, connector, reason):
-        print("Connection lost with server ", self.connectiondata, " Retrying in ", self.retry_delay, " seconds... (Check password match, IP or server availability)")
+        print(
+            "Connection lost with server ",
+            self.connectiondata,
+            " Retrying in ",
+            self.retry_delay,
+            " seconds... (Check password match, IP or server availability)",
+        )
         self.connectiondata = None
-    
+
     def clientConnectionFailed(self, connector, reason):
-        print("Connection failed. Retrying in", self.retry_delay, "seconds... Possible server down or incorrect IP:port match")
+        print(
+            "Connection failed. Retrying in",
+            self.retry_delay,
+            "seconds... Possible server down or incorrect IP:port match",
+        )
+        print(reason)
         time.sleep(self.retry_delay)
         connector.connect()
 
@@ -50,14 +70,19 @@ class tcpLocsys(protocol.ClientFactory):
         conn = SingleConnection()
         conn.factory = self
         return conn
-    
+
     def stopListening(self):
         super().stopListening()
-    
+
     def receive_data_from_server(self, message):
-        message_to_send= { "Owner"  :Location.Owner.value , "msgID": Location.msgID.value, "msgType" : Location.msgType.value,"msgValue":message }
+        message["id"] = self.deviceID
+        message_to_send = {
+            "Owner": Location.Owner.value,
+            "msgID": Location.msgID.value,
+            "msgType": Location.msgType.value,
+            "msgValue": message,
+        }
         self.sendQueue.put(message_to_send)
-        print("Received data from ", message)
 
 
 # One class is generated for each new connection
@@ -68,6 +93,7 @@ class SingleConnection(protocol.Protocol):
         self.factory.connection = self
         print("Connection with locsys established : ", self.factory.connectiondata)
 
-
     def dataReceived(self, data):
+        dat = data.decode()
+        da = json.loads(dat)
         self.factory.receive_data_from_server(data.decode())

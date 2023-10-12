@@ -25,27 +25,34 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-    
-from src.templates.threadwithstop   import ThreadWithStop
-from twisted.internet           import reactor
+
+from src.templates.threadwithstop import ThreadWithStop
+from twisted.internet import reactor
 from src.data.CarsAndSemaphores.threads.udpListener import udpListener
 
+
 class threadCarsAndSemaphores(ThreadWithStop):
-    #====================================== INIT ==========================================
+    """Thread which will handle processCarsAndSemaphores functionalities
+
+    Args:
+        queuesList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        listenPort (int, optional): Listening port. Defaults to 5007.
+    """
+
+    # ====================================== INIT ==========================================
     def __init__(self, queueList, listenPort=5007):
-        super(threadCarsAndSemaphores,self).__init__()
+        super(threadCarsAndSemaphores, self).__init__()
         self.listenPort = listenPort
-        self.queueList= queueList
+        self.queueList = queueList
         self.udp_factory = udpListener(self.queueList["General"])
         self.reactor = reactor
         self.reactor.listenUDP(self.listenPort, self.udp_factory)
 
-    #======================================= RUN ==========================================
+    # ======================================= RUN ==========================================
     def run(self):
         self.reactor.run(installSignalHandlers=False)
 
-    #====================================== STOP ==========================================
+    # ====================================== STOP ==========================================
     def stop(self):
         self.reactor.stop()
-        super(threadCarsAndSemaphores,self).stop()
-        
+        super(threadCarsAndSemaphores, self).stop()
