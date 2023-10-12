@@ -31,6 +31,7 @@ import time
 import json
 
 
+
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class tcpLocsys(protocol.ClientFactory):
     """This handle the data received(position)
