@@ -31,8 +31,6 @@ import time
 import json
 
 
-
-
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class tcpLocsys(protocol.ClientFactory):
     """This handle the data received(position)
@@ -56,6 +54,7 @@ class tcpLocsys(protocol.ClientFactory):
             " seconds... (Check password match, IP or server availability)",
         )
         self.connectiondata = None
+        connector.connect()
 
     def clientConnectionFailed(self, connector, reason):
         print(
@@ -76,7 +75,7 @@ class tcpLocsys(protocol.ClientFactory):
         super().stopListening()
 
     def receive_data_from_server(self, message):
-        message["id"] = self.deviceID
+        message["id"] = 3
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,
@@ -97,4 +96,4 @@ class SingleConnection(protocol.Protocol):
     def dataReceived(self, data):
         dat = data.decode()
         da = json.loads(dat)
-        self.factory.receive_data_from_server(data.decode())
+        self.factory.receive_data_from_server(da)
