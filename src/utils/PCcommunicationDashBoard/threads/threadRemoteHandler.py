@@ -70,7 +70,7 @@ class threadRemoteHandler(ThreadWithStop):
         """
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": EnableButton.Owner.value,
                 "msgID": EnableButton.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -78,7 +78,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": SignalRunning.Owner.value,
                 "msgID": SignalRunning.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -86,7 +86,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Location.Owner.value,
                 "msgID": Location.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -94,7 +94,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Signal.Owner.value,
                 "msgID": Signal.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -102,7 +102,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": mainCamera.Owner.value,
                 "msgID": mainCamera.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},

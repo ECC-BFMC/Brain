@@ -75,7 +75,7 @@ class threadCamera(ThreadWithStop):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Record.Owner.value,
                 "msgID": Record.msgID.value,
                 "To": {"receiver": "threadCamera", "pipe": self.pipeSendRecord},
@@ -83,7 +83,7 @@ class threadCamera(ThreadWithStop):
         )
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Config.Owner.value,
                 "msgID": Config.msgID.value,
                 "To": {"receiver": "threadCamera", "pipe": self.pipeSendConfig},

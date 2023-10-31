@@ -33,6 +33,7 @@ from src.utils.messages.allMessages import (
     SteerMotor,
     Brake,
     Record,
+    Control,
 )
 
 
@@ -127,6 +128,15 @@ class SingleConnection(protocol.Protocol):
                         "Owner": Record.Owner.value,
                         "msgID": Record.msgID.value,
                         "msgType": Record.msgType.value,
+                        "msgValue": dataJSON["value"],
+                    }
+                )
+            elif dataJSON["action"] == "STS":
+                self.factory.queues[Record.Queue.value].put(
+                    {
+                        "Owner": Control.Owner.value,
+                        "msgID": Control.msgID.value,
+                        "msgType": Control.msgType.value,
                         "msgValue": dataJSON["value"],
                     }
                 )

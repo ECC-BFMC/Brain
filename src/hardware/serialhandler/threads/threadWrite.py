@@ -85,7 +85,7 @@ class threadWrite(ThreadWithStop):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": EngineRun.Owner.value,
                 "msgID": EngineRun.msgID.value,
                 "To": {
@@ -96,7 +96,7 @@ class threadWrite(ThreadWithStop):
         )
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Control.Owner.value,
                 "msgID": Control.msgID.value,
                 "To": {
@@ -107,7 +107,7 @@ class threadWrite(ThreadWithStop):
         )
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": SteerMotor.Owner.value,
                 "msgID": SteerMotor.msgID.value,
                 "To": {"receiver": "threadWrite", "pipe": self.pipeSendSteer},
@@ -115,7 +115,7 @@ class threadWrite(ThreadWithStop):
         )
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": SpeedMotor.Owner.value,
                 "msgID": SpeedMotor.msgID.value,
                 "To": {"receiver": "threadWrite", "pipe": self.pipeSendSpeed},
@@ -123,7 +123,7 @@ class threadWrite(ThreadWithStop):
         )
         self.queuesList["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Brake.Owner.value,
                 "msgID": Brake.msgID.value,
                 "To": {"receiver": "threadWrite", "pipe": self.pipeSendBreak},
@@ -178,6 +178,17 @@ class threadWrite(ThreadWithStop):
                     elif self.pipeRecvSteer.poll():
                         message = self.pipeRecvSteer.recv()
                         command = {"action": "2", "steerAngle": float(message["value"])}
+                        command_msg = self.messageConverter.get_command(**command)
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
+                    elif self.pipeRecvControl.poll():
+                        message = self.pipeRecvControl.recv()
+                        command = {
+                            "action": "9",
+                            "time": float(message["value"]["Time"]),
+                            "speed": float(message["value"]["Speed"]),
+                            "steer": float(message["value"]["Steer"]),
+                        }
                         command_msg = self.messageConverter.get_command(**command)
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)

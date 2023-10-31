@@ -55,7 +55,7 @@ class threadRemoteHandler(ThreadWithStop):
         super(threadRemoteHandler, self).__init__()
         self.factory = FactoryDealer(queuesList)
         self.reactor = reactor
-        self.reactor.listenTCP(5000, self.factory)
+        self.reactor.listenTCP(5001, self.factory)
         self.queues = queuesList
         self.logging = logging
         self.pipeRecv = pipeRecv
@@ -72,7 +72,7 @@ class threadRemoteHandler(ThreadWithStop):
         """
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": serialCamera.Owner.value,
                 "msgID": serialCamera.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -80,7 +80,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Cars.Owner.value,
                 "msgID": Cars.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -88,7 +88,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Semaphores.Owner.value,
                 "msgID": Semaphores.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -96,7 +96,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": EnableButton.Owner.value,
                 "msgID": EnableButton.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -104,7 +104,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": SignalRunning.Owner.value,
                 "msgID": SignalRunning.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -112,7 +112,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Recording.Owner.value,
                 "msgID": Recording.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},
@@ -120,7 +120,7 @@ class threadRemoteHandler(ThreadWithStop):
         )
         self.queues["Config"].put(
             {
-                "Subscribe/Unsubscribe": 1,
+                "Subscribe/Unsubscribe": "subscribe",
                 "Owner": Location.Owner.value,
                 "msgID": Location.msgID.value,
                 "To": {"receiver": "threadRemoteHandler", "pipe": pipeSend},

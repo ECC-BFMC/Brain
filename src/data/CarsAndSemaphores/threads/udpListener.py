@@ -41,7 +41,7 @@ class udpListener(protocol.DatagramProtocol):
     def __init__(self, queue):
         self.queue = queue
 
-    def datagramReceived(self, datagram):
+    def datagramReceived(self, datagram, addr):
         """Specific function for receiving the information. It will select and create different dictionary for each type of data we receive(car or semaphore)
 
         Args:
@@ -51,11 +51,7 @@ class udpListener(protocol.DatagramProtocol):
         dat = json.loads(dat)
 
         if dat["device"] == "semaphore":
-<<<<<<< HEAD
-            tmp = {"state": dat["state"], "x": dat["x"], "y": dat["y"]}
-=======
-            tmp = {"id":dat["id"], "state": dat["state"], "x": dat["x"], "y": dat["y"]}
->>>>>>> 2aa2f04d62ee532a5c1b275250384a0c98391817
+            tmp = {"id": dat["id"], "state": dat["state"], "x": dat["x"], "y": dat["y"]}
             self.queue.put(
                 {
                     "Owner": Semaphores.Owner.value,
@@ -65,11 +61,7 @@ class udpListener(protocol.DatagramProtocol):
                 }
             )
         elif dat["device"] == "car":
-<<<<<<< HEAD
-            tmp = {"x": dat["x"], "y": dat["y"]}
-=======
-            tmp = {"id":dat["id"], "x": dat["x"], "y": dat["y"]}
->>>>>>> 2aa2f04d62ee532a5c1b275250384a0c98391817
+            tmp = {"id": dat["id"], "x": dat["x"], "y": dat["y"]}
             self.queue.put(
                 {
                     "Owner": Cars.Owner.value,

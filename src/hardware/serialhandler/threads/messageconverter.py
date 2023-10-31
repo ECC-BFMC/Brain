@@ -41,10 +41,14 @@ class MessageConverter:
         | 'SPED'    : [ ['f_vel'],                   [float],                        [False]                ] - Speed command -
         | 'STER'    : [ ['f_angle'],                 [float],                        [False]                ] - Steer command -
         | 'BRAK'    : [ ['f_angle' ],                [float],                        [False]                ] - Brake command -
-        | 'PIDA'    : [ ['activate' ],               [bool],                         [False]                ] - Activate PID control -
-        | 'ENPB'    : [ ['activate' ],               [bool],                         [False]                ] - Activate encoder publisher -
-        | 'PIDS'    : [ ['kp', 'ki', 'kd', 'tf' ],   [float, float, float, float],   [True]                 ] - Pass PID values -
-        | 'MOVE'    : [ ['distance', 'speed'],       [float, float],                 [True]                 ] - Set distance to travel and the speed -
+        | 'ENBL'    : [ ['activate' ],               [bool],                         [False]                ] - Activate batterylevel -
+        | 'ENIS'    : [ ['activate' ],               [bool],                         [False]                ] - Activate instant consumption -
+        | 'ENIMU'   : [ ['activate' ],               [bool],                         [False]                ] - Activate IMU -
+        | 'BEZIER   : [ ["point1x","point1y",        [float, float,                                         ]
+        |                "point2x","point2y",         float, float,                                         ]
+        |                "point3x","point3y",         float, float,                                         ]
+        |  MOVEMENT'     "point4x","point4y",]        float, float]                  [False]                ]
+        | 'STS '    : [ ["speed", "time", "steer"]   [float, float, float]           [False]                 ] - Set a speed a timer and a steering angle -
 
     """
 
@@ -52,10 +56,24 @@ class MessageConverter:
         "1": [["speed"], [float], [False]],
         "2": [["steerAngle"], [float], [False]],
         "3": [["steerAngle"], [float], [False]],
-        "4": [["activate"], [bool], [False]],
         "5": [["activate"], [bool], [False]],
-        "6": [["kp", "ki", "kd", "tf"], [float, float, float, float], [True]],
-        "7": [["distance", "speed"], [float, float], [True]],
+        "6": [["activate"], [bool], [False]],
+        "7": [["activate"], [bool], [False]],
+        "8": [
+            [
+                "point1x",
+                "point1y",
+                "point2x",
+                "point2y",
+                "point3x",
+                "point3y",
+                "point4x",
+                "point4y",
+            ],
+            [float, float, float, float, float, float, float, float],
+            [False],
+        ],
+        "9": [["speed", "time", "steer"], [float, float, float], [False]],
     }
     """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """
 

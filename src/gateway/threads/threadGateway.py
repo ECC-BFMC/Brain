@@ -134,7 +134,7 @@ class threadGateway(ThreadWithStop):
                 self.send(message)
             if not self.queuesList["Config"].empty():
                 message2 = self.queuesList["Config"].get()
-                if message2["Subscribe/Unsubscribe"] == 1:
+                if message2["Subscribe/Unsubscribe"] == "subscribe":
                     self.subscribe(message2)
                 else:
                     self.unsubscribe(message2)
