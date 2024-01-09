@@ -7,4 +7,4 @@ The project contains all the provided code for the RPi, more precisely:
 - Simulated servers for the API's.
 
 ## The documentation is available in more details here:
-[Documentation](https://boschfuturemobility.com/brain/)
+[Documentation](https://bosch-future-mobility-challenge-documentation.readthedocs-hosted.com/)
