@@ -91,34 +91,36 @@ class threadRead(ThreadWithStop):
 
     def sendqueue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
-        if buff[0] == 1:
+        if buff[1] == 1:
             print(buff[2:-2])
-        elif buff[0] == 2:
+        elif buff[1] == 2:
             print(buff[2:-2])
-        elif buff[0] == 3:
+        elif buff[1] == 3:
             print(buff[2:-2])
-        elif buff[0] == 4:
+        elif buff[1] == 4:
             print(buff[2:-2])
-        elif buff[0] == 5:
+        elif buff[1] == 9:
+            print(buff[2:-2])
+        elif buff[1] == 5:
             self.queuesList[BatteryLvl.Queue].put(
                 {
                     "Owner": BatteryLvl.Owner,
                     "msgID": BatteryLvl.msgID,
                     "msgType": BatteryLvl.msgType,
-                    "msgValue": int(buff[2:-3]),
+                    "msgValue": int(buff[3:-2]),
                 }
             )
-        elif buff[0] == 6:
+        elif buff[1] == 6:
             self.queuesList[InstantConsumption.Queue].put(
                 {
                     "Owner": InstantConsumption.Owner,
                     "msgID": InstantConsumption.msgID,
                     "msgType": InstantConsumption.msgType,
-                    "msgValue": int(buff[2:-3]),
+                    "msgValue": int(buff[3:-2]),
                 }
             )
-        elif buff[0] == 7:
-            buff = buff[2:-2]
+        elif buff[1] == 7:
+            buff = buff[3:-2]
             splitedBuffer = buff.split(";")
             data = {
                 "roll": splitedBuffer[0],
