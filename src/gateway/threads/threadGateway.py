@@ -83,7 +83,7 @@ class threadGateway(ThreadWithStop):
 
         # We delete the value from Dictionary
         del self.sendingList[Owner][Id][To]
-        self.messageApproved.remove(Id)
+        self.messageApproved.remove((Owner, Id))
         if self.debugging:
             self.printList()
 
