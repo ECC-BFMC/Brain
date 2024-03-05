@@ -43,8 +43,9 @@ class udpListener(protocol.DatagramProtocol):
         self.serverfoundCllback = serverfound
 
     def startProtocol(self):
-        print("Looking for Traffic Communicaiton Server")
+        print("Looking for Traffic Communication Server")
 
+    # De ce trimite serverul data si semnatura?
     def datagramReceived(self, datagram, address):
         """In this function we split the receive data and we call the callbackfunction"""
         try:

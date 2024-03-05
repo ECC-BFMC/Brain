@@ -39,11 +39,18 @@ class tcpLocsys(protocol.ClientFactory):
         sendQueue (multiprocessing.Queue): We place the information on this queue.
     """
 
-    def __init__(self, id, sendQueue):
+    # def __init__(self, id, sendQueue):
+    #     self.connection = None
+    #     self.retry_delay = 1
+    #     self.sendQueue = sendQueue
+    #     self.deviceID = id
+
+    def __init__(self, deviceID, sendQueue):
+        self.connectiondata = None
         self.connection = None
         self.retry_delay = 1
         self.sendQueue = sendQueue
-        self.deviceID = id
+        self.deviceID = deviceID
 
     def clientConnectionLost(self, connector, reason):
         print(
@@ -71,11 +78,14 @@ class tcpLocsys(protocol.ClientFactory):
         conn.factory = self
         return conn
 
+    #ClientFactory nu are metoda de stopListening??
     def stopListening(self):
         super().stopListening()
 
+    # Ii confusing, nu ii from server ii from Location device (I guess)
     def receive_data_from_server(self, message):
-        message["id"] = 3
+        # De ce 3?
+        message["id"] = self.deviceID
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,

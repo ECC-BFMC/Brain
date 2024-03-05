@@ -105,13 +105,15 @@ class SingleConnection(protocol.Protocol):
         self.send_data(msg)
         print("Connection with server established : ", self.factory.connectiondata)
 
+    #From the server
     def dataReceived(self, data):
         self.factory.receive_data_from_server(data.decode())
         print(
             "got message from trafficcommunication server: ",
             self.factory.connectiondata,
         )
-
+        
+    #To the server
     def send_data(self, message):
         msg = json.dumps(message)
         self.transport.write(msg.encode())
