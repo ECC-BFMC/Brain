@@ -53,12 +53,12 @@ class processCarsAndSemaphores(WorkerProcess):
         super(processCarsAndSemaphores, self).__init__()
 
     # ===================================== STOP ==========================================
-    # def stop(self):
-    #     """Function for stopping threads and the process."""
-    #     for thread in self.threads:
-    #         thread.stop()
-    #         thread.join()
-    #     super(processCarsAndSemaphores, self).stop()
+    def stop(self):
+        """Function for stopping threads and the process."""
+        for thread in self.threads:
+            thread.stop()
+            thread.join()
+        super(processCarsAndSemaphores, self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
