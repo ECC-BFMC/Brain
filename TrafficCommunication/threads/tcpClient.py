@@ -57,9 +57,10 @@ class tcpClient(protocol.ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         print(
-            "Connection failed. Retrying in",
+            "Here?? Connection with server failed. Retrying in",
             self.retry_delay,
             "seconds... Possible server down or incorrect IP:port match",
+            reason
         )
         time.sleep(self.retry_delay)
         connector.connect()
@@ -83,6 +84,7 @@ class tcpClient(protocol.ClientFactory):
         msglist = msgPrepToList.split("}{")
         for msg in msglist:
             msg = json.loads(msg)
+            print(msg)
             if msg["reqORinfo"] == "request":
                 if msg["type"] == "locsysDevice":
                     if "error" in msg:

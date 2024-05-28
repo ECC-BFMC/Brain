@@ -75,6 +75,7 @@ class tcpLocsys(protocol.ClientFactory):
 
     def buildProtocol(self, addr):
         conn = SingleConnection()
+        print('here3')
         conn.factory = self
         return conn
 
@@ -86,6 +87,9 @@ class tcpLocsys(protocol.ClientFactory):
     def receive_data_from_server(self, message):
         # De ce 3?
         message["id"] = self.deviceID
+        
+        print('here2')
+
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,
@@ -93,7 +97,6 @@ class tcpLocsys(protocol.ClientFactory):
             "msgValue": message,
         }
         self.sendQueue.put(message_to_send)
-
 
 # One class is generated for each new connection
 class SingleConnection(protocol.Protocol):
@@ -104,6 +107,12 @@ class SingleConnection(protocol.Protocol):
         print("Connection with locsys established : ", self.factory.connectiondata)
 
     def dataReceived(self, data):
-        dat = data.decode()
-        da = json.loads(dat)
-        self.factory.receive_data_from_server(da)
+        try:
+            dat = data.decode()
+            da = json.loads(dat)
+            self.factory.receive_data_from_server(da)
+        except Exception as e:
+            print(data)
+            print("ttcpLocsys -> dataReceived (line 111)")
+            print(e)
+

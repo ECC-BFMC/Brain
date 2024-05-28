@@ -40,13 +40,13 @@ class threadTrafficCommunication(ThreadWithStop):
     # =================================== CONNECTION =======================================
     def serverDisconnect(self):
         """If the server discconects we stop the factory listening and we start the reactor listening"""
-        self.reactor.listenUDP(self.listenPort, self.udp_factory)
+        # self.reactor.listenUDP(self.listenPort, self.udp_factory)
         self.tcp_factory.stopListening()
 
     def serverFound(self, address, port):
         """If the server was found we stop the factory listening and we connect the reactor and we start the periodic task"""
         self.reactor.connectTCP(address, port, self.tcp_factory)
-        self.udp_factory.stopListening()
+        # self.udp_factory.stopListening()
         self.period_task.start()
 
     def locsysConnect(self, deviceID, IPandPORT):
