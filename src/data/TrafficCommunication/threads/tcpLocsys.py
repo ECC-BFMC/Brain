@@ -75,7 +75,7 @@ class tcpLocsys(protocol.ClientFactory):
         super().stopListening()
 
     def receive_data_from_server(self, message):
-        message["id"] = 3
+        message["id"] = self.deviceID
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,
@@ -95,5 +95,9 @@ class SingleConnection(protocol.Protocol):
 
     def dataReceived(self, data):
         dat = data.decode()
+        tmp_data = dat.replace("}{","}}{{")
+        if tmp_data != dat:
+            tmp_dat = tmp_data.split("}{")
+            dat = tmp_dat[-1]
         da = json.loads(dat)
         self.factory.receive_data_from_server(da)
