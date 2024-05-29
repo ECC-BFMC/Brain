@@ -8,7 +8,7 @@ on:
 jobs:
   push:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Set up SSH
       run: |
@@ -22,6 +22,11 @@ jobs:
       with:
         fetch-depth: 0
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Set Git identity
+      run: |
+        git config --global user.email "rares.lemnariu@ro.bosch.com"
+        git config --global user.name "BFMC - Rares Lemnariu"
 
     - name: Fetch and merge remote changes
       run: |
