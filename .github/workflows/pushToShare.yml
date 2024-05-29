@@ -29,28 +29,26 @@ jobs:
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
     
-    - name: Fetch all branches and tags
-      run: git fetch --all --tags
+    - name: Stash uncommitted changes
+      run: |
+        git stash -u
   
-    - name: Split the subtree
-      id: split
-      run: git subtree split --prefix=src/data -b temp-branch
-      continue-on-error: true
-
-    - name: Check if split was successful
+    - name: Fetch and merge remote changes
       run: |
-        if git show-ref --verify --quiet refs/heads/temp-branch; then
-          echo "Subtree split successful."
-        else
-          echo "Subtree split failed. Exiting."
-          exit 1
-        fi
+        git fetch origin
+        git checkout master
+        git reset --hard origin/master
+        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --strategy-option ours
 
-    - name: Force-push local changes to subtree
-      if: success()
+    - name: Apply stashed changes
       run: |
-        git push -f git@github.com:ECC-BFMC/Shared.git temp-branch:data
+        git stash pop || true
 
-    - name: Cleanup local temp-branch
-      if: success()
-      run: git branch -D temp-branch
+    - name: Commit merge results
+      run: |
+        git add -A
+        git commit -m "Merge changes from subtree with conflict resolution"
+
+    - name: Push changes to subtree
+      run: |
+        git subtree push --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
