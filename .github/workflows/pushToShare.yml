@@ -39,9 +39,6 @@ jobs:
           exit 1
         fi
 
-    - name: Add subtree
-      run: |
-        git subtree add --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --squash
 
     - name: Force-push local changes to subtree
       run: |
