@@ -31,7 +31,7 @@ jobs:
 
     - name: Force-push local changes to subtree
       run: |
-        git fetch origin
+        git fetch -all
         git subtree split --prefix=src/data -b temp-branch
         git push -f git@github.com:ECC-BFMC/Shared.git temp-branch:data
   
