@@ -48,7 +48,9 @@ class processCarsAndSemaphores(WorkerProcess):
     def __init__(self, queueList, logging=False):
         self.queuesList = queueList
         self.logging = logging
-        super(processCarsAndSemaphores, self).__init__(self.queuesList)
+        # super(processCarsAndSemaphores, self).__init__(self.queuesList)
+        # super(processCarsAndSemaphores, self).__init__(queueList)
+        super(processCarsAndSemaphores, self).__init__()
 
     # ===================================== STOP ==========================================
     def stop(self):
