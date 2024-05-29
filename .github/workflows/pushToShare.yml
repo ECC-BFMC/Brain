@@ -28,25 +28,11 @@ jobs:
       run: |
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
-    
-    - name: Stash uncommitted changes
-      run: |
-        git stash -u
-  
-    - name: Fetch and merge remote changes
-      run: |
-        git reset --hard origin/master
-        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --strategy-option ours
-
-    - name: Apply stashed changes
-      run: |
-        git stash pop || true
-
-    - name: Commit merge results
-      run: |
-        git add -A
-        git commit -m "Merge changes from subtree with conflict resolution"
 
     - name: Push changes to subtree
       run: |
-        git subtree push --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
+        git subtree split --prefix=src/data -b temp-branch
+        git push -f git@github.com:ECC-BFMC/Shared.git temp-branch:data
+    
+    - name: Cleanup local temp-branch
+      run: git branch -D temp-branch
