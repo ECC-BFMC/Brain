@@ -60,4 +60,4 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           https://api.github.com/repos/ECC-BFMC/Shared/actions/workflows/triggerPullData.yml/dispatches \
-          -d '{"ref":"data", "inputs": {"project_name": "Brain"}}'
+          -d '{"ref":"master", "inputs": {"project_name": "Brain"}}'
