@@ -28,12 +28,29 @@ jobs:
       run: |
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
+    
+    - name: Fetch all branches and tags
+      run: git fetch --all --tags
+  
+    - name: Split the subtree
+      id: split
+      run: git subtree split --prefix=src/data -b temp-branch
+      continue-on-error: true
+
+    - name: Check if split was successful
+      run: |
+        if git show-ref --verify --quiet refs/heads/temp-branch; then
+          echo "Subtree split successful."
+        else
+          echo "Subtree split failed. Exiting."
+          exit 1
+        fi
 
     - name: Force-push local changes to subtree
+      if: success()
       run: |
-        git fetch --all
-        git subtree split --prefix=src/data -b temp-branch
         git push -f git@github.com:ECC-BFMC/Shared.git temp-branch:data
-  
+
     - name: Cleanup local temp-branch
+      if: success()
       run: git branch -D temp-branch
