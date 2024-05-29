@@ -98,6 +98,7 @@ if __name__ == "__main__":
         shared_memory, queueList, deviceID, filename
     )
     traffic_communication.start()
-    time.sleep(6)
-    print(queueList["General"].get())
+    x = range(6)
+    for n in x:
+        print(queueList["General"].get())
     traffic_communication.stop()
