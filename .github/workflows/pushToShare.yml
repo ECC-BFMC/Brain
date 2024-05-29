@@ -31,7 +31,7 @@ jobs:
 
     - name: Fetch and merge remote changes
       run: |
-        git fetch origin data
+        git fetch origin
         git checkout -b data origin/data
         git subtree pull --prefix=src/data origin data --squash
 
