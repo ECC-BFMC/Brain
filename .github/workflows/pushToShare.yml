@@ -32,8 +32,9 @@ jobs:
     - name: Fetch and merge remote changes
       run: |
         git fetch origin
-        git checkout -b data origin/data
-        git subtree pull --prefix=src/data origin data --squash
+        git checkout origin
+        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
+
 
     - name: Push changes to subtree
       run: |
