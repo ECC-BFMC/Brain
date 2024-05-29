@@ -29,11 +29,11 @@ jobs:
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
 
-    - name: Get remote changes
+    - name: Force-push local changes to subtree
       run: |
-        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --squash
-
-
-    - name: Push changes to subtree
-      run: |
-        git subtree push --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
+        git fetch origin
+        git subtree split --prefix=src/data -b temp-branch
+        git push -f git@github.com:ECC-BFMC/Shared.git temp-branch:data
+  
+    - name: Cleanup local temp-branch
+      run: git branch -D temp-branch
