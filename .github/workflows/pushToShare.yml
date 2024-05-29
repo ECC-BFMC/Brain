@@ -1,6 +1,6 @@
-name: Push changes to subtree
+name: Push changes to shared repository
 
-on: 
+on:
   push:
     branches:
       - master
@@ -9,7 +9,7 @@ on:
 jobs:
   push:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Set up SSH
       run: |
@@ -54,3 +54,10 @@ jobs:
         git checkout master
         git branch -D temp-branch
 
+    - name: Dispatch event to shared repository
+      run: |
+        curl -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/ECC-BFMC/Shared/actions/workflows/propagate-changes.yml/dispatches \
+          -d '{"ref":"data", "inputs": {"project_name": "Brain"}}'
