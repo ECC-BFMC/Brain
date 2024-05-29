@@ -29,11 +29,9 @@ jobs:
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
 
-    - name: Fetch and merge remote changes
+    - name: Get remote changes
       run: |
-        git fetch origin
-        git checkout origin
-        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
+        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --squash
 
 
     - name: Push changes to subtree
