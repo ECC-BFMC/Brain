@@ -2,10 +2,13 @@ name: Push changes to subtree
 
 on: 
   push:
+    branches:
+      - main
 
 jobs:
   push:
     runs-on: ubuntu-latest
+
     steps:
     - name: Set up SSH
       run: |
@@ -20,12 +23,12 @@ jobs:
         fetch-depth: 0
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Set Git identity
+    - name: Fetch and merge remote changes
       run: |
-        git config --global user.email "rares.lemnariu@ro.bosch.com"
-        git config --global user.name "BFMC - Rares Lemnariu"
+        git fetch origin
+        git checkout main
+        git pull origin main
 
     - name: Push changes to subtree
       run: |
         git subtree push --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
-
