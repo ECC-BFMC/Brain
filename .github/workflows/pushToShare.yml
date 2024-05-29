@@ -29,19 +29,28 @@ jobs:
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
 
-    - name: Fetch all branches and tags
-      run: git fetch --all --tags
-  
-    - name: Verify the presence of the subtree directory
+    - name: Fetch remote data branch
       run: |
-        if [ ! -d "src/data" ]; then
-          echo "Subtree directory 'src/data' does not exist. Exiting."
-          exit 1
-        fi
-
-
-    - name: Force-push local changes to subtree
-      run: |
-        git subtree split --prefix=src/data -b temp-branch
-        git subtree push --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
+        git remote add shared git@github.com:ECC-BFMC/Shared.git
+        git fetch shared data
   
+    - name: Merge remote data branch into local subtree
+      run: |
+        git checkout -b temp-branch
+        git subtree add --prefix=src/data shared data --squash || echo "subtree already exists"
+        git subtree pull --prefix=src/data shared data --squash || echo "no need to pull"
+
+    - name: Resolve conflicts by prioritizing local changes
+      run: |
+        git add src/data
+        git commit -m "Resolve conflicts by keeping local changes" --allow-empty
+
+    - name: Push merged changes to remote data branch
+      run: |
+        git subtree push --prefix=src/data shared data
+
+    - name: Cleanup
+      run: |
+        git checkout master
+        git branch -D temp-branch
+
