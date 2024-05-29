@@ -89,7 +89,8 @@ if __name__ == "__main__":
     process = processCarsAndSemaphores(queueList)
     process.start()
 
-    time.sleep(3)
-    print(queueList["General"].get())
+    x = range(6)
+    for n in x:
+        print(queueList["General"].get())
 
     process.stop()
