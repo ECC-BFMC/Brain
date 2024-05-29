@@ -2,6 +2,7 @@ name: Push changes to subtree
 
 on: 
   push:
+  workflow_dispatch:
 
 jobs:
   push:
@@ -29,8 +30,8 @@ jobs:
     - name: Fetch and merge remote changes
       run: |
         git fetch origin
-        git checkout main
-        git pull origin main
+        git checkout master
+        git pull origin master
 
     - name: Push changes to subtree
       run: |
