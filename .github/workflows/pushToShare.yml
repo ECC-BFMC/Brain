@@ -35,8 +35,6 @@ jobs:
   
     - name: Fetch and merge remote changes
       run: |
-        git fetch origin
-        git checkout master
         git reset --hard origin/master
         git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --strategy-option ours
 
