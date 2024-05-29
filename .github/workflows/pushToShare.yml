@@ -2,6 +2,8 @@ name: Push changes to subtree
 
 on: 
   push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
@@ -29,9 +31,9 @@ jobs:
 
     - name: Fetch and merge remote changes
       run: |
-        git fetch origin
-        git checkout master
-        git pull origin master
+        git fetch origin data
+        git checkout -b data origin/data
+        git subtree pull --prefix=src/data origin data --squash
 
     - name: Push changes to subtree
       run: |
