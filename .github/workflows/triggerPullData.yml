@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Check for project_name in push payload
         run: |
+<<<<<<< HEAD
           commit_message="${{ github.event.head_commit.message }}"
           if [[ "$commit_message" == *"project_name="* ]]; then
             project_name=$(echo "$commit_message" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
@@ -54,3 +55,11 @@ jobs:
             echo "Event type: update-subtree-$project_name"
             echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
           done
+=======
+          if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
+            project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
+            echo "Project Name from commit message: $project_name"
+          else
+            echo "No project_name found in commit message."
+          fi
+>>>>>>> 6264de7341649309b76f6e8888e29fc463ef7787
