@@ -1,0 +1,18 @@
+name: Propagate changes to data projects
+
+on: 
+  push:
+
+jobs:
+  identify-and-print:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check for project_name in push payload
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
+            project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
+            echo "Project Name from commit message: $project_name"
+          else
+            echo "No project_name found in commit message."
+          fi
