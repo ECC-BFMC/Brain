@@ -11,13 +11,9 @@ jobs:
       - name: Check for project_name in push payload
         run: |
           commit_message="${{ github.event.head_commit.message }}"
-<<<<<<< HEAD
           # Check if the commit message contains the keyword 'project_name='
           if [[ "$commit_message" == *"project_name="* ]]; then
             # Extract the project_name from the commit message
-=======
-          if [[ "$commit_message" == *"project_name="* ]]; then
->>>>>>> cb0302dab43bd6eea8896611bd1bb5842d8e41ba
             project_name=$(echo "$commit_message" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
             echo "Project Name from commit message: $project_name"
             echo "::set-output name=project_name::$project_name"
@@ -38,10 +34,7 @@ jobs:
           origin_repo="${{ github.repository }}"
           repositories=()
 
-<<<<<<< HEAD
           # Determine the repositories to update based on the origin repository and project_name
-=======
->>>>>>> cb0302dab43bd6eea8896611bd1bb5842d8e41ba
           if [[ "$origin_repo" == "ECC-BFMC/BrainProject" && "$project_name" == "Brain" ]]; then
             repositories=("ECC-BFMC/CompetitionPCing")
           elif [[ "$origin_repo" == "ECC-BFMC/CompetitionPCing" && "$project_name" == "CompetitionPCing" ]]; then
@@ -51,10 +44,7 @@ jobs:
             exit 1
           fi
 
-<<<<<<< HEAD
           # Uncomment the following block to perform the actual dispatch
-=======
->>>>>>> cb0302dab43bd6eea8896611bd1bb5842d8e41ba
           # for repo in "${repositories[@]}"; do
           #   echo "Dispatching event to repository: $repo"
           #   gh api repos/"$repo"/dispatches \
@@ -63,10 +53,7 @@ jobs:
           #     -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
           # done
 
-<<<<<<< HEAD
           # Print the dispatch information
-=======
->>>>>>> cb0302dab43bd6eea8896611bd1bb5842d8e41ba
           for repo in "${repositories[@]}"; do
             echo "Prepared to dispatch event to repository: $repo"
             echo "Event type: update-subtree-$project_name"
