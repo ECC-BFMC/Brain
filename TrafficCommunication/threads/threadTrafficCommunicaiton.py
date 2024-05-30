@@ -40,20 +40,85 @@ class threadTrafficCommunication(ThreadWithStop):
     # =================================== CONNECTION =======================================
     def serverDisconnect(self):
         """If the server discconects we stop the factory listening and we start the reactor listening"""
-        self.reactor.listenUDP(self.listenPort, self.udp_factory)
+        # self.reactor.listenUDP(self.listenPort, self.udp_factory)
         self.tcp_factory.stopListening()
 
     def serverFound(self, address, port):
         """If the server was found we stop the factory listening and we connect the reactor and we start the periodic task"""
         self.reactor.connectTCP(address, port, self.tcp_factory)
-        self.udp_factory.stopListening()
+        # self.udp_factory.stopListening()
         self.period_task.start()
 
     def locsysConnect(self, deviceID, IPandPORT):
         """In this method we get the port and ip and we connect the reactor"""
         ip, port = IPandPORT.split(":")
         print(ip, port, deviceID)
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e52a7757083565575dca9ee39896d3895fd38e29
+>>>>>>> fe38f2896e92ca1a7a143585e198e8ce5f2b8b18
+>>>>>>> 484bad0f91d4d3232a8d2db53e6a790eaa9c4390
+>>>>>>> 9f158333fbaa1f1a3abf903cd8b87f40c81ac184
+>>>>>>> 6519bd656912fa5fc5037b5c6894e84434d19d19
+>>>>>>> ee658f9826666bf894b22c061e0d7a2460a2119e
+>>>>>>> 2fccfd2e5502feeadfff5d9f47456b6423f12bcf
+>>>>>>> 1424611625d94ad1049aade0d1d2ead4ed862766
+>>>>>>> ad26c60c210984dd6d64cb937825189314c7296a
+>>>>>>> e869ca624bad2ca0f6ddf41b74f20542d35b8ebb
+>>>>>>> ae82d5b61dc59bb5805476e7243cc36a1f6a2bd6
+>>>>>>> 4f2490ba7a467a99c07d715069c7579800202f5d
+>>>>>>> 81f1ff8ad53a28cb2d13f1d134245130773312e1
+>>>>>>> 7c97e7c6e4aa2ef6adef4ae99308453f3930617d
+>>>>>>> 4d0774ae035d0837d6b5bd1bf0c9c2903d1a3edd
+>>>>>>> 25735b8e5bd805c72d101a04f181f061912c1083
+>>>>>>> 53537b8ed6afb3b206d0ab8698da4c2add1645cd
+>>>>>>> 6264de7341649309b76f6e8888e29fc463ef7787
+>>>>>>> 3b557e7e80799edca9ac652ab674d6e6f1ad87a0
+>>>>>>> cb0302dab43bd6eea8896611bd1bb5842d8e41ba
         self.tcp_factory_locsys = tcpLocsys(id, self.queue)
+=======
+        # self.tcp_factory_locsys = tcpLocsys(id, self.queue)
+        self.tcp_factory_locsys = tcpLocsys(deviceID, self.queue)
+>>>>>>> 7f0d8187eee98a81dd404308b4f7846168b19f09
         self.reactor.connectTCP(ip, int(port), self.tcp_factory_locsys)
 
     # ======================================= RUN ==========================================
