@@ -16,6 +16,7 @@ jobs:
             echo "project_name=$project_name" >> $GITHUB_ENV
           else
             echo "No project_name found in commit message."
+            echo "project_name=None" >> $GITHUB_ENV
           fi         
     
   dispatch:
@@ -26,32 +27,33 @@ jobs:
     steps:
       - name: Set up repository dispatch parameters and dispatch events
         run: |
-          project_name="${{ env.project_name }}"
           origin_repo="${{ github.repository }}"
-          repositories=()
+          project_name="${{ env.project_name }}"
+          
+          repositories=(Brain CompetitionPCing)
 
-          # Determine the repositories to update based on the origin repository and project_name
-          if [[ "$origin_repo" == "ECC-BFMC/BrainProject" && "$project_name" == "Brain" ]]; then
-            repositories=("ECC-BFMC/CompetitionPCing")
-          elif [[ "$origin_repo" == "ECC-BFMC/CompetitionPCing" && "$project_name" == "CompetitionPCing" ]]; then
-            repositories=("ECC-BFMC/BrainProject")
-          else
-            echo "Unknown origin repository or project_name: $origin_repo, $project_name"
-            exit 1
-          fi
+          # # Determine the repositories to update based on the origin repository and project_name
+          # if [[ "$origin_repo" == "ECC-BFMC/BrainProject" && "$project_name" == "Brain" ]]; then
+          #   repositories=("ECC-BFMC/CompetitionPCing")
+          # elif [[ "$origin_repo" == "ECC-BFMC/CompetitionPCing" && "$project_name" == "CompetitionPCing" ]]; then
+          #   repositories=("ECC-BFMC/BrainProject")
+          # else
+          #   echo "Unknown origin repository or project_name: $origin_repo, $project_name"
+          #   exit 1
+          # fi
 
-          # Uncomment the following block to perform the actual dispatch
+          # # Uncomment the following block to perform the actual dispatch
+          # # for repo in "${repositories[@]}"; do
+          # #   echo "Dispatching event to repository: $repo"
+          # #   gh api repos/"$repo"/dispatches \
+          # #     -f event_type=update-subtree-$project_name \
+          # #     -f client_payload='{}' \
+          # #     -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
+          # # done
+
+          # # Print the dispatch information
           # for repo in "${repositories[@]}"; do
-          #   echo "Dispatching event to repository: $repo"
-          #   gh api repos/"$repo"/dispatches \
-          #     -f event_type=update-subtree-$project_name \
-          #     -f client_payload='{}' \
-          #     -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
+          #   echo "Prepared to dispatch event to repository: $repo"
+          #   echo "Event type: update-subtree-$project_name"
+          #   echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
           # done
-
-          # Print the dispatch information
-          for repo in "${repositories[@]}"; do
-            echo "Prepared to dispatch event to repository: $repo"
-            echo "Event type: update-subtree-$project_name"
-            echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
-          done
