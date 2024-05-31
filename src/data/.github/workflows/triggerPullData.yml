@@ -6,6 +6,8 @@ on:
 jobs:
   identify-and-print:
     runs-on: ubuntu-latest
+    outputs:
+      project_name: ${{ steps.check_project_name.outputs.project_name }}
 
     steps:
       - name: Check for project_name in push payload
