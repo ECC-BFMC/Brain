@@ -14,23 +14,21 @@ jobs:
           if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
             project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
             echo "Project Name from commit message: $project_name"
-            echo "::set-output name=project_name::$project_name"
+            echo "project_name=$project_name" >> $GITHUB_OUTPUT
           else
             echo "No project_name found in commit message."
-            echo "::set-output name=project_name::None"
+            echo "project_name=None" >> $GITHUB_OUTPUT
           fi         
     
   dispatch:
     needs: identify-and-print
     runs-on: ubuntu-latest
     if: success()
-    outputs:
-      project_name: ${{ steps.check-project-name.outputs.project_name }}
 
     steps:
       - name: Set up repository dispatch parameters and dispatch events
         run: |
-          project_name="${{ env.project_name }}"
+          project_name="${{ needs.identify-and-print.outputs.project_name }}"
           
           repositories=(Brain CompetitionPCing)
 
