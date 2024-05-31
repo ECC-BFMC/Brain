@@ -54,6 +54,6 @@ jobs:
             echo "Event type: $dispatch_name"
 
             gh api repos/"$project_origin_name"/dispatches \
-              -f event_type=dispatch_name \
+              -f event_type=$dispatch_name \
               -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
           done
