@@ -42,6 +42,8 @@ jobs:
 
     - name: Resolve conflicts by prioritizing local changes
       run: |
+        git checkout master
+        git merge -Xours temp-branch
         git add src/data
         git commit -m "Traceback: project_name=Brain" --allow-empty
 
