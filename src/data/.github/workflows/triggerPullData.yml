@@ -1,8 +1,6 @@
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   identify-and-print:
