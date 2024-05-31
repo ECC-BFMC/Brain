@@ -9,18 +9,13 @@ jobs:
 
     steps:
       - name: Check for project_name in push payload
-        id: check_project_name
         run: |
-          commit_message="${{ github.event.head_commit.message }}"
-          # Check if the commit message contains the keyword 'project_name='
-          if [[ "$commit_message" == *"project_name="* ]]; then
-            # Extract the project_name from the commit message
-            project_name=$(echo "$commit_message" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
+          if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
+            project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
             echo "Project Name from commit message: $project_name"
-            echo "::set-output name=project_name::$project_name"
           else
             echo "No project_name found in commit message."
-            exit 1
+          fi
     
 
 
