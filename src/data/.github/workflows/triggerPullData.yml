@@ -27,20 +27,18 @@ jobs:
     steps:
       - name: Set up repository dispatch parameters and dispatch events
         run: |
-          origin_repo="${{ github.repository }}"
           project_name="${{ env.project_name }}"
           
           repositories=(Brain CompetitionPCing)
 
-          # # Determine the repositories to update based on the origin repository and project_name
-          # if [[ "$origin_repo" == "ECC-BFMC/BrainProject" && "$project_name" == "Brain" ]]; then
-          #   repositories=("ECC-BFMC/CompetitionPCing")
-          # elif [[ "$origin_repo" == "ECC-BFMC/CompetitionPCing" && "$project_name" == "CompetitionPCing" ]]; then
-          #   repositories=("ECC-BFMC/BrainProject")
-          # else
-          #   echo "Unknown origin repository or project_name: $origin_repo, $project_name"
-          #   exit 1
-          # fi
+          # Remove the project_name from the repositories array
+          for i in "${!repositories[@]}"; do
+            if [[ "${repositories[$i]}" == "$project_name" ]]; then
+              unset 'repositories[i]'
+            fi
+          done
+
+          echo "Repos to update: ${repositories[@]}"
 
           # # Uncomment the following block to perform the actual dispatch
           # # for repo in "${repositories[@]}"; do
