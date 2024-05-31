@@ -37,8 +37,7 @@ jobs:
     - name: Merge remote data branch into local subtree
       run: |
         git checkout -b temp-branch
-        git subtree add --prefix=src/data shared data --squash || echo "subtree already exists"
-        git subtree pull --prefix=src/data shared data --squash || echo "no need to pull"
+        git subtree pull --prefix=src/data shared data --squash
 
     - name: Resolve conflicts by prioritizing local changes
       run: |
