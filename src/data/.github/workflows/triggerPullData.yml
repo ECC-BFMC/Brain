@@ -8,8 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       project_origin: ${{ steps.check-project-name.outputs.project_origin }}
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
 
     steps:
       - name: Check for project_name in push payload
@@ -28,6 +27,8 @@ jobs:
     needs: identify-and-print
     runs-on: ubuntu-latest
     if: success()
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Use project_origin output
         run: |
