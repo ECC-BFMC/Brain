@@ -53,8 +53,9 @@ jobs:
             dispatch_name="Pull-Data-Changes-$repo"
             echo "Event type: $dispatch_name"
 
+            payload=$(jq -n '{}')
             gh api repos/"$project_origin_name"/dispatches \
               -f event_type=dispatch_name \
-              -f client_payload='{}' \
+              -f client_payload="$payload"\
               -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
           done
