@@ -30,14 +30,13 @@ jobs:
       - name: Use project_origin output
         run: |
           project_origin="${{ needs.identify-and-print.outputs.project_origin }}"
-          echo "Project Name for dispatch: $project_origin"
 
           
           repositories=(Brain CompetitionPCing)
 
-          # Remove the project_name_origin from the repositories array
+          # Remove the project_origin from the repositories array
           for i in "${!repositories[@]}"; do
-            if [[ "${repositories[$i]}" == "$project_name_origin" ]]; then
+            if [[ "${repositories[$i]}" == "$project_origin" ]]; then
               unset 'repositories[i]'
             fi
           done
@@ -48,7 +47,7 @@ jobs:
           # # for repo in "${repositories[@]}"; do
           # #   echo "Dispatching event to repository: $repo"
           # #   gh api repos/"$repo"/dispatches \
-          # #     -f event_type=update-subtree-$project_name_origin \
+          # #     -f event_type=update-subtree-$project_origin \
           # #     -f client_payload='{}' \
           # #     -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
           # # done
@@ -56,6 +55,6 @@ jobs:
           # # Print the dispatch information
           # for repo in "${repositories[@]}"; do
           #   echo "Prepared to dispatch event to repository: $repo"
-          #   echo "Event type: update-subtree-$project_name_origin"
+          #   echo "Event type: update-subtree-$project_origin"
           #   echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
           # done
