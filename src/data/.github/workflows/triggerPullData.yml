@@ -6,9 +6,10 @@ on:
 jobs:
   identify-and-print:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Check for project_name in push payload
+        id: check_project_name
         run: |
           commit_message="${{ github.event.head_commit.message }}"
           # Check if the commit message contains the keyword 'project_name='
@@ -20,7 +21,8 @@ jobs:
           else
             echo "No project_name found in commit message."
             exit 1
-        id: check_project_name
+    
+
 
   dispatch:
     needs: identify-and-print
