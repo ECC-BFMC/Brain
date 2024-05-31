@@ -29,13 +29,10 @@ jobs:
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
   
-    - name: Merge remote data branch into local subtree
+    - name: Fetch changes from remote
       run: |
-        git subtree pull --prefix=src/data shared data --squash
-
-    - name: Resolve conflicts by prioritizing local changes
-      run: |
-        git checkout --ours src/data
+        git fetch shared data
+        git merge -s ours FETCH_HEAD
     
     - name: Add source to the commit.
       run: |
