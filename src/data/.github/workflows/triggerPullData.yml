@@ -7,7 +7,7 @@ jobs:
   identify-and-print:
     runs-on: ubuntu-latest
     outputs:
-      project_origin: ${{ steps.check_project_name.outputs.project_origin }}
+      project_origin: ${{ steps.check-project-name.outputs.project_origin }}
 
     steps:
       - name: Check for project_name in push payload
