@@ -43,19 +43,15 @@ jobs:
 
           echo "Repos to update: ${repositories[@]}"
 
-          # # Uncomment the following block to perform the actual dispatch
-          # # for repo in "${repositories[@]}"; do
-          # #   echo "Dispatching event to repository: $repo"
-          # #   gh api repos/"$repo"/dispatches \
-          # #     -f event_type=update-subtree-$project_origin \
-          # #     -f client_payload='{}' \
-          # #     -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
-          # # done
-
-          # Print the dispatch information
+          # Uncomment the following block to perform the actual dispatch
           for repo in "${repositories[@]}"; do
             project_origin_name="ECC-BFMC/$repo"
             echo "Prepared to dispatch event to repository: $project_origin_name"
-            echo "Event type: update-subtree-$project_origin"
-            echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
+            dispatch_name="Pull-Data-Changes-$repo"
+            echo "Event type: $dispatch_name"
+
+            gh api repos/"$project_origin_name"/dispatches \
+              -f event_type=dispatch_name \
+              -f client_payload='{}' \
+              -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
           done
