@@ -47,6 +47,7 @@ jobs:
           echo "Repos to update: ${repositories[@]}"
 
           # Uncomment the following block to perform the actual dispatch
+          #test
           for repo in "${repositories[@]}"; do
             project_origin_name="ECC-BFMC/$repo"
             echo "Prepared to dispatch event to repository: $project_origin_name"
