@@ -9,20 +9,23 @@ jobs:
 
     steps:
       - name: Check for project_name in push payload
+        id: check-project-name
         run: |
           if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
             project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
             echo "Project Name from commit message: $project_name"
-            echo "project_name=$project_name" >> $GITHUB_ENV
+            echo "::set-output name=project_name::$project_name"
           else
             echo "No project_name found in commit message."
-            echo "project_name=None" >> $GITHUB_ENV
+            echo "::set-output name=project_name::None"
           fi         
     
   dispatch:
     needs: identify-and-print
     runs-on: ubuntu-latest
     if: success()
+    outputs:
+      project_name: ${{ steps.check-project-name.outputs.project_name }}
 
     steps:
       - name: Set up repository dispatch parameters and dispatch events
