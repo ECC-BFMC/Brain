@@ -37,6 +37,10 @@ jobs:
         if [[ "$commit_message" == *"Traceback: FromPull"* ]]; then
           echo "Commit message contains 'Traceback: FromPull'. Exiting."
           exit 0
+        else
+          # Add the commands you want to execute if the commit message does not contain "Traceback: FromPull"
+          echo "Commit message does not contain 'Traceback: FromPull'. Proceeding with the rest of the script."
+          # Your commands go here
         fi
   
     - name: Fetch changes from remote
@@ -53,10 +57,3 @@ jobs:
     - name: Push merged changes to remote data branch
       run: |
         git subtree push --prefix=src/data shared data
-
-        #test
-
-
-
-
-        
