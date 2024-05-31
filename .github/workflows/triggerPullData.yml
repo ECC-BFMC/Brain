@@ -52,9 +52,10 @@ jobs:
           # #     -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
           # # done
 
-          # # Print the dispatch information
-          # for repo in "${repositories[@]}"; do
-          #   echo "Prepared to dispatch event to repository: $repo"
-          #   echo "Event type: update-subtree-$project_origin"
-          #   echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
-          # done
+          # Print the dispatch information
+          for repo in "${repositories[@]}"; do
+            project_origin_name="ECC-BFMC/$repo"
+            echo "Prepared to dispatch event to repository: $project_origin_name"
+            echo "Event type: update-subtree-$project_origin"
+            echo "Would use token: ${{ secrets.REPO_ACCESS_TOKEN }}"
+          done
