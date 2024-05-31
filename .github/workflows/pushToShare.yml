@@ -38,7 +38,7 @@ jobs:
     - name: Add source to the commit.
       run: |
         git add src/data
-        git commit -m "Traceback: project_name=Brain" --allow-empty
+        git commit --amend -m "Traceback: project_name=Brain"
 
     - name: Push merged changes to remote data branch
       run: |
