@@ -1,64 +1,60 @@
-name: Push changes to subtree
+name: Propagate changes to data projects
 
 on: 
   push:
-    branches:
-      - master
-  workflow_dispatch:
 
 jobs:
-  push:
+  identify-and-print:
+    runs-on: ubuntu-latest
+    outputs:
+      project_origin: ${{ steps.check-project-name.outputs.project_origin }}
+    
+
+    steps:
+      - name: Check for project_name in push payload
+        id: check-project-name
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
+            project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
+            echo "Project Name from commit message: $project_name"
+            echo "project_origin=$project_name" >> $GITHUB_OUTPUT
+          else
+            echo "No project_name found in commit message."
+            echo "project_origin=None" >> $GITHUB_OUTPUT
+          fi     
+
+  dispatch:
+    needs: identify-and-print
     runs-on: ubuntu-latest
     
+    if: success()
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-    - name: Set up SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Use project_origin output
+        run: |
+          project_origin="${{ needs.identify-and-print.outputs.project_origin }}"
 
-    - name: Check out code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+          repositories=(Brain CompetitionPCing)
 
-    - name: Set Git identity
-      run: |
-        git config --global user.email "rares.lemnariu@ro.bosch.com"
-        git config --global user.name "BFMC - Rares Lemnariu"
+          # Remove the project_origin from the repositories array
+          for i in "${!repositories[@]}"; do
+            if [[ "${repositories[$i]}" == "$project_origin" ]]; then
+              unset 'repositories[i]'
+            fi
+          done
 
-    - name: Get Status
-      run: |
-          git status
-          echo COX++       
-        
-    - name: Check commit message
-      id: commit_message
-      run: |
-        commit_message=$(git log -1 --pretty=%B)
-        echo "Commit message: $commit_message"
-        if [[ "$commit_message" == *"Traceback: FromPull"* ]]; then
-          echo "Commit message contains 'Traceback: FromPull'. Exiting."
-          exit 0
-        else
-          # Add the commands you want to execute if the commit message does not contain "Traceback: FromPull"
-          echo "Commit message does not contain 'Traceback: FromPull'. Proceeding with the rest of the script."
-          # Your commands go here
-        fi
-  
-    - name: Fetch changes from remote
-      run: |
-        git remote add shared git@github.com:ECC-BFMC/Shared.git
-        git fetch shared data
-        git merge -s ours FETCH_HEAD
-    
-    - name: Add source to the commit.
-      run: |
-        git add src/data
-        git commit --amend -m "Traceback: project_name=Brain"
+          echo "Repos to update: ${repositories[@]}"
 
-    - name: Push merged changes to remote data branch
-      run: |
-        git subtree push --prefix=src/data shared data
+          # Uncomment the following block to perform the actual dispatch
+          for repo in "${repositories[@]}"; do
+            project_origin_name="ECC-BFMC/$repo"
+            echo "Prepared to dispatch event to repository: $project_origin_name"
+            dispatch_name="Pull-Data-Changes-$repo"
+            echo "Event type: $dispatch_name"
+
+            gh api repos/"$project_origin_name"/dispatches \
+              -f event_type=$dispatch_name \
+              -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
+          done
