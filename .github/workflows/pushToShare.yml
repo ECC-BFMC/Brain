@@ -28,6 +28,16 @@ jobs:
       run: |
         git config --global user.email "rares.lemnariu@ro.bosch.com"
         git config --global user.name "BFMC - Rares Lemnariu"
+        
+    - name: Check commit message
+      id: commit_message
+      run: |
+        commit_message=$(git log -1 --pretty=%B)
+        echo "Commit message: $commit_message"
+        if [[ "$commit_message" == *"Traceback: FromPull"* ]]; then
+          echo "Commit message contains 'Traceback: FromPull'. Exiting."
+          exit 0
+        fi
   
     - name: Fetch changes from remote
       run: |
