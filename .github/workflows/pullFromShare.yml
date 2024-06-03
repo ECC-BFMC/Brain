@@ -1,12 +1,14 @@
-name: Update subtree
+name: Pull Data From Shared
 
 on: 
   repository_dispatch:
-    types: [update-subtree-Data]
+    types: [Pull-Data-Changes-CompetitionPCing]
+  workflow_dispatch:
 
 jobs:
   pull:
     runs-on: ubuntu-latest
+
     steps:
     - name: Set up SSH
       run: |
@@ -16,7 +18,7 @@ jobs:
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -24,10 +26,12 @@ jobs:
     - name: Set Git identity
       run: |
         git config --global user.email "rares.lemnariu@ro.bosch.com"
-        git config --global user.name "BFMC Rares Lemnariu"
-
-    - name: Pull changes from subtree
+        git config --global user.name "BFMC - Rares Lemnariu"
+    
+    - name: Add source to the commit.
       run: |
-        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data --squash
+        git subtree pull --prefix=src/data git@github.com:ECC-BFMC/Shared.git data
+        git commit --amend -m "Traceback: FromPull"
         git push
 
+        
