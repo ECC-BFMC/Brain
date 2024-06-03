@@ -2,7 +2,7 @@ name: Pull Data From Shared
 
 on: 
   repository_dispatch:
-    types: [Pull-Data-Changes-CompetitionPCing]
+    types: [Pull-Data-Changes-Brain]
   workflow_dispatch:
 
 jobs:
