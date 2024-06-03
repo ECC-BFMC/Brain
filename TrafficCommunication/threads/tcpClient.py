@@ -57,10 +57,9 @@ class tcpClient(protocol.ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         print(
-            "Here?? Connection with server failed. Retrying in",
+            "Connection failed. Retrying in",
             self.retry_delay,
             "seconds... Possible server down or incorrect IP:port match",
-            reason
         )
         time.sleep(self.retry_delay)
         connector.connect()
@@ -84,7 +83,6 @@ class tcpClient(protocol.ClientFactory):
         msglist = msgPrepToList.split("}{")
         for msg in msglist:
             msg = json.loads(msg)
-            print(msg)
             if msg["reqORinfo"] == "request":
                 if msg["type"] == "locsysDevice":
                     if "error" in msg:
@@ -107,15 +105,13 @@ class SingleConnection(protocol.Protocol):
         self.send_data(msg)
         print("Connection with server established : ", self.factory.connectiondata)
 
-    #From the server
     def dataReceived(self, data):
         self.factory.receive_data_from_server(data.decode())
         print(
             "got message from trafficcommunication server: ",
             self.factory.connectiondata,
         )
-        
-    #To the server
+
     def send_data(self, message):
         msg = json.dumps(message)
         self.transport.write(msg.encode())

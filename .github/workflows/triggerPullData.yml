@@ -1,0 +1,60 @@
+name: Propagate changes to data projects
+
+on: 
+  push:
+
+jobs:
+  identify-and-print:
+    runs-on: ubuntu-latest
+    outputs:
+      project_origin: ${{ steps.check-project-name.outputs.project_origin }}
+    
+
+    steps:
+      - name: Check for project_name in push payload
+        id: check-project-name
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"project_name="* ]]; then
+            project_name=$(echo "${{ github.event.head_commit.message }}" | sed -n 's/.*project_name=\([^ ]*\).*/\1/p')
+            echo "Project Name from commit message: $project_name"
+            echo "project_origin=$project_name" >> $GITHUB_OUTPUT
+          else
+            echo "No project_name found in commit message."
+            echo "project_origin=None" >> $GITHUB_OUTPUT
+          fi     
+
+  dispatch:
+    needs: identify-and-print
+    runs-on: ubuntu-latest
+    if: success()
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Use project_origin output
+        run: |
+          project_origin="${{ needs.identify-and-print.outputs.project_origin }}"
+
+          
+          repositories=(Brain CompetitionPCing)
+
+          # Remove the project_origin from the repositories array
+          for i in "${!repositories[@]}"; do
+            if [[ "${repositories[$i]}" == "$project_origin" ]]; then
+              unset 'repositories[i]'
+            fi
+          done
+
+          echo "Repos to update: ${repositories[@]}"
+
+          # Uncomment the following block to perform the actual dispatch
+          #test
+          for repo in "${repositories[@]}"; do
+            project_origin_name="ECC-BFMC/$repo"
+            echo "Prepared to dispatch event to repository: $project_origin_name"
+            dispatch_name="Pull-Data-Changes-$repo"
+            echo "Event type: $dispatch_name"
+
+            gh api repos/"$project_origin_name"/dispatches \
+              -f event_type=$dispatch_name \
+              -H "Authorization: token ${{ secrets.REPO_ACCESS_TOKEN }}"
+          done

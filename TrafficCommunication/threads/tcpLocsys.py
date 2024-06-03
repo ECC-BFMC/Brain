@@ -39,18 +39,11 @@ class tcpLocsys(protocol.ClientFactory):
         sendQueue (multiprocessing.Queue): We place the information on this queue.
     """
 
-    # def __init__(self, id, sendQueue):
-    #     self.connection = None
-    #     self.retry_delay = 1
-    #     self.sendQueue = sendQueue
-    #     self.deviceID = id
-
-    def __init__(self, deviceID, sendQueue):
-        self.connectiondata = None
+    def __init__(self, id, sendQueue):
         self.connection = None
         self.retry_delay = 1
         self.sendQueue = sendQueue
-        self.deviceID = deviceID
+        self.deviceID = id
 
     def clientConnectionLost(self, connector, reason):
         print(
@@ -75,21 +68,14 @@ class tcpLocsys(protocol.ClientFactory):
 
     def buildProtocol(self, addr):
         conn = SingleConnection()
-        print('here3')
         conn.factory = self
         return conn
 
-    #ClientFactory nu are metoda de stopListening??
     def stopListening(self):
         super().stopListening()
 
-    # Ii confusing, nu ii from server ii from Location device (I guess)
     def receive_data_from_server(self, message):
-        # De ce 3?
         message["id"] = self.deviceID
-        
-        print('here2')
-
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,
@@ -97,6 +83,7 @@ class tcpLocsys(protocol.ClientFactory):
             "msgValue": message,
         }
         self.sendQueue.put(message_to_send)
+
 
 # One class is generated for each new connection
 class SingleConnection(protocol.Protocol):
@@ -107,12 +94,10 @@ class SingleConnection(protocol.Protocol):
         print("Connection with locsys established : ", self.factory.connectiondata)
 
     def dataReceived(self, data):
-        try:
-            dat = data.decode()
-            da = json.loads(dat)
-            self.factory.receive_data_from_server(da)
-        except Exception as e:
-            print(data)
-            print("ttcpLocsys -> dataReceived (line 111)")
-            print(e)
-
+        dat = data.decode()
+        tmp_data = dat.replace("}{","}}{{")
+        if tmp_data != dat:
+            tmp_dat = tmp_data.split("}{")
+            dat = tmp_dat[-1]
+        da = json.loads(dat)
+        self.factory.receive_data_from_server(da)

@@ -51,17 +51,15 @@ class processTrafficCommunication(WorkerProcess):
         self.shared_memory = sharedMem()
         self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
         self.deviceID = deviceID
-        # super(processTrafficCommunication, self).__init__(self.queuesList)
-        # super(processTrafficCommunication, self).__init__(queueList)
-        super(processTrafficCommunication, self).__init__()
+        super(processTrafficCommunication, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
-    # def stop(self):
-    #     """Function for stopping threads and the process."""
-    #     for thread in self.threads:
-    #         thread.stop()
-    #         thread.join()
-    #     super(processTrafficCommunication, self).stop()
+    def stop(self):
+        """Function for stopping threads and the process."""
+        for thread in self.threads:
+            thread.stop()
+            thread.join()
+        super(processTrafficCommunication, self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
@@ -100,6 +98,7 @@ if __name__ == "__main__":
         shared_memory, queueList, deviceID, filename
     )
     traffic_communication.start()
-    time.sleep(6)
-    print(queueList["General"].get())
+    x = range(6)
+    for n in x:
+        print(queueList["General"].get())
     traffic_communication.stop()

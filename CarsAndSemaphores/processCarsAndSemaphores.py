@@ -48,9 +48,7 @@ class processCarsAndSemaphores(WorkerProcess):
     def __init__(self, queueList, logging=False):
         self.queuesList = queueList
         self.logging = logging
-        # super(processCarsAndSemaphores, self).__init__(self.queuesList)
-        # super(processCarsAndSemaphores, self).__init__(queueList)
-        super(processCarsAndSemaphores, self).__init__()
+        super(processCarsAndSemaphores, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
     def stop(self):
@@ -91,7 +89,10 @@ if __name__ == "__main__":
     process = processCarsAndSemaphores(queueList)
     process.start()
 
-    time.sleep(3)
-    print(queueList["General"].get())
+    x = range(6)
+    for n in x:
+        print(queueList["General"].get())
 
     process.stop()
+
+#put a test?
