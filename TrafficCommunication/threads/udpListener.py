@@ -27,7 +27,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from twisted.internet import protocol
 import src.data.TrafficCommunication.useful.keyDealer as keyDealer
-import socket
 
 
 class udpListener(protocol.DatagramProtocol):
@@ -44,10 +43,8 @@ class udpListener(protocol.DatagramProtocol):
         self.serverfoundCllback = serverfound
 
     def startProtocol(self):
-        self.transport.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print("Looking for Traffic Communication Server")
+        print("Looking for Traffic Communicaiton Server")
 
-    # De ce trimite serverul data si semnatura?
     def datagramReceived(self, datagram, address):
         """In this function we split the receive data and we call the callbackfunction"""
         try:
