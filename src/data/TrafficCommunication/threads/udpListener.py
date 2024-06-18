@@ -58,6 +58,7 @@ class udpListener(protocol.DatagramProtocol):
             port = int(msg[1])
             self.serverfoundCllback(address[0], port)
         except Exception as e:
+            print("TrafficCommunication -> udpListener -> datagramReceived:")
             print(e)
 
     def stopListening(self):

@@ -76,6 +76,10 @@ class tcpLocsys(protocol.ClientFactory):
 
     def receive_data_from_server(self, message):
         message["id"] = self.deviceID
+<<<<<<< HEAD
+
+=======
+>>>>>>> 382ec6cb980c0fdbc23148705775d63bb94420cf
         message_to_send = {
             "Owner": Location.Owner.value,
             "msgID": Location.msgID.value,
