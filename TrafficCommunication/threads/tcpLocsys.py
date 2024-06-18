@@ -75,7 +75,6 @@ class tcpLocsys(protocol.ClientFactory):
 
     def buildProtocol(self, addr):
         conn = SingleConnection()
-        print('here3')
         conn.factory = self
         return conn
 
@@ -87,8 +86,6 @@ class tcpLocsys(protocol.ClientFactory):
     def receive_data_from_server(self, message):
         # De ce 3?
         message["id"] = self.deviceID
-        
-        print('here2')
 
         message_to_send = {
             "Owner": Location.Owner.value,

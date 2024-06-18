@@ -84,7 +84,6 @@ class tcpClient(protocol.ClientFactory):
         msglist = msgPrepToList.split("}{")
         for msg in msglist:
             msg = json.loads(msg)
-            print(msg)
             if msg["reqORinfo"] == "request":
                 if msg["type"] == "locsysDevice":
                     if "error" in msg:
