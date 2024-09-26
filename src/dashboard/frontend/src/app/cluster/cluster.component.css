@@ -1,0 +1,183 @@
+.cluster-container { 
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    border: 3px solid tomato;
+}
+
+.cluster-instruments { 
+    display: flex;
+    position: absolute;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.cluster-instruments-main { 
+    display: flex;
+    position: absolute;
+    flex-direction: row;
+    top: 30%;
+    padding-inline: 5%;
+    width: 100%;
+    height: 40%;
+    justify-content: center;
+    gap: 25%;
+    /* border: 3px solid blueviolet; */
+}
+
+.cluster-instruments-secondary {
+    display: flex;
+    position: absolute;
+    flex-direction: row;
+    top: 54%;
+    width: 100%;
+    height: 30%;
+    /* justify-content: center; */
+    gap: 43.5%;
+    /* padding-left: 0%; */
+    padding-right: 1%;
+    /* border: 3px solid rgb(10, 194, 50); */
+}
+
+.cluster-instruments-switches { 
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    /* margin-right: 10%; */
+    /* align-items: center; */
+    top: 17%;
+    gap: 10%;
+    width: 30%;
+    height: 50%;
+    /* border: 3px solid yellow; */
+}
+
+.cluster-battery-level, .cluster-speedometer { 
+    width: 100%;
+    height: 100%;
+}
+
+.cluster-instant-consumption { 
+    width: 20%;
+    height: 100%;
+    padding-bottom: 5%;
+    /* border: 3px solid red; */
+}
+
+.cluster-state-switch { 
+    /* width: 40%;
+    height: 50%; */
+    width: 100%;
+    height: 45%;
+    /* top: 20%; */
+    /* border: 3px solid red; */
+}
+
+.cluster-kl-switch { 
+    width: 50%;
+    height: 45%;
+    /* border: 3px solid red; */
+}
+
+.cluster-map { 
+    position: absolute;
+    padding-inline: 20%;
+    top: 3%;
+    width: 100%;
+    height: 47%;
+    /* border: 3px solid cadetblue; */
+}
+
+.cluster-digital-container { 
+    display: flex;
+    position: absolute;
+    top: 30%;
+    width: 100%;
+    height: 8%;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.7vw;
+    filter: drop-shadow(0 0 8vw rgba(0, 0, 0, 0.7));
+    /* border: 3px solid greenyellow */
+}
+
+.cluster-digital-text-container {
+    display: flex;
+    position: relative;
+    width: 38%;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.cluster-digital-unit { 
+    position: relative; 
+    height: 30%;
+    font-size: 1vw;
+    color: white;
+    opacity: 0.7;
+    padding-top: 5%;
+}
+
+.cluster-car { 
+    position: absolute;
+    padding-inline: 40%;
+    top: 58%;
+    width: 100%;
+    height: 20%;
+    /* border: 3px solid darkorange; */
+}
+
+.cluster-steering { 
+    position: absolute;
+    padding-inline: 43%;
+    width: 100%;
+    height: 3%;
+    top: 51%;
+    /* border: 3px solid red; */
+}
+
+.cluster-live-camera { 
+    position: absolute;
+    /* padding-inline: 42%; */
+    padding-left: 70%;
+    padding-right: 8%;
+    top: 76.5%;
+    width: 100%;
+    height: auto;
+    /* border: 3px solid darkorange; */
+}
+
+.cluster-warning-light { 
+    position: absolute;
+    /* padding-inline: 49%; */
+    padding-left: 19%;
+    padding-right: 62%;
+    top: 60%;
+    width: 100%;
+    height: auto;
+    /* border: 3px solid darkorange; */
+}
+
+.cluster-hardware-data { 
+    position: absolute;
+    padding-left: 0.5%;
+    padding-right: 61.5%;
+    top: 82%;
+    width: 100%;
+    height: 16%;
+    /* border: 3px solid red; */
+}
+.red {
+    background-color: red;
+    color: white;
+  }
+  
+  .white {
+    background-color: white;
+    color: black;
+    border: 1px solid black;
+  }
+  

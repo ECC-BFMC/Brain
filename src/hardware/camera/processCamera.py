@@ -48,19 +48,8 @@ class processCamera(WorkerProcess):
     def __init__(self, queueList, logging, debugging=False):
         self.queuesList = queueList
         self.logging = logging
-        pipeRecv, pipeSend = Pipe(duplex=False)
-        self.pipeRecv = pipeRecv
-        self.pipeSend = pipeSend
         self.debugging = debugging
         super(processCamera, self).__init__(self.queuesList)
-
-    # ===================================== STOP ==========================================
-    def stop(self):
-        """Function for stopping threads and the process."""
-        for thread in self.threads:
-            thread.stop()
-            thread.join()
-        super(processCamera, self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
@@ -71,7 +60,7 @@ class processCamera(WorkerProcess):
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
         camTh = threadCamera(
-            self.pipeRecv, self.pipeSend, self.queuesList, self.logging, self.debugging
+         self.queuesList, self.logging, self.debugging
         )
         self.threads.append(camTh)
 

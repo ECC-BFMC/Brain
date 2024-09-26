@@ -1,0 +1,115 @@
+.kl-switch { 
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5%;
+  /* border: 3px solid yellow; */
+}
+
+.kl-switch-text {
+  color: white;
+  opacity: 0.8;
+  font-size: 0.6vw;
+  /* border: 3px solid blue; */
+}
+
+.kl-switch-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  position: relative;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+  background-color: rgba(21, 23, 24, 0.3);
+  border-radius: 0.3vw;
+  /* border: 3px solid greenyellow; */
+}
+
+.kl-switch-body input[type="radio"] {
+  display: none;
+}
+
+.kl-switch-body label {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  position: relative;
+  user-select: none;
+  z-index: 1;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9vw;
+  text-shadow: 0 0 0.3vw rgba(0, 0, 0, 1);
+}
+
+.kl-switch-body .slide {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: #2b8fd1;
+  transition: left 0.3s ease-in-out;
+  z-index: 0;
+  border-radius: 0.3vw;
+}
+  
+
+  /* .kl-switch { 
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+    
+  .kl-switch-body { 
+    display: flex;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    grid-template-columns: 1fr 1fr;
+    background-color: #2b8fd1;
+    border-radius: 6%;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0px 8px rgba(0, 0, 0, 0.5);
+    border: 1px solid #e6e6e680;
+  }
+  
+  .kl-switch-body input[type="radio"] {
+    display: none;
+  }
+  
+  .states { 
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .kl-switch-body label {
+    display: flex;
+    position: relative;
+    user-select: none;
+    z-index: 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-size: 1vw;
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .kl-switch-body label:active {
+      background-color: #21262927;
+  }
+  
+  #kl-switch-arrow { 
+    position: absolute;
+    transform-origin: center center;
+    width: 28%;
+    rotate: -135deg;
+    transition: transform 0.3s ease-in-out;
+    z-index: 2;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+  } */

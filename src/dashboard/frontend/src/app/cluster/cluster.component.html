@@ -1,0 +1,34 @@
+<div class="cluster-container">
+  <app-map class="cluster-map" [cursorRotation]="cursorRotation" />
+
+  <div class="cluster-digital-container">
+    <div class="cluster-digital-text-container">
+      <h1 class="cluster-digital-text">{{battery}}</h1>
+      <p class="cluster-digital-unit">%</p>
+    </div>
+    <div class="cluster-digital-text-container">
+      <h1 class="cluster-digital-text">{{speed}}</h1>
+      <p class="cluster-digital-unit">cm/s</p>
+    </div>
+  </div>
+  
+  <div class="cluster-instruments">
+    <div class="cluster-instruments-main">
+      <app-battery-level class="cluster-battery-level" />
+      <app-speedometer class="cluster-speedometer" />
+    </div>
+    <div class="cluster-instruments-secondary">
+      <app-instant-consumption class="cluster-instant-consumption" />
+      <div class="cluster-instruments-switches">
+        <app-state-switch class="cluster-state-switch" />
+        <app-kl-switch class="cluster-kl-switch" />
+      </div>
+    </div>
+  </div>
+
+  <app-car class="cluster-car" [position]="carPosition" [leftLaneOn]="carLeftLaneOn" [rightLaneOn]="carRightLaneOn" />
+  <app-steering class="cluster-steering" />
+  <app-live-camera class="cluster-live-camera" />
+  <app-warning-light class="cluster-warning-light" />
+  <app-hardware-data class="cluster-hardware-data" />
+</div>

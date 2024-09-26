@@ -28,6 +28,7 @@
 
 import json
 from src.utils.messages.allMessages import Cars, Semaphores
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 from twisted.internet import protocol
 
 
@@ -38,8 +39,12 @@ class udpListener(protocol.DatagramProtocol):
         queue (multiprocessing.queues.Queue): the queue to send the info
     """
 
-    def __init__(self, queue):
+    def __init__(self, queue, logger, debugging):
         self.queue = queue
+        self.logger = logger
+        self.debugging = debugging
+        self.semaphoreSender = messageHandlerSender(self.queue, Semaphores)
+        self.carSender = messageHandlerSender(self.queue, Cars)
 
     def datagramReceived(self, datagram, addr):
         """Specific function for receiving the information. It will select and create different dictionary for each type of data we receive(car or semaphore)
@@ -49,27 +54,14 @@ class udpListener(protocol.DatagramProtocol):
         """
         dat = datagram.decode("utf-8")
         dat = json.loads(dat)
-
+        if self.debugging: 
+            self.logger.info(dat)
         if dat["device"] == "semaphore":
             tmp = {"id": dat["id"], "state": dat["state"], "x": dat["x"], "y": dat["y"]}
-            self.queue.put(
-                {
-                    "Owner": Semaphores.Owner.value,
-                    "msgID": Semaphores.msgID.value,
-                    "msgType": Semaphores.msgType.value,
-                    "msgValue": tmp,
-                }
-            )
+            self.semaphoreSender.send(tmp)
         elif dat["device"] == "car":
             tmp = {"id": dat["id"], "x": dat["x"], "y": dat["y"]}
-            self.queue.put(
-                {
-                    "Owner": Cars.Owner.value,
-                    "msgID": Cars.msgID.value,
-                    "msgType": Cars.msgType.value,
-                    "msgValue": tmp,
-                }
-            )
+            self.carSender.send(tmp)
 
     def stopListening(self):
         super().stopListening()

@@ -1,0 +1,10 @@
+<div class="hardware-data">
+    <app-indicator class="cpu-temp" [value]="cpuTemp" [minValue]="0" [maxValue]="100" title="temp" [titleOffset]="110" symbol="°"/>
+    <app-indicator class="cpu-usage" [value]="cpuUsage[0]" [minValue]="0" [maxValue]="100" title="core1" [titleOffset]="110" symbol="%"/>
+    <app-indicator class="cpu-usage" [value]="cpuUsage[1]" [minValue]="0" [maxValue]="100" title="core2" [titleOffset]="110" symbol="%"/>
+    <app-indicator class="cpu-usage" [value]="cpuUsage[2]" [minValue]="0" [maxValue]="100" title="core3" [titleOffset]="110" symbol="%"/>
+    <app-indicator class="cpu-usage" [value]="cpuUsage[3]" [minValue]="0" [maxValue]="100" title="core4" [titleOffset]="110" symbol="%"/>
+    <app-indicator class="memory-usage" [value]="memoryUsage" [minValue]="0" [maxValue]="100" title="memory" [titleOffset]="90" symbol="%"/>
+    <app-indicator class="memory-usage" [value]="heap" [minValue]="0" [maxValue]="100" title="heap" [titleOffset]="90" symbol="%"/>
+    <app-indicator class="memory-usage" [value]="stack" [minValue]="0" [maxValue]="100" title="stack" [titleOffset]="90" symbol="%"/>
+</div>

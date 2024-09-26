@@ -1,0 +1,32 @@
+.map-container { 
+    display: flex;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+#map-track-image-container {
+    display: flex; 
+    position: relative;
+    overflow: hidden;
+    mix-blend-mode: screen; 
+    mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 90%);
+    -webkit-mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 90%);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+}
+
+#map-track-image {
+    position: absolute;
+}
+
+#map-cursor { 
+    position: absolute;
+    filter: drop-shadow(0 0 0.5vw rgba(0, 0, 0, 0.5));
+}

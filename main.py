@@ -25,7 +25,19 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+#
+# To start the project: 
+#
+#       sudo apt update
+#       sudo apt upgrade
+#       xargs sudo apt install -y < "requirement.txt" 
+#       cd src/dashboard/frontend/
+#       curl -fsSL https://fnm.vercel.app/install | bash
+#       source ~/.bashrc
+#       fnm install --lts
+#       npm install -g @angular/cli@17
+#       npm install
+#
 # ===================================== GENERAL IMPORTS ==================================
 import sys
 
@@ -33,24 +45,23 @@ sys.path.append(".")
 from multiprocessing import Queue, Event
 import logging
 
+logging.basicConfig(level=logging.INFO)
 
 # ===================================== PROCESS IMPORTS ==================================
+
 from src.gateway.processGateway import processGateway
+from src.dashboard.processDashboard import processDashboard
 from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
-from src.utils.PCcommunicationDemo.processPCcommunication import (
-    processPCCommunicationDemo,
-)
-from src.utils.PCcommunicationDashBoard.processPCcommunication import (
-    processPCCommunicationDashBoard,
-)
 from src.data.CarsAndSemaphores.processCarsAndSemaphores import processCarsAndSemaphores
-from src.data.TrafficCommunication.processTrafficCommunication import (
-    processTrafficCommunication,
-)
+from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 
+# ------ New component imports starts here ------#
+
+# ------ New component imports ends here ------#
 # ======================================== SETTING UP ====================================
 allProcesses = list()
+
 queueList = {
     "Critical": Queue(),
     "Warning": Queue(),
@@ -60,46 +71,50 @@ queueList = {
 
 logging = logging.getLogger()
 
-TrafficCommunication = True
+TrafficCommunication = False
 Camera = True
-PCCommunicationDemo = True
-CarsAndSemaphores = True
+Dashboard = True
+CarsAndSemaphores = False
 SerialHandler = True
+
+# ------ New component flags starts here ------#
+ 
+# ------ New component flags ends here ------#
+
 # ===================================== SETUP PROCESSES ==================================
 
 # Initializing gateway
 processGateway = processGateway(queueList, logging)
-allProcesses.append(processGateway)
+processGateway.start()
+
+# Initializing dashboard
+if Dashboard:
+    processDashboard = processDashboard( queueList, logging, debugging = False)
+    allProcesses.append(processDashboard)
 
 # Initializing camera
 if Camera:
-    processCamera = processCamera(queueList, logging)
+    processCamera = processCamera(queueList, logging , debugging = False)
     allProcesses.append(processCamera)
-
-# Initializing interface
-if PCCommunicationDemo:
-    processPCCommunication = processPCCommunicationDemo(queueList, logging)
-    allProcesses.append(processPCCommunication)
-else:
-    processPCCommunicationDashBoard = processPCCommunicationDashBoard(
-        queueList, logging
-    )
-    allProcesses.append(processPCCommunicationDashBoard)
 
 # Initializing cars&sems
 if CarsAndSemaphores:
-    processCarsAndSemaphores = processCarsAndSemaphores(queueList)
+    processCarsAndSemaphores = processCarsAndSemaphores(queueList, logging, debugging = False)
     allProcesses.append(processCarsAndSemaphores)
 
 # Initializing GPS
 if TrafficCommunication:
-    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3)
+    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3, debugging = False)
     allProcesses.append(processTrafficCommunication)
 
 # Initializing serial connection NUCLEO - > PI
 if SerialHandler:
-    processSerialHandler = processSerialHandler(queueList, logging)
+    processSerialHandler = processSerialHandler(queueList, logging, debugging = False)
     allProcesses.append(processSerialHandler)
+
+# ------ New component runs starts here ------#
+ 
+# ------ New component runs ends here ------#
 
 # ===================================== START PROCESSES ==================================
 for process in allProcesses:
@@ -112,7 +127,8 @@ try:
     blocker.wait()
 except KeyboardInterrupt:
     print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
-    for proc in allProcesses:
+    for proc in reversed(allProcesses):
         print("Process stopped", proc)
         proc.stop()
-        proc.join()
+
+processGateway.stop()

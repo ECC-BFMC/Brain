@@ -1,0 +1,7 @@
+<div class="map-container">
+  <div #imageContainer id="map-track-image-container">
+    <img src="/assets/Track.svg" id="map-track-image" #imageElement (load)="onLoadTrack(imageElement)" alt="BFMC Track" />    
+  </div>
+  <app-map-cursor id="map-cursor" (cursorLoaded)="onLoadCursor()" [cursorRotation]="cursorRotation" />
+</div>
+

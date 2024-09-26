@@ -1,0 +1,69 @@
+.cluster { 
+    position: relative;
+    /* top: -250px; */
+}
+
+.sliders { 
+    display: flex;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    gap: 100px;
+}
+
+.cluster-container { 
+    width: var(--cluster-width);
+    height: calc(var(--cluster-width) / var(--aspect-ratio));
+    display: flex;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+}
+
+.cluster { 
+    width: 100%;
+    height: 100%;
+    background-color: rgb(45, 54, 58);
+}
+  
+/* Modal styles */
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    width: 300px;
+    text-align: center;
+  }
+  
+  .modal input {
+    margin-bottom: 10px;
+    padding: 5px;
+    width: 100%;
+  }
+  
+  .modal button {
+    padding: 10px;
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .modal button:hover {
+    background-color: #0056b3;
+  }
+
+  

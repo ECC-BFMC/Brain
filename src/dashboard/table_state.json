@@ -1,0 +1,55 @@
+[
+    {
+        "channel": "DropdownChannelExample",
+        "value": "3",
+        "initialValue": "3",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            1,
+            2,
+            3
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "SliderChannelExample",
+        "value": 22,
+        "initialValue": 22,
+        "interval": 0,
+        "type": "slider",
+        "values": [
+            1,
+            30
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "Brightness",
+        "value": 50,
+        "initialValue": 50,
+        "interval": 0,
+        "type": "slider",
+        "values": [
+            0,
+            100
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "Contrast",
+        "value": 0,
+        "initialValue": 0,
+        "interval": 0,
+        "type": "slider",
+        "values": [
+            0,
+            3200
+        ],
+        "checked": false,
+        "hasChanged": false
+    }
+]

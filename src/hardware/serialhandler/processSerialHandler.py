@@ -63,14 +63,6 @@ class processSerialHandler(WorkerProcess):
         self.example = example
         super(processSerialHandler, self).__init__(self.queuesList)
 
-    # ===================================== STOP ==========================================
-    def stop(self):
-        """Function for stopping threads and the process."""
-        for thread in self.threads:
-            thread.stop()
-            thread.join()
-        super(processSerialHandler, self).stop()
-
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
@@ -81,11 +73,9 @@ class processSerialHandler(WorkerProcess):
     # ===================================== INIT TH =================================
     def _init_threads(self):
         """Initializes the read and the write thread."""
-        readTh = threadRead(self.serialCom, self.historyFile, self.queuesList)
+        readTh = threadRead(self.serialCom, self.historyFile, self.queuesList, self.logger, self.debugging)
         self.threads.append(readTh)
-        writeTh = threadWrite(
-            self.queuesList, self.serialCom, self.historyFile, self.example
-        )
+        writeTh = threadWrite(self.queuesList, self.serialCom, self.historyFile, self.logger, self.debugging, self.example)
         self.threads.append(writeTh)
 
 

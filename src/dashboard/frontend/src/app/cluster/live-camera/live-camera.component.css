@@ -1,0 +1,38 @@
+.image-container {
+  width: 100%;
+  height: auto; 
+  position: relative;
+  /* border: 3px solid forestgreen; */
+}
+
+.scaled-image {
+  width: 100%;
+  height: auto; /* Maintain aspect ratio */
+  position: relative;
+  object-fit: cover; 
+  border: 0.2vw solid rgb(188, 188, 188);
+  filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.5))
+}
+
+.loader {
+  width: 10.93%;
+  height: 20%;
+  position: absolute;
+  top: 40%;
+  left: 45%;
+
+  border: 0.2vw solid rgb(188, 188, 188);
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  box-sizing: border-box;
+  animation: rotation 2s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+} 

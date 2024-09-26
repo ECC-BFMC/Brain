@@ -25,18 +25,25 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+import json
+import time
 import threading
-from multiprocessing import Pipe
 from src.hardware.serialhandler.threads.messageconverter import MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
     SignalRunning,
-    EngineRun,
+    Klem,
     Control,
     SteerMotor,
     SpeedMotor,
     Brake,
+    ToggleBatteryLvl,
+    ToggleImuData,
+    ToggleInstant,
+    ToggleResourceMonitor
 )
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
 class threadWrite(ThreadWithStop):
@@ -50,31 +57,27 @@ class threadWrite(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, queues, serialCom, logFile, example=False):
+    def __init__(self, queues, serialCom, logFile, logger, debugger = False, example=False):
         super(threadWrite, self).__init__()
         self.queuesList = queues
         self.serialCom = serialCom
         self.logFile = logFile
         self.exampleFlag = example
-        self.messageConverter = MessageConverter()
+        self.logger = logger
+        self.debugger = debugger
+
         self.running = False
-        pipeRecvBreak, pipeSendBreak = Pipe(duplex=False)
-        self.pipeRecvBreak = pipeRecvBreak
-        self.pipeSendBreak = pipeSendBreak
-        pipeRecvSpeed, pipeSendSpeed = Pipe(duplex=False)
-        self.pipeRecvSpeed = pipeRecvSpeed
-        self.pipeSendSpeed = pipeSendSpeed
-        pipeRecvSteer, pipeSendSteer = Pipe(duplex=False)
-        self.pipeRecvSteer = pipeRecvSteer
-        self.pipeSendSteer = pipeSendSteer
-        pipeRecvControl, pipeSendControl = Pipe(duplex=False)
-        self.pipeRecvControl = pipeRecvControl
-        self.pipeSendControl = pipeSendControl
-        pipeRecvRunningSignal, pipeSendRunningSignal = Pipe(duplex=False)
-        self.pipeRecvRunningSignal = pipeRecvRunningSignal
-        self.pipeSendRunningSignal = pipeSendRunningSignal
+        self.engineEnabled = False
+        self.messageConverter = MessageConverter()
+        self.signalRunningSender = messageHandlerSender(self.queuesList, SignalRunning)
+        self.steerMotorSender = messageHandlerSender(self.queuesList, SteerMotor)
+        self.speedMotorSender = messageHandlerSender(self.queuesList, SpeedMotor)
+        self.configPath = "src/utils/initConfig.json"
+
+        self.loadConfig("init")
         self.subscribe()
         self.Queue_Sending()
+
         if example:
             self.i = 0.0
             self.j = -1.0
@@ -83,115 +86,134 @@ class threadWrite(ThreadWithStop):
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": EngineRun.Owner.value,
-                "msgID": EngineRun.msgID.value,
-                "To": {
-                    "receiver": "threadWrite",
-                    "pipe": self.pipeSendRunningSignal,
-                },
-            }
-        )
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": Control.Owner.value,
-                "msgID": Control.msgID.value,
-                "To": {
-                    "receiver": "threadWrite",
-                    "pipe": self.pipeSendControl,
-                },
-            }
-        )
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": SteerMotor.Owner.value,
-                "msgID": SteerMotor.msgID.value,
-                "To": {"receiver": "threadWrite", "pipe": self.pipeSendSteer},
-            }
-        )
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": SpeedMotor.Owner.value,
-                "msgID": SpeedMotor.msgID.value,
-                "To": {"receiver": "threadWrite", "pipe": self.pipeSendSpeed},
-            }
-        )
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": Brake.Owner.value,
-                "msgID": Brake.msgID.value,
-                "To": {"receiver": "threadWrite", "pipe": self.pipeSendBreak},
-            }
-        )
+        self.klSubscriber = messageHandlerSubscriber(self.queuesList, Klem, "lastOnly", True)
+        self.controlSubscriber = messageHandlerSubscriber(self.queuesList, Control, "lastOnly", True)
+        self.steerMotorSubscriber = messageHandlerSubscriber(self.queuesList, SteerMotor, "lastOnly", True)
+        self.speedMotorSubscriber = messageHandlerSubscriber(self.queuesList, SpeedMotor, "lastOnly", True)
+        self.brakeSubscriber = messageHandlerSubscriber(self.queuesList, Brake, "lastOnly", True)
+        self.instantSubscriber = messageHandlerSubscriber(self.queuesList, ToggleInstant, "lastOnly", True)
+        self.batterySubscriber = messageHandlerSubscriber(self.queuesList, ToggleBatteryLvl, "lastOnly", True)
+        self.resourceMonitorSubscriber = messageHandlerSubscriber(self.queuesList, ToggleResourceMonitor, "lastOnly", True)
+        self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
         """Callback function for engine running flag."""
-        self.queuesList["General"].put(
-            {
-                "Owner": SignalRunning.Owner.value,
-                "msgID": SignalRunning.msgID.value,
-                "msgType": SignalRunning.msgType.value,
-                "msgValue": self.running,
-            }
-        )
+        self.signalRunningSender.send(self.running)
         threading.Timer(1, self.Queue_Sending).start()
 
+    def sendToSerial(self, msg):
+        command_msg = self.messageConverter.get_command(**msg)
+        if command_msg != "error":
+            self.serialCom.write(command_msg.encode("ascii"))
+            self.logFile.write(command_msg)
+
+    def loadConfig(self, configType):
+        with open(self.configPath, "r") as file:
+            data = json.load(file)[configType]
+
+        for action, dictionary in data.items():
+            for key, value in dictionary.items():
+                command = {"action": action, key: value}
+                self.sendToSerial(command)
+                time.sleep(0.05)
+
+    def convertFc(self,instantRecv):
+        if instantRecv =="True":
+            return True
+        else :
+            return False
     # ===================================== RUN ==========================================
     def run(self):
         """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""
         while self._running:
             try:
-                if self.pipeRecvRunningSignal.poll():
-                    msg = self.pipeRecvRunningSignal.recv()
-                    if msg["value"] == True:
+                klRecv = self.klSubscriber.receive()
+                if klRecv is not None:
+                    if self.debugger:
+                        self.logger.info(klRecv)
+
+                    if klRecv == "30":
                         self.running = True
-                    else:
+                        self.engineEnabled = True
+                        command = {"action": "kl", "mode": 30}
+                        self.sendToSerial(command)
+                        self.loadConfig("sensors")
+                    elif klRecv == "15":
+                        self.running = True
+                        self.engineEnabled = False
+                        command = {"action": "kl", "mode": 15}
+                        self.sendToSerial(command)
+                        self.loadConfig("sensors")
+                    elif klRecv == "0":
                         self.running = False
-                        command = {"action": "1", "speed": 0.0}
-                        command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
-                        command = {"action": "2", "steerAngle": 0.0}
-                        command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
+                        self.engineEnabled = False
+                        command = {"action": "kl", "mode": 0}
+                        self.sendToSerial(command)
+
                 if self.running:
-                    if self.pipeRecvBreak.poll():
-                        message = self.pipeRecvBreak.recv()
-                        command = {"action": "1", "speed": float(message["value"])}
-                        command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
-                    elif self.pipeRecvSpeed.poll():
-                        message = self.pipeRecvSpeed.recv()
-                        command = {"action": "1", "speed": float(message["value"])}
-                        command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
-                    elif self.pipeRecvSteer.poll():
-                        message = self.pipeRecvSteer.recv()
-                        command = {"action": "2", "steerAngle": float(message["value"])}
-                        command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
-                    elif self.pipeRecvControl.poll():
-                        message = self.pipeRecvControl.recv()
-                        command = {
-                            "action": "9",
-                            "time": float(message["value"]["Time"]),
-                            "speed": float(message["value"]["Speed"]),
-                            "steer": float(message["value"]["Steer"]),
-                        }
-                        command_msg = self.messageConverter.get_command(**command)
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
+                    if self.engineEnabled:
+                        brakeRecv = self.brakeSubscriber.receive()
+                        if brakeRecv is not None:
+                            if self.debugger:
+                                self.logger.info(brakeRecv)
+                            command = {"action": "brake", "steerAngle": int(brakeRecv)}
+                            self.sendToSerial(command)
+
+                        speedRecv = self.speedMotorSubscriber.receive()
+                        if speedRecv is not None: 
+                            if self.debugger:
+                                self.logger.info(speedRecv)
+                            command = {"action": "speed", "speed": int(speedRecv)}
+                            self.sendToSerial(command)
+
+                        steerRecv = self.steerMotorSubscriber.receive()
+                        if steerRecv is not None:
+                            if self.debugger:
+                                self.logger.info(steerRecv) 
+                            command = {"action": "steer", "steerAngle": int(steerRecv)}
+                            self.sendToSerial(command)
+
+                        controlRecv = self.controlSubscriber.receive()
+                        if controlRecv is not None:
+                            if self.debugger:
+                                self.logger.info(controlRecv) 
+                            command = {
+                                "action": "vcd",
+                                "time": int(controlRecv["Time"]),
+                                "speed": int(controlRecv["Speed"]),
+                                "steer": int(controlRecv["Steer"]),
+                            }
+                            self.sendToSerial(command)
+
+                    instantRecv = self.instantSubscriber.receive()
+                    if instantRecv is not None: 
+                        if self.debugger:
+                            self.logger.info(instantRecv) 
+                        command = {"action": "instant", "activate": self.convertFc(instantRecv)}
+                        self.sendToSerial(command)
+
+                    batteryRecv = self.batterySubscriber.receive()
+                    if batteryRecv is not None: 
+                        if self.debugger:
+                            self.logger.info(batteryRecv)
+                        command = {"action": "battery", "activate": self.convertFc(batteryRecv)}
+                        self.sendToSerial(command)
+
+                    resourceMonitorRecv = self.resourceMonitorSubscriber.receive()
+                    if resourceMonitorRecv is not None: 
+                        if self.debugger:
+                            self.logger.info(resourceMonitorRecv)
+                        command = {"action": "resourceMonitor", "activate": self.convertFc(resourceMonitorRecv)}
+                        self.sendToSerial(command)
+
+                    imuRecv = self.imuSubscriber.receive()
+                    if imuRecv is not None: 
+                        if self.debugger:
+                            self.logger.info(imuRecv)
+                        command = {"action": "imu", "activate": self.convertFc(imuRecv)}
+                        self.sendToSerial(command)
+
             except Exception as e:
                 print(e)
 
@@ -205,8 +227,9 @@ class threadWrite(ThreadWithStop):
         import time
 
         self.exampleFlag = False
-        self.pipeSendSteer.send({"Type": "Steer", "value": 0.0})
-        self.pipeSendSpeed.send({"Type": "Speed", "value": 0.0})
+        command = {"action": "kl", "mode": 0.0}
+        self.sendToSerial(command)
+
         time.sleep(2)
         super(threadWrite, self).stop()
 
@@ -214,9 +237,9 @@ class threadWrite(ThreadWithStop):
     def example(self):
         """This function simulte the movement of the car."""
         if self.exampleFlag:
-            self.pipeSendRunningSignal.send({"Type": "Run", "value": True})
-            self.pipeSendSpeed.send({"Type": "Speed", "value": self.s})
-            self.pipeSendSteer.send({"Type": "Steer", "value": self.i})
+            self.signalRunningSender.send({"Type": "Run", "value": True})
+            self.speedMotorSender.send({"Type": "Speed", "value": self.s})
+            self.steerMotorSender.send({"Type": "Steer", "value": self.i})
             self.i += self.j
             if self.i >= 21.0:
                 self.i = 21.0

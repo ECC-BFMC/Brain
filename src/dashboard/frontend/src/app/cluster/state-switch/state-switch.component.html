@@ -1,0 +1,40 @@
+<div class="state-switch">
+  <label class="state-switch-text">driving mode</label>
+  <div class="state-switch-body">
+    <ng-container *ngFor="let state of states; let i = index">
+      <input type="radio" 
+            id="state-switch-{{i}}" 
+            name="state" 
+            [value]="i" 
+            [checked]="currentStateIndex === i"
+            (change)="setState(i)">
+      <label for="state-switch-{{i}}">{{ state }}</label>
+    </ng-container>
+
+    <a class="slide" aria-hidden="true" 
+      [style.left]="getSliderPosition(currentStateIndex)" 
+      [style.width]="getSliderWidth()"
+      [style.backgroundColor]="getSliderColor()">
+    </a>
+  </div> 
+</div>
+
+<!-- <div class="state-switch">
+  <div class="state-switch-body">
+    <div class="states">
+      <ng-container *ngFor="let state of states; let i = index">
+        <input type="radio" 
+               id="state-switch-{{i}}" 
+               class="grid-item"
+               name="state" 
+               [value]="i" 
+               [checked]="currentStateIndex === i"
+               (change)="setState(i)">
+        <label for="state-switch-{{i}}">{{ state }}</label>
+      </ng-container>
+    </div>  
+    <svg id="state-switch-arrow" viewBox="0 0 34 33"> 
+      <path d="M23.91 11.413A1 1 0 0 1 23 12h-3v17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V12H9a1 1 0 0 1-.752-1.658l7-8a1.03 1.03 0 0 1 1.504 0l7 8a1 1 0 0 1 .159 1.071z" style="fill:#ffffff"/>
+    </svg>
+  </div>
+</div> -->

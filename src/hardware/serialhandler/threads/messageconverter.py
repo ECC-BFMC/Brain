@@ -37,43 +37,30 @@ class MessageConverter:
 
     Implemented commands:
 
-        | 'Command' : [ [ arg_list ],                [type_list],                    [enhanced precision]   ]
-        | 'SPED'    : [ ['f_vel'],                   [float],                        [False]                ] - Speed command -
-        | 'STER'    : [ ['f_angle'],                 [float],                        [False]                ] - Steer command -
-        | 'BRAK'    : [ ['f_angle' ],                [float],                        [False]                ] - Brake command -
-        | 'ENBL'    : [ ['activate' ],               [bool],                         [False]                ] - Activate batterylevel -
-        | 'ENIS'    : [ ['activate' ],               [bool],                         [False]                ] - Activate instant consumption -
-        | 'ENIMU'   : [ ['activate' ],               [bool],                         [False]                ] - Activate IMU -
-        | 'BEZIER   : [ ["point1x","point1y",        [float, float,                                         ]
-        |                "point2x","point2y",         float, float,                                         ]
-        |                "point3x","point3y",         float, float,                                         ]
-        |  MOVEMENT'     "point4x","point4y",]        float, float]                  [False]                ]
-        | 'STS '    : [ ["speed", "time", "steer"]   [float, float, float]           [False]                 ] - Set a speed a timer and a steering angle -
-
+        | 'Command' : [ [ arg_list ],                [precision in digits            [enhanced precision]   ]
+        | 'SPEED'   : [ ['f_vel'],                   [2],                            [False]                ] - Speed command -
+        | 'STER'    : [ ['f_angle'],                 [3],                            [False]                ] - Steer command -
+        | 'BRAK'    : [ ['f_angle' ],                [int],                          [False]                ] - Brake command -
+        | 'BTC'     : [ ['capacity' ],               [int],                          [False]                ] - Set battery capacity -
+        | 'ENBL'    : [ ['activate' ],               [int],                          [False]                ] - Activate batterylevel -
+        | 'ENIS'    : [ ['activate' ],               [int],                          [False]                ] - Activate instant consumption -
+        | 'ENRM'    : [ ['activate' ],               [int],                          [False]                ] - Activate resource monitor -
+        | 'ENIMU'   : [ ['activate' ],               [int],                          [False]                ] - Activate IMU -
+        | 'STS '    : [ ["speed", "time", "steer"]   [int, int, int]                 [False]                ] - Set a speed a timer and a steering angle -
+        | 'KL'      : [ ['f_mode'],                  [int],                          [False]                ] - Enable/Diasble functions -
     """
 
     commands = {
-        "1": [["speed"], [float], [False]],
-        "2": [["steerAngle"], [float], [False]],
-        "3": [["steerAngle"], [float], [False]],
-        "5": [["activate"], [bool], [False]],
-        "6": [["activate"], [bool], [False]],
-        "7": [["activate"], [bool], [False]],
-        "8": [
-            [
-                "point1x",
-                "point1y",
-                "point2x",
-                "point2y",
-                "point3x",
-                "point3y",
-                "point4x",
-                "point4y",
-            ],
-            [float, float, float, float, float, float, float, float],
-            [False],
-        ],
-        "9": [["speed", "time", "steer"], [float, float, float], [False]],
+        "speed": [["speed"], [2], [False]],
+        "steer": [["steerAngle"], [3], [False]],
+        "brake": [["steerAngle"], [int], [False]],
+        "batteryCapacity": [["capacity"], [int], [False]],
+        "battery": [["activate"], [int], [False]],
+        "instant": [["activate"], [int], [False]],
+        "resourceMonitor": [["activate"], [int], [False]],
+        "imu": [["activate"], [int], [False]],
+        "vcd": [["speed", "time", "steer"], [int, int, int], [False]],
+        "kl": [["mode"], [2], [False]]
     }
     """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """
 
@@ -94,27 +81,21 @@ class MessageConverter:
         string
             Command with the decoded action, which can be transmite to embed device via serial communication.
         """
-        self.verify_command(action, kwargs)
+        valid = self.verify_command(action, kwargs)
+        if valid:
+            enhPrec = MessageConverter.commands[action][2][0]
+            listKwargs = MessageConverter.commands[action][0]
 
-        enhPrec = MessageConverter.commands[action][2][0]
-        listKwargs = MessageConverter.commands[action][0]
+            command = "#" + action + ":"
 
-        command = "#" + action + ":"
+            for key in listKwargs:
+                value = kwargs.get(key)
+                command += str(value)+";"
 
-        for key in listKwargs:
-            value = kwargs.get(key)
-            valType = type(value)
-
-            if valType == float:
-                if enhPrec:
-                    command += "{0:.6f};".format(value)
-                else:
-                    command += "{0:.2f};".format(value)
-            elif valType == bool:
-                command += "{0:d};".format(value)
-
-        command += ";\r\n"
-        return command
+            command += ";\r\n"
+            return command
+        else:
+            return "error"
 
     # ===================================== VERIFY COMMAND ===============================
     def verify_command(self, action, commandDict):
@@ -127,18 +108,22 @@ class MessageConverter:
         commandDict : dict
             The dictionary with the names and values of command parameters, it has to contain all parameters defined in the commands dictionary.
         """
-
-        assert len(commandDict.keys()) == len(
-            MessageConverter.commands[action][0]
-        ), "Number of arguments does not match"
+        if len(commandDict.keys()) != len(MessageConverter.commands[action][0]):
+            print( "Number of arguments does not match" + str(len(commandDict.keys())), str(len(MessageConverter.commands[action][0])))
+            return False
         for i, [key, value] in enumerate(commandDict.items()):
-            assert key in MessageConverter.commands[action][0], (
-                action + "should not contain key:" + key
-            )
-            assert type(value) == MessageConverter.commands[action][1][i], (
-                action
-                + "should be of type "
-                + str(MessageConverter.commands[action][1][i])
-                + "instead of"
-                + str(type(value))
-            )
+            if key not in MessageConverter.commands[action][0]:
+                print(action + " should not contain key: " + key)
+                return False
+            elif type(value) != int:
+                print(action + " should be of type int instead of " + str(type(value)))
+                return False
+            elif value<0 and len(str(value)) > (MessageConverter.commands[action][1][i]+1):
+                print(action + " should have " + str(MessageConverter.commands[action][1][i]) + " digits ")
+                return False
+            elif value>0 and len(str(value)) > MessageConverter.commands[action][1][i]:
+                print(action + " should have " + str(MessageConverter.commands[action][1][i]) + " digits ")
+                return False
+
+        return True
+

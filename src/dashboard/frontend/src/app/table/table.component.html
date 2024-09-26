@@ -1,0 +1,57 @@
+<table class="my-table">
+  <thead>
+    <tr>
+      <th class="header">Channel</th>
+      <th class="header">Interval</th>
+      <th class="header">Value</th>
+      <th class="header">RangeOfValues</th>
+      <th class="header">Action?</th>
+      <th class="header">Changed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let item of items">
+      <td class="cell">{{ item.channel }}</td>
+      <td class="cell">{{ item.interval }}</td>
+      <td class="cell">{{ item.value/100 }}</td>
+      <td class="cell">
+        <ng-container [ngSwitch]="item.type">
+          <!-- Default type -->
+          <span *ngSwitchCase="'default'">{{ item.values }}</span>
+          
+          <!-- Dropdown type -->
+          <select *ngSwitchCase="'dropdown'" [(ngModel)]="item.value" (change)="item.hasChanged = item.value !== item.initialValue">
+            <option *ngFor="let option of item.values" [value]="option">{{ option }}</option>
+          </select>
+          
+          <!-- Slider type with layers in a row -->
+          <div *ngSwitchCase="'slider'" class="slider-wrapper">
+            <!-- Layer in front of the slider -->
+            <div class="layer-front">{{ item.values[0] / 100 }}</div>
+            
+            <!-- The slider itself -->
+            <input type="range" [min]="item.values[0]" [max]="item.values[1]" [(ngModel)]="item.value"
+              (change)="item.hasChanged = item.value !== item.initialValue" />
+            
+            <!-- Layer after the slider -->
+            <div class="layer-back">{{ item.values[1] / 100 }}</div>
+          </div>
+        </ng-container>
+      </td>
+      <td class="cell" *ngIf="item.type !== 'default'">
+        <input type="checkbox" [(ngModel)]="item.checked" />
+      </td>
+      <td class="cell" *ngIf="item.type !== 'default'">
+        <span *ngIf="item.hasChanged">Yes</span>
+        <span *ngIf="!item.hasChanged">No</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Buttons that cover the entire width of the table -->
+<div class="button-group">
+  <button class="full-width-button" (click)="save()">Save</button>
+  <button class="full-width-button" (click)="reset()">Reset</button>
+  <button class="full-width-button" (click)="load()">Load</button>
+</div>

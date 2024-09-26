@@ -70,10 +70,13 @@ class WorkerProcess(Process):
         for th in self.threads:
             th.daemon = self.daemon
             th.start()
-
+            
         # Wait to set internal flag true for the event
         while not self._blocker.is_set():
-            self._blocker.wait(1)
+            try:
+                self._blocker.wait(1)
+            except KeyboardInterrupt as e: 
+                print(e)
 
         for th in self.threads:
             if hasattr(th, "stop") and callable(getattr(th, "stop")):

@@ -1,0 +1,55 @@
+.my-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ddd; /* Outer border for the whole table */
+}
+
+.header {
+  border-bottom: 2px solid #ddd; /* Keep the bottom border for the header */
+  padding: 8px;
+  text-align: center; /* Horizontally center header content */
+}
+
+.cell {
+  padding: 8px;
+  text-align: center; /* Horizontally center content */
+  vertical-align: middle; /* Vertically center content */
+  border: none; /* Remove borders from table cells */
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+}
+
+.full-width-button {
+  flex: 1;
+  padding: 10px;
+  margin: 5px;
+  background-color: #a77cec; /* Pale blue background color */
+  color: white;
+  border: none;
+  border-radius: 15px; /* Round corners */
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s ease; /* Smooth transition on hover */
+}
+
+.full-width-button:hover {
+  background-color: #6497b1; /* Slightly darker blue on hover */
+}
+
+.slider-wrapper {
+  display: flex;
+  align-items: center; /* Vertically center the slider and its layers */
+}
+
+.layer-front,
+.layer-back {
+  margin: 0 10px; /* Add some space around the layers */
+}
+
+input[type="range"] {
+  flex-grow: 1; /* Make the slider take up remaining space */
+  margin: 0 10px; /* Optional: add margin around the slider */
+}

@@ -46,15 +46,6 @@ class processGateway(WorkerProcess):
         self.debugging = debugging
         super(processGateway, self).__init__(queueList)
 
-    # ===================================== STOP ==========================================
-
-    def stop(self):
-        """Function for stopping threads and the process."""
-        for thread in self.threads:
-            thread.stop()
-            thread.join()
-        super(processGateway, self).stop()
-
     # ===================================== RUN ===========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
@@ -90,10 +81,9 @@ if __name__ == "__main__":
     process.start()
 
     pipeReceive1, pipeSend1 = Pipe()
-
     queueList["Config"].put(
         {
-            "Subscribe/Unsubscribe": 1,
+            "Subscribe/Unsubscribe": "suBsCribe",
             "Owner": "Camera",
             "msgID": 1,
             "To": {"receiver": 1, "pipe": pipeSend1},
@@ -104,7 +94,7 @@ if __name__ == "__main__":
     pipeReceive2, pipeSend2 = Pipe()
     queueList["Config"].put(
         {
-            "Subscribe/Unsubscribe": 1,
+            "Subscribe/Unsubscribe": "Subscribe",
             "Owner": "Camera",
             "msgID": 2,
             "To": {"receiver": 2, "pipe": pipeSend2},
@@ -115,7 +105,7 @@ if __name__ == "__main__":
     pipeReceive3, pipeSend3 = Pipe()
     queueList["Config"].put(
         {
-            "Subscribe/Unsubscribe": 1,
+            "Subscribe/Unsubscribe": "subscribe",
             "Owner": "Camera",
             "msgID": 3,
             "To": {"receiver": 3, "pipe": pipeSend3},

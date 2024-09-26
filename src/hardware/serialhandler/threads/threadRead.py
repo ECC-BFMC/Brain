@@ -25,14 +25,21 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+import time
 import threading
+import re
+import os
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
     BatteryLvl,
     ImuData,
     InstantConsumption,
     EnableButton,
+    ResourceMonitor,
+    CurrentSpeed,
+    CurrentSteer
 )
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
 class threadRead(ThreadWithStop):
@@ -45,15 +52,37 @@ class threadRead(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, f_serialCon, f_logFile, queueList):
-        super(threadRead, self).__init__()
+    def __init__(self, f_serialCon, f_logFile, queueList, logger, debugger = False):
+        
         self.serialCon = f_serialCon
         self.logFile = f_logFile
         self.buff = ""
         self.isResponse = False
         self.queuesList = queueList
         self.acumulator = 0
+        self.logger = logger
+        self.debugger = debugger
+        self.currentSpeed = 0
+        self.currentSteering = 0
+
+        self.enableButtonSender = messageHandlerSender(self.queuesList, EnableButton)
+        self.batteryLvlSender = messageHandlerSender(self.queuesList, BatteryLvl)
+        self.instantConsumptionSender = messageHandlerSender(self.queuesList, InstantConsumption)
+        self.imuDataSender = messageHandlerSender(self.queuesList, ImuData)
+        self.resourceMonitorSender = messageHandlerSender(self.queuesList, ResourceMonitor)
+        self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
+        self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
+
+        self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
+                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -250 and 250", 
+                               "speed": "between -500 and 500", "break": "between -250 and 250"}
+        
+        self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
+        self.resourceMonitorPattern = r'\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\);\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\)'
+
         self.Queue_Sending()
+        
+        super(threadRead, self).__init__()
 
     # ====================================== RUN ==========================================
     def run(self):
@@ -79,62 +108,95 @@ class threadRead(ThreadWithStop):
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
         """Callback function for enable button flag."""
-        self.queuesList[EnableButton.Queue.value].put(
-            {
-                "Owner": EnableButton.Owner.value,
-                "msgID": EnableButton.msgID.value,
-                "msgType": EnableButton.msgType.value,
-                "msgValue": True,
-            }
-        )
+        self.enableButtonSender.send(True)
         threading.Timer(1, self.Queue_Sending).start()
 
     def sendqueue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
-        if buff[1] == 1:
-            print(buff[2:-2])
-        elif buff[1] == 2:
-            print(buff[2:-2])
-        elif buff[1] == 3:
-            print(buff[2:-2])
-        elif buff[1] == 4:
-            print(buff[2:-2])
-        elif buff[1] == 9:
-            print(buff[2:-2])
-        elif buff[1] == 5:
-            self.queuesList[BatteryLvl.Queue].put(
-                {
-                    "Owner": BatteryLvl.Owner,
-                    "msgID": BatteryLvl.msgID,
-                    "msgType": BatteryLvl.msgType,
-                    "msgValue": int(buff[3:-2]),
+
+        action, value = buff.split(":") # @action:value;;
+        action = action[1:]
+        value = value[:-2]
+        if self.debugger:
+            self.logger.info(buff)
+
+        if action == "speed":
+            speed = value.split(",")[0]
+            if self.isFloat(speed):
+                self.currentSpeedSender.send(float(speed))
+
+        elif action == "steer":
+            steer = value.split(",")[0]
+            if self.isFloat(steer):
+                self.currentSteerSender.send(float(steer))
+
+        elif action == "battery":
+            if self.checkValidValue(action, value):
+                # to calculate the battery percentage we will use the linear equation y = m*x + b
+                # m - slope, b - y intercept
+                # (x1, y1) = (6.8, 0)  (x2, y2) = (8.4, 100)
+                m = 62.5  # (y2-y1) / (x2-x1) 
+                b = -425 # y1 = m*x1 + b
+                percentage = m*float(value) + b
+                percentage = max(0, min(100, round(percentage)))
+
+                self.batteryLvlSender.send(percentage)
+
+        elif action == "instant":
+            if self.checkValidValue(action, value):
+                self.instantConsumptionSender.send(float(value))
+
+        elif action == "resourceMonitor":
+            if self.checkValidValue(action, value):
+                data = re.match(self.resourceMonitorPattern, value)
+                if data:
+                    message = {"heap": data.group(1), "stack": data.group(2)}
+                    self.resourceMonitorSender.send(message)
+
+        elif action == "imu":
+            if self.checkValidValue(action, value):
+                splittedValue = value.split(";")
+                data = {
+                    "roll": splittedValue[0],
+                    "pitch": splittedValue[1],
+                    "yaw": splittedValue[2],
+                    "accelx": splittedValue[3],
+                    "accely": splittedValue[4],
+                    "accelz": splittedValue[5],
                 }
-            )
-        elif buff[1] == 6:
-            self.queuesList[InstantConsumption.Queue].put(
-                {
-                    "Owner": InstantConsumption.Owner,
-                    "msgID": InstantConsumption.msgID,
-                    "msgType": InstantConsumption.msgType,
-                    "msgValue": int(buff[3:-2]),
-                }
-            )
-        elif buff[1] == 7:
-            buff = buff[3:-2]
-            splitedBuffer = buff.split(";")
-            data = {
-                "roll": splitedBuffer[0],
-                "pitch": splitedBuffer[1],
-                "yaw": splitedBuffer[2],
-                "accelx": splitedBuffer[3],
-                "accely": splitedBuffer[4],
-                "accelz": splitedBuffer[5],
-            }
-            self.queuesList[ImuData.Queue].put(
-                {
-                    "Owner": ImuData.Owner,
-                    "msgID": ImuData.msgID,
-                    "msgType": ImuData.msgType,
-                    "msgValue": data,
-                }
-            )
+                self.imuDataSender.send(data)
+
+        elif action == "kl":
+            self.checkValidValue(action, value)
+
+        elif action == "warning":
+            data = re.match(self.warningPattern, value)
+            if data:
+                print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
+
+        elif action == "shutdown":
+            print("SHUTTING DOWN!")
+            time.sleep(3)
+            os.system("sudo shutdown -h now")
+            
+
+    def checkValidValue(self, action, message):
+        if message == "syntax error":
+            print(f"WARNING! Invalid value for {action.upper()} (expected {self.expectedValues[action]})")
+            return False
+    
+        if message == "kl 15/30 is required!!":
+            print(f"WARNING! KL set to 15 or 30 is required to perform {action.upper()} action")
+            return False
+        
+        if message == "ack":
+            return False
+        return True
+    
+    def isFloat(self, string):
+        try: 
+            float(string)
+        except ValueError:
+            return False
+        
+        return True

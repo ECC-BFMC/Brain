@@ -1,0 +1,76 @@
+.speedometer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    /* border: 1px solid black; */
+  }
+
+.speedometer-body { 
+    width: 100%;
+    height: 100%;
+    position: relative;
+    /* border: 3px solid yellow; */
+}
+
+.speedometer-indicator-svg { 
+    display: flex;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#speedometer-needle-group { 
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+}
+
+.speedometer-text { 
+    font-size: 25px;
+    text-anchor: middle;
+    fill: white;
+}
+
+.speedometer-unit-text { 
+    font-size: 15px;
+    opacity: 0.5;
+    text-anchor: middle;
+    fill: white;
+}
+
+.speedometer-big-lines { 
+    stroke: rgb(188, 188, 188);
+    stroke-width: 2px;
+    stroke-opacity: 0.9;
+    mask-image: linear-gradient(110deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    -webkit-mask-image: linear-gradient(110deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    mask-size: 110% 110%;
+    mask-repeat: no-repeat;
+}
+
+.speedometer-small-lines { 
+    stroke: rgb(191, 191, 191);
+    stroke-width: 1px;
+    stroke-opacity: 0.6;
+    mask-image: linear-gradient(110deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    -webkit-mask-image: linear-gradient(110deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    mask-size: 110% 110%;
+    mask-repeat: no-repeat;
+}
+
+#speedometer-path { 
+    stroke: rgb(188, 188, 188);
+    stroke-width: 8px;
+    fill: transparent;
+    stroke-linecap: round;
+    filter: drop-shadow(3px 3px 3px rgb(0, 0, 0, 0.5));
+}
+
+#speedometer-needle { 
+    position: relative;
+    stroke: red;
+    stroke-width: 3px;
+    stroke-linecap: round;
+    filter: drop-shadow(0px 0px 2px rgb(255, 0, 0, 0.8));
+}

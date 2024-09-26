@@ -31,41 +31,42 @@ import base64
 import picamera2
 import time
 
-from multiprocessing import Pipe
 from src.utils.messages.allMessages import (
     mainCamera,
     serialCamera,
     Recording,
     Record,
-    Config,
+    Brightness,
+    Contrast,
 )
+from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
 
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
     Args:
-        pipeRecv (multiprocessing.queues.Pipe): A pipe where we can receive configs for camera. We will read from this pipe.
-        pipeSend (multiprocessing.queues.Pipe): A pipe where we can write configs for camera. Process Gateway will write on this pipe.
         queuesList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
         logger (logging object): Made for debugging.
         debugger (bool): A flag for debugging.
     """
 
     # ================================ INIT ===============================================
-    def __init__(self, pipeRecv, pipeSend, queuesList, logger, debugger):
+    def __init__(self, queuesList, logger, debugger):
         super(threadCamera, self).__init__()
         self.queuesList = queuesList
         self.logger = logger
-        self.pipeRecvConfig = pipeRecv
-        self.pipeSendConfig = pipeSend
         self.debugger = debugger
         self.frame_rate = 5
         self.recording = False
-        pipeRecvRecord, pipeSendRecord = Pipe(duplex=False)
-        self.pipeRecvRecord = pipeRecvRecord
-        self.pipeSendRecord = pipeSendRecord
+
         self.video_writer = ""
+
+        self.recordingSender = messageHandlerSender(self.queuesList, Recording)
+        self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
+        self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
+
         self.subscribe()
         self._init_camera()
         self.Queue_Sending()
@@ -73,36 +74,16 @@ class threadCamera(ThreadWithStop):
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": Record.Owner.value,
-                "msgID": Record.msgID.value,
-                "To": {"receiver": "threadCamera", "pipe": self.pipeSendRecord},
-            }
-        )
-        self.queuesList["Config"].put(
-            {
-                "Subscribe/Unsubscribe": "subscribe",
-                "Owner": Config.Owner.value,
-                "msgID": Config.msgID.value,
-                "To": {"receiver": "threadCamera", "pipe": self.pipeSendConfig},
-            }
-        )
+        self.recordSubscriber = messageHandlerSubscriber(self.queuesList, Record, "lastOnly", True)
+        self.brightnessSubscriber = messageHandlerSubscriber(self.queuesList, Brightness, "lastOnly", True)
+        self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
 
     def Queue_Sending(self):
         """Callback function for recording flag."""
-        self.queuesList[Recording.Queue.value].put(
-            {
-                "Owner": Recording.Owner.value,
-                "msgID": Recording.msgID.value,
-                "msgType": Recording.msgType.value,
-                "msgValue": self.recording,
-            }
-        )
+        self.recordingSender.send(self.recording)
         threading.Timer(1, self.Queue_Sending).start()
-
-    # =============================== STOP ================================================
+        
+    # ================ STOP ================================================
     def stop(self):
         if self.recording:
             self.video_writer.release()
@@ -111,15 +92,26 @@ class threadCamera(ThreadWithStop):
     # =============================== CONFIG ==============================================
     def Configs(self):
         """Callback function for receiving configs on the pipe."""
-        while self.pipeRecvConfig.poll():
-            message = self.pipeRecvConfig.recv()
-            message = message["value"]
-            print(message)
+        if self.brightnessSubscriber.isDataInPipe():
+            message = self.brightnessSubscriber.receive()
+            if self.debugger:
+                self.logger.info(str(message))
             self.camera.set_controls(
                 {
                     "AeEnable": False,
                     "AwbEnable": False,
-                    message["action"]: float(message["value"]),
+                    "Brightness": max(0.0, min(1.0, float(message))),
+                }
+            )
+        if self.contrastSubscriber.isDataInPipe():
+            message = self.contrastSubscriber.receive() # de modificat marti uc camera noua 
+            if self.debugger:
+                self.logger.info(str(message))
+            self.camera.set_controls(
+                {
+                    "AeEnable": False,
+                    "AwbEnable": False,
+                    "Contrast": max(0.0, min(32.0, float(message))),
                 }
             )
         threading.Timer(1, self.Configs).start()
@@ -127,13 +119,14 @@ class threadCamera(ThreadWithStop):
     # ================================ RUN ================================================
     def run(self):
         """This function will run while the running flag is True. It captures the image from camera and make the required modifies and then it send the data to process gateway."""
-        var = True
+        send = True
         while self._running:
             try:
-                if self.pipeRecvRecord.poll():
-                    msg = self.pipeRecvRecord.recv()
-                    self.recording = msg["value"]
-                    if msg["value"] == False:
+                recordRecv = self.recordSubscriber.receive()
+                if recordRecv is not None: 
+                    self.recording = bool(recordRecv)
+                    print(self.recording, type(self.recording))
+                    if recordRecv == False:
                         self.video_writer.release()
                     else:
                         fourcc = cv2.VideoWriter_fourcc(
@@ -145,40 +138,29 @@ class threadCamera(ThreadWithStop):
                             self.frame_rate,
                             (2048, 1080),
                         )
+
             except Exception as e:
                 print(e)
-            if self.debugger == True:
-                self.logger.warning("getting image")
-            request = self.camera.capture_array("main")
-            if var:
+
+            if send:
+                mainRequest = self.camera.capture_array("main")
+                serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
+
                 if self.recording == True:
-                    cv2_image = cv2.cvtColor(request, cv2.COLOR_RGB2BGR)
-                    self.video_writer.write(cv2_image)
-                request2 = self.camera.capture_array(
-                    "lores"
-                )  # Will capture an array that can be used by OpenCV library
-                request2 = request2[:360, :]
-                _, encoded_img = cv2.imencode(".jpg", request2)
-                _, encoded_big_img = cv2.imencode(".jpg", request)
-                image_data_encoded = base64.b64encode(encoded_img).decode("utf-8")
-                image_data_encoded2 = base64.b64encode(encoded_big_img).decode("utf-8")
-                self.queuesList[mainCamera.Queue.value].put(
-                    {
-                        "Owner": mainCamera.Owner.value,
-                        "msgID": mainCamera.msgID.value,
-                        "msgType": mainCamera.msgType.value,
-                        "msgValue": image_data_encoded2,
-                    }
-                )
-                self.queuesList[serialCamera.Queue.value].put(
-                    {
-                        "Owner": serialCamera.Owner.value,
-                        "msgID": serialCamera.msgID.value,
-                        "msgType": serialCamera.msgType.value,
-                        "msgValue": image_data_encoded,
-                    }
-                )
-            var = not var
+                    self.video_writer.write(mainRequest)
+
+                serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420)
+
+                _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)                   
+                _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
+
+                mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
+                serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8")
+
+                self.mainCameraSender.send(mainEncodedImageData)
+                self.serialCameraSender.send(serialEncodedImageData)
+
+            send = not send
 
     # =============================== START ===============================================
     def start(self):
@@ -191,8 +173,8 @@ class threadCamera(ThreadWithStop):
         config = self.camera.create_preview_configuration(
             buffer_count=1,
             queue=False,
-            main={"format": "XBGR8888", "size": (2048, 1080)},
-            lores={"size": (480, 360)},
+            main={"format": "RGB888", "size": (2048, 1080)},
+            lores={"size": (512, 270)},
             encode="lores",
         )
         self.camera.configure(config)

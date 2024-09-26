@@ -1,0 +1,9 @@
+<div class="warning-light-container">
+  <div class="warning-light-items" *ngFor="let warningLight of warningLights" @fadeInOut>
+    <img
+      class="warning-light-image"
+      [src]="'assets/warningLights/' + warningLight.type + '.png'"
+      alt="Warning Light"
+    />
+  </div>
+</div>

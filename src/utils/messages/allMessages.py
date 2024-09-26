@@ -33,28 +33,26 @@ class mainCamera(Enum):
     Queue = "General"
     Owner = "threadCamera"
     msgID = 1
-    msgType = "base64"
+    msgType = "str"
 
 
 class serialCamera(Enum):
     Queue = "General"
     Owner = "threadCamera"
     msgID = 2
-    msgType = "base64"
-
+    msgType = "str"
 
 class Recording(Enum):
     Queue = "General"
     Owner = "threadCamera"
     msgID = 3
-    msgType = "Boolean"
-
+    msgType = "bool"
 
 class Signal(Enum):
     Queue = "General"
     Owner = "threadCamera"
     msgID = 4
-    msgType = "String"
+    msgType = "str"
 
 
 ################################# processCarsAndSemaphores ##################################
@@ -62,116 +60,170 @@ class Cars(Enum):
     Queue = "General"
     Owner = "threadCarsAndSemaphores"
     msgID = 1
-    msgType = "String"
+    msgType = "dict"
 
 
 class Semaphores(Enum):
     Queue = "General"
     Owner = "threadCarsAndSemaphores"
     msgID = 2
-    msgType = "String"
+    msgType = "dict"
 
 
-################################# From PC ##################################
-class EngineRun(Enum):
-    Queue = "General"
-    Owner = "threadRemoteHandler"
-    msgID = 1
-    msgType = "dictionary"
-
-
-# {"action": "startEngine", "value": self.started}
-
-
+################################# From Dashboard ##################################
 class SpeedMotor(Enum):
     Queue = "General"
-    Owner = "threadRemoteHandler"
-    msgID = 2
-    msgType = "dictionary"
-
-
-# "action": "speed", "value": val}
+    Owner = "Dashboard"
+    msgID = 1
+    msgType = "str"
 
 
 class SteerMotor(Enum):
     Queue = "General"
-    Owner = "threadRemoteHandler"
-    msgID = 3
-    msgType = "dictionary"
-
-
-# {"action": "steer", "value": val}
+    Owner = "Dashboard"
+    msgID = 2
+    msgType = "str"
 
 
 class Control(Enum):
     Queue = "General"
-    Owner = "threadRemoteHandler"
-    msgID = 4
-    msgType = "dictionary"
+    Owner = "Dashboard"
+    msgID = 3
+    msgType = "dict"
 
 
 class Brake(Enum):
     Queue = "General"
-    Owner = "threadRemoteHandler"
-    msgID = 5
-    msgType = "dictionary"
-
-
-# {"action": "steer", "value": 0.0}
-# {"action": "speed", "value": 0.0}
+    Owner = "Dashboard"
+    msgID = 4
+    msgType = "float"
 
 
 class Record(Enum):
     Queue = "General"
-    Owner = "threadRemoteHandler"
-    msgID = 6
-    msgType = "dictionary"
-
-
-# {"action": "startRecord", "value": self.startedRecord}
+    Owner = "Dashboard"
+    msgID = 5
+    msgType = "str"
 
 
 class Config(Enum):
     Queue = "General"
-    Owner = "threadRemoteHandler"
+    Owner = "Dashboard"
+    msgID = 6
+    msgType = "dict"
+
+class Klem(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
     msgID = 7
-    msgType = "dictionary"
+    msgType = "str"
 
+class DrivingMode(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 8
+    msgType = "str"
 
-# {"action": key, "value": value}
+class ToggleInstant(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 9
+    msgType = "str"
 
+class ToggleBatteryLvl(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 10
+    msgType = "str"
+
+class ToggleImuData(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 11
+    msgType = "str"
+
+class ToggleResourceMonitor(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 12
+    msgType = "str"
+
+class State(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 13
+    msgType = "str"
+
+class Brightness(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 14
+    msgType = "str"
+
+class Contrast(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 15
+    msgType = "str"
+
+class DropdownChannelExample(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 16
+    msgType = "str"
+
+class SliderChannelExample(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 17
+    msgType = "str"
 
 ################################# From Nucleo ##################################
 class BatteryLvl(Enum):
     Queue = "General"
-    Owner = "threadReadSerial"
+    Owner = "threadRead"
     msgID = 1
-    msgType = "float"
+    msgType = "int"
 
 
 class ImuData(Enum):
     Queue = "General"
-    Owner = "threadReadSerial"
+    Owner = "threadRead"
     msgID = 2
-    msgType = "String"
+    msgType = "str"
 
 
 class InstantConsumption(Enum):
     Queue = "General"
-    Owner = "threadReadSerial"
+    Owner = "threadRead"
     msgID = 3
     msgType = "float"
 
+
+class ResourceMonitor(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 4
+    msgType = "dict"
+
+class CurrentSpeed(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 5
+    msgType = "float"
+
+class CurrentSteer(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 6
+    msgType = "float"
 
 ################################# From Locsys ##################################
 class Location(Enum):
     Queue = "General"
     Owner = "threadTrafficCommunication"
     msgID = 1
-    msgType = "dictionary"
-
-
-# {"x": value, "y": value}
+    msgType = "dict"
 
 
 ######################    From processSerialHandler  ###########################
@@ -179,11 +231,21 @@ class EnableButton(Enum):
     Queue = "General"
     Owner = "threadWrite"
     msgID = 1
-    msgType = "Boolean"
+    msgType = "bool"
 
 
 class SignalRunning(Enum):
     Queue = "General"
     Owner = "threadWrite"
     msgID = 2
-    msgType = "Boolean"
+    msgType = "bool"
+
+
+
+class WarningSignal(Enum):
+    Queue = "General"
+    Owner = "brain"
+    msgID = 1
+    msgType = "str"
+
+### It will have this format: {"WarningName":"name1", "WarningID": 1}

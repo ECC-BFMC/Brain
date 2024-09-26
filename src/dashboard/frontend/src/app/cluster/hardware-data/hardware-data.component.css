@@ -1,0 +1,26 @@
+.hardware-data {
+    width: 100%;
+    height: 100%;
+    /* border: 3px solid blue; */
+    display: flex;
+    gap: 2%;
+    flex-direction: row;
+}
+
+.cpu-temp {
+    width: 13%;
+    height: 100%;
+    /* border: 3px solid green; */
+}
+
+.cpu-usage { 
+    width: 13%;
+    height: 100%;
+    /* border: 3px solid yellow; */
+}
+
+.memory-usage {
+    width: 13%;
+    height: 100%;
+    /* border: 3px solid red; */
+}
