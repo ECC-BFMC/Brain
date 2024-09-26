@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from twisted.internet import protocol
 from src.utils.messages.allMessages import Location
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 import time
 import json
 
@@ -39,30 +40,31 @@ class tcpLocsys(protocol.ClientFactory):
         sendQueue (multiprocessing.Queue): We place the information on this queue.
     """
 
-    def __init__(self, id, sendQueue):
+    def __init__(self, id, sendQueue, debugging, logger):
         self.connection = None
         self.retry_delay = 1
         self.sendQueue = sendQueue
         self.deviceID = id
+        self.logger = logger
+        self.debugging = debugging
+        self.locationSender = messageHandlerSender(self.sendQueue, Location)
 
     def clientConnectionLost(self, connector, reason):
-        print(
-            "Connection lost with server ",
+        if self.debugging:
+            print("Connection lost with server ",
             self.connectiondata,
             " Retrying in ",
             self.retry_delay,
-            " seconds... (Check password match, IP or server availability)",
-        )
+            " seconds... (Check password match, IP or server availability)")
         self.connectiondata = None
         connector.connect()
 
     def clientConnectionFailed(self, connector, reason):
-        print(
-            "Connection failed. Retrying in",
-            self.retry_delay,
-            "seconds... Possible server down or incorrect IP:port match",
-        )
-        print(reason)
+        if self.debugging:
+            print("Connection failed. Retrying in",
+                self.retry_delay,
+                "seconds... Possible server down or incorrect IP:port match",)
+            self.logger.info(reason)
         time.sleep(self.retry_delay)
         connector.connect()
 
@@ -76,13 +78,7 @@ class tcpLocsys(protocol.ClientFactory):
 
     def receive_data_from_server(self, message):
         message["id"] = self.deviceID
-        message_to_send = {
-            "Owner": Location.Owner.value,
-            "msgID": Location.msgID.value,
-            "msgType": Location.msgType.value,
-            "msgValue": message,
-        }
-        self.sendQueue.put(message_to_send)
+        self.locationSender.send(message)
 
 
 # One class is generated for each new connection

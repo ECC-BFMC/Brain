@@ -25,14 +25,16 @@ class threadTrafficCommunication(ThreadWithStop):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, shrd_mem, queueslist, deviceID, decrypt_key):
+    def __init__(self, shrd_mem, queueslist, deviceID, decrypt_key, debugging, logger):
         super(threadTrafficCommunication, self).__init__()
         self.listenPort = 9000
+        self.debugging = debugging 
+        self.logger = logger 
         self.tcp_factory = tcpClient(
             self.serverDisconnect, self.locsysConnect, deviceID
         )
         self.udp_factory = udpListener(decrypt_key, self.serverFound)
-        self.queue = queueslist["General"]
+        self.queue = queueslist
         self.period_task = periodicTask(1, shrd_mem, self.tcp_factory)
         self.reactor = reactor
         self.reactor.listenUDP(self.listenPort, self.udp_factory)
@@ -52,8 +54,10 @@ class threadTrafficCommunication(ThreadWithStop):
     def locsysConnect(self, deviceID, IPandPORT):
         """In this method we get the port and ip and we connect the reactor"""
         ip, port = IPandPORT.split(":")
-        print(ip, port, deviceID)
-        self.tcp_factory_locsys = tcpLocsys(id, self.queue)
+        if self.debugging: 
+            self.logger.info(str(ip))
+            self.logger.info(str(port))
+        self.tcp_factory_locsys = tcpLocsys(deviceID, self.queue, self.debugging, self.logger)
         self.reactor.connectTCP(ip, int(port), self.tcp_factory_locsys)
 
     # ======================================= RUN ==========================================
