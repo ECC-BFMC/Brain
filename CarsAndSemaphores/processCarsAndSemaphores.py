@@ -45,9 +45,10 @@ class processCarsAndSemaphores(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging=False):
+    def __init__(self, queueList, logging, debugging = False):
         self.queuesList = queueList
-        self.logging = logging
+        self.logger = logging
+        self.debugging = debugging
         super(processCarsAndSemaphores, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
@@ -66,7 +67,7 @@ class processCarsAndSemaphores(WorkerProcess):
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the thread and add to the list of threads."""
-        CarsSemTh = threadCarsAndSemaphores(self.queuesList)
+        CarsSemTh = threadCarsAndSemaphores(self.queuesList, self.logger, self.debugging)
         self.threads.append(CarsSemTh)
 
 

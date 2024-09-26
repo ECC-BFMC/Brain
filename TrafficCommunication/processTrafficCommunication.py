@@ -45,9 +45,10 @@ class processTrafficCommunication(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, deviceID):
+    def __init__(self, queueList, logging, deviceID, debugging = False):
         self.queuesList = queueList
         self.logging = logging
+        self.debugging = debugging
         self.shared_memory = sharedMem()
         self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
         self.deviceID = deviceID
@@ -70,7 +71,7 @@ class processTrafficCommunication(WorkerProcess):
     def _init_threads(self):
         """Create the Traffic Communication thread and add to the list of threads."""
         TrafficComTh = threadTrafficCommunication(
-            self.shared_memory, self.queuesList, self.deviceID, self.filename
+            self.shared_memory, self.queuesList, self.deviceID, self.filename, self.debugging, self.logging
         )
         self.threads.append(TrafficComTh)
 
