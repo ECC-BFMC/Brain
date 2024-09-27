@@ -21,7 +21,7 @@ export class SteeringComponent {
     // Listen for camera
     this.steerSubscription = this.webSocketService.receiveCurrentSteer().subscribe(
       (message) => {
-        this.angle = message["float"]/10;
+        this.angle = message.value/10;
       },
       (error) => {
         console.error('Error receiving disk usage:', error);

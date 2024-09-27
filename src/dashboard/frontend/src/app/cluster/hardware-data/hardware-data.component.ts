@@ -40,8 +40,8 @@ export class HardwareDataComponent {
     
     this.resourceSubscription = this.webSocketService.receiveResourceMonitor().subscribe(
       (message) =>{
-        this.heap = message.dict["heap"];
-        this.stack = message.dict["stack"];
+        this.heap = message.value["heap"];
+        this.stack = message.value["stack"];
       },
       (error) => {
         console.error('Error receiving resource monitor:', error);

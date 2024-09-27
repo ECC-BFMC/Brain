@@ -74,11 +74,11 @@ class threadRead(ThreadWithStop):
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
-                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -250 and 250", 
+                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25", 
                                "speed": "between -500 and 500", "break": "between -250 and 250"}
         
         self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
-        self.resourceMonitorPattern = r'\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\);\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\)'
+        self.resourceMonitorPattern = r'Heap\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\);Stack\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\)'
 
         self.Queue_Sending()
         
@@ -113,7 +113,6 @@ class threadRead(ThreadWithStop):
 
     def sendqueue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
-
         action, value = buff.split(":") # @action:value;;
         action = action[1:]
         value = value[:-2]
@@ -134,10 +133,11 @@ class threadRead(ThreadWithStop):
             if self.checkValidValue(action, value):
                 # to calculate the battery percentage we will use the linear equation y = m*x + b
                 # m - slope, b - y intercept
-                # (x1, y1) = (6.8, 0)  (x2, y2) = (8.4, 100)
-                m = 62.5  # (y2-y1) / (x2-x1) 
-                b = -425 # y1 = m*x1 + b
+                # (x1, y1) = (7.1, 0)  (x2, y2) = (8.4, 100)
+                m = 76.92  # (y2-y1) / (x2-x1) 
+                b = -546 # y1 = m*x1 + b
                 percentage = m*float(value) + b
+                percentage = m*float(7.75) + b
                 percentage = max(0, min(100, round(percentage)))
 
                 self.batteryLvlSender.send(percentage)
@@ -148,7 +148,9 @@ class threadRead(ThreadWithStop):
 
         elif action == "resourceMonitor":
             if self.checkValidValue(action, value):
+                print("cevaaaa")
                 data = re.match(self.resourceMonitorPattern, value)
+                print(data)
                 if data:
                     message = {"heap": data.group(1), "stack": data.group(2)}
                     self.resourceMonitorSender.send(message)

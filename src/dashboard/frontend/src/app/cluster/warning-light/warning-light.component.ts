@@ -35,9 +35,8 @@ export class WarningLightComponent {
   ngOnInit() {
     this.warningsSubscription = this.webSocketService.receiveWarningSignal().subscribe(
       (message) => {
-        console.log(message.data.WarningID)
-        let id = message.data.WarningID
-        let type = message.data.WarningName
+        let id = message.value.WarningID
+        let type = message.value.WarningName
         this.setWarningLightType(String(id))
       },
     );

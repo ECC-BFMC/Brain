@@ -13,7 +13,7 @@
     <tr *ngFor="let item of items">
       <td class="cell">{{ item.channel }}</td>
       <td class="cell">{{ item.interval }}</td>
-      <td class="cell">{{ item.value/100 }}</td>
+      <td class="cell">{{ item.value}}</td>
       <td class="cell">
         <ng-container [ngSwitch]="item.type">
           <!-- Default type -->

@@ -120,9 +120,9 @@ class threadWrite(ThreadWithStop):
 
     def convertFc(self,instantRecv):
         if instantRecv =="True":
-            return True
+            return 1
         else :
-            return False
+            return 0
     # ===================================== RUN ==========================================
     def run(self):
         """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""
@@ -190,28 +190,28 @@ class threadWrite(ThreadWithStop):
                     if instantRecv is not None: 
                         if self.debugger:
                             self.logger.info(instantRecv) 
-                        command = {"action": "instant", "activate": self.convertFc(instantRecv)}
+                        command = {"action": "instant", "activate": int(instantRecv)}
                         self.sendToSerial(command)
 
                     batteryRecv = self.batterySubscriber.receive()
                     if batteryRecv is not None: 
                         if self.debugger:
                             self.logger.info(batteryRecv)
-                        command = {"action": "battery", "activate": self.convertFc(batteryRecv)}
+                        command = {"action": "battery", "activate": int(batteryRecv)}
                         self.sendToSerial(command)
 
                     resourceMonitorRecv = self.resourceMonitorSubscriber.receive()
                     if resourceMonitorRecv is not None: 
                         if self.debugger:
                             self.logger.info(resourceMonitorRecv)
-                        command = {"action": "resourceMonitor", "activate": self.convertFc(resourceMonitorRecv)}
+                        command = {"action": "resourceMonitor", "activate": int(resourceMonitorRecv)}
                         self.sendToSerial(command)
 
                     imuRecv = self.imuSubscriber.receive()
                     if imuRecv is not None: 
                         if self.debugger:
                             self.logger.info(imuRecv)
-                        command = {"action": "imu", "activate": self.convertFc(imuRecv)}
+                        command = {"action": "imu", "activate": int(imuRecv)}
                         self.sendToSerial(command)
 
             except Exception as e:

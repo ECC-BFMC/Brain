@@ -26,6 +26,9 @@ export class AppComponent {
   clusterLightType: string = '';
   recordingState: boolean = false;
   private intervalId: any;
+  timeValue: number = 0;
+  speedValue: number = 0;
+  steerValue: number = 0;
 
   enteredPassword = ''; // User input password
   
@@ -36,9 +39,13 @@ export class AppComponent {
 
   constructor( private webSocketService: WebSocketService) { }
 
+  activateFunction() {
+    this.sendMessage(`{"Name": "Control", "Value": {"Time":"${this.timeValue}","Speed":"${this.speedValue}"},"Steer":"${this.steerValue}"`)
+  }
+
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:
-    //this.startNUCLEOFunctions()
+    this.startNUCLEOFunctions()
   }
 
   ngOnDestroy() {
@@ -104,10 +111,10 @@ export class AppComponent {
   
   startNUCLEOFunctions()
   {
-    this.sendMessage("{\"Name\": \"ToggleInstant\", \"Value\": \"True\"}")
-    this.sendMessage("{\"Name\": \"ToggleBatteryLvl\", \"Value\": \"True\"}")
-    this.sendMessage("{\"Name\": \"ToggleImuData\", \"Value\": \"True\"}")
-    this.sendMessage("{\"Name\": \"ToggleResourceMonitor\", \"Value\": \"True\"}")
+    this.sendMessage("{\"Name\": \"ToggleInstant\", \"Value\": \"1\"}")
+    this.sendMessage("{\"Name\": \"ToggleBatteryLvl\", \"Value\": \"1\"}")
+    this.sendMessage("{\"Name\": \"ToggleImuData\", \"Value\": \"1\"}")
+    this.sendMessage("{\"Name\": \"ToggleResourceMonitor\", \"Value\": \"1\"}")
   }
 
   sendMessage(message: string) {

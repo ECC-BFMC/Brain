@@ -34,7 +34,7 @@ export class TableComponent implements OnInit {
     );
 
     this.webSocketService.receiveUnhandledEvents().subscribe(event => {
-      this.updateTable(event.channel, event.data);
+      this.updateTable(event.channel, event.data.value);
     });
 
     this.reset();
@@ -43,14 +43,13 @@ export class TableComponent implements OnInit {
   private updateTable(channel: string, value: any) {
     const currentTime = Date.now();
     const lastTimestamp = this.lastReceivedTimestamp[channel] || currentTime;
-
     const interval = (currentTime - lastTimestamp) / 1000;
     this.lastReceivedTimestamp[channel] = currentTime;
 
     const existingItem = this.items.find(item => item.channel === channel);
 
     if (existingItem) {
-      existingItem.value = value.data;
+      existingItem.value = value;
       existingItem.interval = interval;
 
       // Compare current value to initial value and mark as changed if necessary
@@ -58,8 +57,8 @@ export class TableComponent implements OnInit {
     } else {
       this.items.push({ 
         channel, 
-        value: value.data, 
-        initialValue: value.data, 
+        value: value, 
+        initialValue: value, 
         interval, 
         type: 'default', 
         values: [], 

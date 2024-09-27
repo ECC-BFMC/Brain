@@ -30,7 +30,7 @@ export class SpeedometerComponent {
       (message) => {
         // 100% - 60cm/s
         // 0%   - 0cm/s
-        this.speed = Math.abs(message["float"] * 100 / 60);
+        this.speed = Math.abs(message.value * 100 / 60);
         this.updateNeedle();
       },
       (error) => {

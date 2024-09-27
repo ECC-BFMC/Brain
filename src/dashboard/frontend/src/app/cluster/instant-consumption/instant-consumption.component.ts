@@ -30,7 +30,7 @@ export class InstantConsumptionComponent {
       (message) => {
         // 100% - 40Ah
         // 0%   - 0Ah
-        this.instant = message["float"] * 100 / 40;
+        this.instant = message.value * 100 / 40;
         this.updateNeedle();
       },
       (error) => {

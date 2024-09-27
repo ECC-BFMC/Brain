@@ -24,7 +24,7 @@ export class LiveCameraComponent {
 
     this.cameraSubscription = this.webSocketService.receiveCamera().subscribe(
       (message) => {
-        this.image = `data:image/png;base64,${message.str}`;
+        this.image = `data:image/png;base64,${message.value}`;
         this.loading = false;
       },
       (error) => {

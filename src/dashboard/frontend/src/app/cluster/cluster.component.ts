@@ -34,7 +34,7 @@ export class ClusterComponent {
 
   warningLightType: string = '';
   public battery: number = 0;
-  public speed: number = 20;
+  public speed: number = 0;
   private batterySubscription: Subscription | undefined;
   private speedSubscription: Subscription | undefined;
 
@@ -45,7 +45,7 @@ export class ClusterComponent {
     // Listen for battery
     this.batterySubscription = this.webSocketService.receiveBatteryLevel().subscribe(
       (message) => {
-        this.battery = message['int'];
+        this.battery = message.value;
       },
       (error) => {
         console.error('Error receiving disk usage:', error);
@@ -54,7 +54,7 @@ export class ClusterComponent {
 
     this.speedSubscription = this.webSocketService.receiveCurrentSpeed().subscribe(
       (message) => {
-        this.speed = Math.abs(parseInt(message["float"])/10);
+        this.speed = Math.abs(parseInt(message.value)/10);
       },
       (error) => {
         console.error('Error receiving disk usage:', error);

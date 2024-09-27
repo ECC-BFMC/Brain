@@ -28,7 +28,8 @@ export class BatteryLevelComponent {
     // Listen for battery
     this.batterySubscription = this.webSocketService.receiveBatteryLevel().subscribe(
       (message) => {
-        this.battery = message['int'];
+        console.log(message.value)
+        this.battery = Number(message.value);
         this.updateNeedle();
       },
       (error) => {

@@ -34,8 +34,8 @@ export class MapComponent {
 
     this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
       (message) => {
-        this.mapX = parseFloat(message.dict.x)
-        this.mapY = parseFloat(message.dict.y)
+        this.mapX = parseFloat(message.value.x)
+        this.mapY = parseFloat(message.value.y)
         this.updateMap()
       },
     );

@@ -174,7 +174,7 @@ class processDashboard(WorkerProcess):
                 resp = self.messages[msg]["obj"].receive()
 
                 if resp is not None:
-                    self.socketio.emit(msg, {self.messages[msg]["type"]: resp})
+                    self.socketio.emit(msg, {"value": resp})
                     if self.debugging:
                         self.logger.info(str(msg))
                         self.logger.info(str(resp))
