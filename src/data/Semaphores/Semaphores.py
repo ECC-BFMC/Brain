@@ -25,18 +25,19 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 if __name__ == "__main__":
     import sys
 
     sys.path.insert(0, "../../..")
 
 from src.templates.workerprocess import WorkerProcess
-from src.data.CarsAndSemaphores.threads.threadCarsAndSemaphores import (
-    threadCarsAndSemaphores,
+from src.data.Semaphores.threads.threadSemaphores import (
+    threadSemaphores,
 )
 
 
-class processCarsAndSemaphores(WorkerProcess):
+class processSemaphores(WorkerProcess):
     """This process will receive the location of the other cars and the location and the state of the semaphores.
 
     Args:
@@ -45,11 +46,10 @@ class processCarsAndSemaphores(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, debugging = False):
+    def __init__(self, queueList, logging=False):
         self.queuesList = queueList
-        self.logger = logging
-        self.debugging = debugging
-        super(processCarsAndSemaphores, self).__init__(self.queuesList)
+        self.logging = logging
+        super(processSemaphores, self).__init__(self.queuesList)
 
     # ===================================== STOP ==========================================
     def stop(self):
@@ -57,41 +57,39 @@ class processCarsAndSemaphores(WorkerProcess):
         for thread in self.threads:
             thread.stop()
             thread.join()
-        super(processCarsAndSemaphores, self).stop()
+        super(processSemaphores, self).stop()
 
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processCarsAndSemaphores, self).run()
+        super(processSemaphores, self).run()
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the thread and add to the list of threads."""
-        CarsSemTh = threadCarsAndSemaphores(self.queuesList, self.logger, self.debugging)
+        CarsSemTh = threadSemaphores(self.queuesList)
         self.threads.append(CarsSemTh)
 
 
 # =================================== EXAMPLE =========================================
-#             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
-#                  in terminal:    python3 processCarsAndSemaphores.py
 
 if __name__ == "__main__":
     from multiprocessing import Queue
     import time
 
     queueList = {
-        "Critical": Queue(),
-        "Warning": Queue(),
-        "General": Queue(),
-        "Config": Queue(),
+        "Critical": Queue(),  # Queue for critical messages
+        "Warning": Queue(),  # Queue for warning messages
+        "General": Queue(),  # Queue for general messages
+        "Config": Queue(),  # Queue for configuration messages
     }
 
     allProcesses = list()
-    process = processCarsAndSemaphores(queueList)
+    process = processSemaphores(queueList)
     process.start()
 
     x = range(6)
     for n in x:
-        print(queueList["General"].get())
+        print(queueList["General"].get())  # Print general messages
 
     process.stop()
