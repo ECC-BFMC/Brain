@@ -36,21 +36,15 @@ class periodicTask(task.LoopingCall):
         self.tcp_factory = tcp_factory
 
     def start(self):
+        """
+        Start the periodic task with the specified interval.
+        """
         super().start(self.interval)
 
-    def stop(self):
-        if self.running:
-            super().stop()
-
     def periodicCheck(self):
-        # Will create one of the following structures:
-        # {"reqORinfo": "req",  "type":"locsysDevice"}
-        # {"reqORinfo": "info", "type":"devicePos", "value1":x, "value2":y}
-        # {"reqORinfo": "info", "type":"deviceRot", "value1": theta}
-        # {"reqORinfo": "info", "type":"deviceSpeed", "value1":km/h}
-        # {"reqORinfo": "info", "type":"historyData", "value1":id, "value2":x, "value3":y}
-
-        if self.tcp_factory.isConnected():
-            tosend = self.shrd_mem.get()
-            for mem in tosend:
-                self.tcp_factory.send_data_to_server(mem)
+        """
+        Perform the periodic check and send data to the server.
+        """
+        tosend = self.shrd_mem.get()
+        for mem in tosend:
+            self.tcp_factory.send_data_to_server(mem)
