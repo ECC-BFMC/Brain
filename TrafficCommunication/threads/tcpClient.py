@@ -28,25 +28,24 @@
 from twisted.internet import protocol
 import json
 import time
+from src.utils.messages.allMessages import Location
 
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class tcpClient(protocol.ClientFactory):
-    def __init__(self, connectionBrokenCllbck, locsysConnectCllbck, locsysID):
+    def __init__(self, connectionBrokenCllbck, locsysID, locsysFrequency, queue):
         self.connectiondata = None
         self.connection = None
         self.retry_delay = 1
         self.connectionBrokenCllbck = connectionBrokenCllbck
-        self.locsysConnectCllbck = locsysConnectCllbck
         self.locsysID = locsysID
+        self.locsysFrequency = locsysFrequency
+        self.queue = queue
 
     def clientConnectionLost(self, connector, reason):
         print(
             "Connection lost with server ",
             self.connectiondata,
-            " Retrying in ",
-            self.retry_delay,
-            " seconds... (Check Keypair, IP or server availability)",
         )
         try:
             self.connectiondata = None
@@ -69,26 +68,8 @@ class tcpClient(protocol.ClientFactory):
         conn.factory = self
         return conn
 
-    def isConnected(self):
-        if self.connection == None:
-            return False
-        else:
-            return True
-
     def send_data_to_server(self, message):
         self.connection.send_data(message)
-
-    def receive_data_from_server(self, message):
-        msgPrepToList = message.replace("}{", "}}{{")
-        msglist = msgPrepToList.split("}{")
-        for msg in msglist:
-            msg = json.loads(msg)
-            if msg["reqORinfo"] == "request":
-                if msg["type"] == "locsysDevice":
-                    if "error" in msg:
-                        print(msg["error"], "on traffic communication")
-                    else:
-                        self.locsysConnectCllbck(msg["DeviceID"], msg["response"])
 
 
 # One class is generated for each new connection
@@ -97,21 +78,51 @@ class SingleConnection(protocol.Protocol):
         peer = self.transport.getPeer()
         self.factory.connectiondata = peer.host + ":" + str(peer.port)
         self.factory.connection = self
-        msg = {
-            "reqORinfo": "request",
-            "type": "locsysDevice",
-            "DeviceID": self.factory.locsysID,
-        }
-        self.send_data(msg)
+        self.subscribeToLocaitonData(self.factory.locsysID, self.factory.locsysFrequency)
         print("Connection with server established : ", self.factory.connectiondata)
 
     def dataReceived(self, data):
-        self.factory.receive_data_from_server(data.decode())
-        print(
-            "got message from trafficcommunication server: ",
-            self.factory.connectiondata,
-        )
+        dat = data.decode()
+        tmp_data = dat.replace("}{","}}{{")
+        if tmp_data != dat:
+            tmp_dat = tmp_data.split("}{")
+            dat = tmp_dat[-1]
+        da = json.loads(dat)
+
+        if da["type"] == "location":
+            da["id"] = self.factory.locsysID
+
+            message_to_send = {
+                "Owner": Location.Owner.value,
+                "msgID": Location.msgID.value,
+                "msgType": Location.msgType.value,
+                "msgValue": da,
+            }
+            self.factory.queue.put(message_to_send)
+        else:
+            print(
+                "got message from trafficcommunication server: ",
+                self.factory.connectiondata,
+            )
 
     def send_data(self, message):
         msg = json.dumps(message)
         self.transport.write(msg.encode())
+    
+    def subscribeToLocaitonData(self, id, frequency):
+        # Sends the id you wish to subscribe to and the frequency you want to receive data. Frequency must be between 0.1 and 5. 
+        msg = {
+            "reqORinfo": "info",
+            "type": "locIDsub",
+            "locID": id,
+            "freq": frequency,
+        }
+        self.send_data(msg)
+    
+    def unSubscribeToLocaitonData(self, id, frequency):
+        # Unsubscribes from locaiton data. 
+        msg = {
+            "reqORinfo": "info",
+            "type": "locIDubsub",
+        }
+        self.send_data(msg)
