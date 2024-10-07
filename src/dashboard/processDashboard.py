@@ -181,9 +181,8 @@ class processDashboard(WorkerProcess):
 
             self.socketio.emit('memory_channel', {'data': self.memory_usage})
             self.socketio.emit('cpu_channel', {'data': {'usage': self.cpu_core_usage, 'temp': self.cpu_temperature}})
-            
             self.socketio.sleep(0.1)
-        
+
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Dashboard thread and add to the list of threads."""

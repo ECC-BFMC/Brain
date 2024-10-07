@@ -13,6 +13,8 @@ import { SteeringComponent } from './steering/steering.component';
 import { LiveCameraComponent } from './live-camera/live-camera.component';
 import { WarningLightComponent } from './warning-light/warning-light.component';
 import { HardwareDataComponent} from './hardware-data/hardware-data.component';
+import { RecordComponent} from './record/record.component';
+import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.component'
 
 @Component({
   selector: 'app-cluster',
@@ -20,7 +22,8 @@ import { HardwareDataComponent} from './hardware-data/hardware-data.component';
   imports: [SpeedometerComponent, BatteryLevelComponent, MapComponent, 
             CarComponent, InstantConsumptionComponent, StateSwitchComponent,
             KlSwitchComponent, SteeringComponent, LiveCameraComponent,
-            WarningLightComponent, HardwareDataComponent],
+            WarningLightComponent, HardwareDataComponent, RecordComponent,
+            TimeSpeedSteerComponent],
   templateUrl: './cluster.component.html',
   styleUrl: './cluster.component.css'
 })
@@ -42,7 +45,6 @@ export class ClusterComponent {
 
   ngOnInit()
   {
-    // Listen for battery
     this.batterySubscription = this.webSocketService.receiveBatteryLevel().subscribe(
       (message) => {
         this.battery = message.value;

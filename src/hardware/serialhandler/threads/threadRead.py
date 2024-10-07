@@ -137,7 +137,6 @@ class threadRead(ThreadWithStop):
                 m = 76.92  # (y2-y1) / (x2-x1) 
                 b = -546 # y1 = m*x1 + b
                 percentage = m*float(value) + b
-                percentage = m*float(7.75) + b
                 percentage = max(0, min(100, round(percentage)))
 
                 self.batteryLvlSender.send(percentage)
@@ -148,9 +147,7 @@ class threadRead(ThreadWithStop):
 
         elif action == "resourceMonitor":
             if self.checkValidValue(action, value):
-                print("cevaaaa")
                 data = re.match(self.resourceMonitorPattern, value)
-                print(data)
                 if data:
                     message = {"heap": data.group(1), "stack": data.group(2)}
                     self.resourceMonitorSender.send(message)

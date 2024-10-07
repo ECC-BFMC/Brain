@@ -53,7 +53,7 @@ from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
 from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
-from src.data.CarsAndSemaphores.processCarsAndSemaphores import processCarsAndSemaphores
+from src.data.Semaphores.Semaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 
 # ------ New component imports starts here ------#
@@ -72,10 +72,10 @@ queueList = {
 logging = logging.getLogger()
 
 TrafficCommunication = False
-Camera = False
+Camera = True
 Dashboard = True
-CarsAndSemaphores = False
-SerialHandler = False
+Semaphores = False
+SerialHandler = True
 
 # ------ New component flags starts here ------#
  
@@ -97,10 +97,10 @@ if Camera:
     processCamera = processCamera(queueList, logging , debugging = False)
     allProcesses.append(processCamera)
 
-# Initializing cars&sems
-if CarsAndSemaphores:
-    processCarsAndSemaphores = processCarsAndSemaphores(queueList, logging, debugging = False)
-    allProcesses.append(processCarsAndSemaphores)
+# Initializing semaphores
+if Semaphores:
+    processSemaphores = processSemaphores(queueList, logging, debugging = False)
+    allProcesses.append(processSemaphores)
 
 # Initializing GPS
 if TrafficCommunication:

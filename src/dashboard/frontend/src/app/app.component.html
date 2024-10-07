@@ -20,24 +20,8 @@
   </div>
 
   <app-table></app-table>
-  <div>
-    <button [ngClass]="recordingState === true ? 'red' : 'white'" (click)="changeState()">
-      Apasă-mă
-    </button>
-    
-  </div>
-  <div class="input-section">
-    <label for="time">Time:</label>
-    <input type="number" id="time" [(ngModel)]="timeValue" placeholder="Enter time" />
 
-    <label for="speed">Speed:</label>
-    <input type="number" id="speed" [(ngModel)]="speedValue" placeholder="Enter speed" />
 
-    <label for="steer">Steer:</label>
-    <input type="number" id="steer" [(ngModel)]="steerValue" placeholder="Enter steer" />
-
-    <button (click)="activateFunction()">Submit</button>
-  </div>
   <!-- <div class="sliders">
     <div>
       <p>

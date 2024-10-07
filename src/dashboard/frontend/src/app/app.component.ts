@@ -24,7 +24,6 @@ export class AppComponent {
   carLeftLaneOn: boolean = false;
   carRightLaneOn: boolean = false;
   clusterLightType: string = '';
-  recordingState: boolean = false;
   private intervalId: any;
   timeValue: number = 0;
   speedValue: number = 0;
@@ -51,16 +50,6 @@ export class AppComponent {
   ngOnDestroy() {
     this.webSocketService.disconnectSocket();
   }
-
-  changeState() {
-    if(this.recordingState == false){
-      this.recordingState = true;
-    }
-    else 
-      this.recordingState = false;
- 
-      this.sendMessage(`{"Name": "Record", "Value": "${this.recordingState}"}`);
-    }
 
   submit(): void {
     if (this.clusterComponent) {

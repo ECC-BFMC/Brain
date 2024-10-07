@@ -26,13 +26,14 @@ import { warningLightDictionary } from './warningLightDictionary';
 export class WarningLightComponent {
   private warningsSubscription: Subscription | undefined;
   warningLights: Array<{"type": string, "time": number}> = [];
-  private warningLightDisplayTime: number = 9999;
+  private warningLightDisplayTime: number = 5;
   private callInterval: number = 0.5;
   private intervalId: any;
   private warningLightDictionaryLength: number = Object.keys(warningLightDictionary).length;
 
   constructor( private  webSocketService: WebSocketService) { }
   ngOnInit() {
+    // this.setWarningLightType("1");
     this.warningsSubscription = this.webSocketService.receiveWarningSignal().subscribe(
       (message) => {
         let id = message.value.WarningID
@@ -91,11 +92,11 @@ export class WarningLightComponent {
       }
     }
 
-    // this.warningLights.push({"type": warningLightDictionary[lightTypeInt.toString()], "time": this.warningLightDisplayTime});
+    this.warningLights.push({"type": warningLightDictionary[lightTypeInt.toString()], "time": this.warningLightDisplayTime});
 
-    for (let i=1; i<=21; i++) { 
-      this.warningLights.push({"type": warningLightDictionary[i.toString()], "time": this.warningLightDisplayTime});
-    }
+    // for (let i=1; i<=21; i++) { 
+    //   this.warningLights.push({"type": warningLightDictionary[i.toString()], "time": this.warningLightDisplayTime});
+    // }
 
     if (!this.intervalId) {
       this.startRepeatingFunction();
