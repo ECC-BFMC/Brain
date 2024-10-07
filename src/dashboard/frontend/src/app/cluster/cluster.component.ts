@@ -15,6 +15,7 @@ import { WarningLightComponent } from './warning-light/warning-light.component';
 import { HardwareDataComponent} from './hardware-data/hardware-data.component';
 import { RecordComponent} from './record/record.component';
 import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.component'
+import { SideMarkerComponent } from './side-marker/side-marker.component'
 
 @Component({
   selector: 'app-cluster',
@@ -23,7 +24,7 @@ import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.comp
             CarComponent, InstantConsumptionComponent, StateSwitchComponent,
             KlSwitchComponent, SteeringComponent, LiveCameraComponent,
             WarningLightComponent, HardwareDataComponent, RecordComponent,
-            TimeSpeedSteerComponent],
+            TimeSpeedSteerComponent, SideMarkerComponent],
   templateUrl: './cluster.component.html',
   styleUrl: './cluster.component.css'
 })

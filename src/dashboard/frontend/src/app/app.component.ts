@@ -25,9 +25,6 @@ export class AppComponent {
   carRightLaneOn: boolean = false;
   clusterLightType: string = '';
   private intervalId: any;
-  timeValue: number = 0;
-  speedValue: number = 0;
-  steerValue: number = 0;
 
   enteredPassword = ''; // User input password
   
@@ -37,10 +34,6 @@ export class AppComponent {
   @ViewChild(TableComponent) tableComponent!: TableComponent;
 
   constructor( private webSocketService: WebSocketService) { }
-
-  activateFunction() {
-    this.sendMessage(`{"Name": "Control", "Value": {"Time":"${this.timeValue}","Speed":"${this.speedValue}"},"Steer":"${this.steerValue}"`)
-  }
 
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:

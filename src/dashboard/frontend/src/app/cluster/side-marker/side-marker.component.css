@@ -1,0 +1,36 @@
+
+.side-marker-body { 
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.side-marker-left, .side-marker-left-background {
+    position: absolute;
+    left: 0%;
+}
+
+.side-marker-right, .side-marker-right-background {
+    position: absolute;
+    left: 90%;
+}
+
+.side-marker-left, .side-marker-right { 
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.side-marker-left-background, .side-marker-right-background {
+    opacity: 0.3;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}

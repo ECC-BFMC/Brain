@@ -196,3 +196,12 @@
     z-index: 5;
     /* border: 3px solid red; */
 }
+
+.cluster-side-marker { 
+    position: absolute;
+    top: 50.6%;
+    left: 39%;
+    width: 22%;
+    height: 5%;
+    /* border: 3px solid darkgoldenrod; */
+}

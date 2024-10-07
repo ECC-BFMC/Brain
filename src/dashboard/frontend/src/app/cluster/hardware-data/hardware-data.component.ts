@@ -31,7 +31,7 @@ export class HardwareDataComponent {
         this.cpuUsage[0] = parseInt(message['data']['usage'][0]);
         this.cpuUsage[1] = parseInt(message['data']['usage'][1]);
         this.cpuUsage[2] = parseInt(message['data']['usage'][2]);
-        this.cpuUsage[3] = parseInt(message['data']['usage'][3]);        
+        this.cpuUsage[3] = parseInt(message['data']['usage'][3]);
       },
       (error) => {
         console.error('Error receiving disk usage:', error);
