@@ -1,5 +1,5 @@
 <div class="kl-switch">  
-  <label class="kl-switch-text">battery status</label>
+  <label class="kl-switch-text">Battery status (KL)</label>
   <div class="kl-switch-body">
     <ng-container *ngFor="let state of states; let i = index">
       <input type="radio" 
@@ -18,25 +18,3 @@
     </a>  
   </div>
 </div>
-
-<!-- 
-<div class="kl-switch">
-    <div class="kl-switch-body">
-      <div class="states">
-        <ng-container *ngFor="let state of states; let i = index">
-          <input type="radio" 
-                 id="kl-switch-{{i}}" 
-                 class="grid-item"
-                 name="state" 
-                 [value]="i" 
-                 [checked]="currentStateIndex === i"
-                 (change)="setState(i)">
-          <label for="kl-switch-{{i}}">{{ state }}</label>
-        </ng-container>
-      </div>  
-      <svg id="kl-switch-arrow" viewBox="0 0 34 33"> 
-        <path d="M23.91 11.413A1 1 0 0 1 23 12h-3v17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V12H9a1 1 0 0 1-.752-1.658l7-8a1.03 1.03 0 0 1 1.504 0l7 8a1 1 0 0 1 .159 1.071z" style="fill:#ffffff"/>
-      </svg>
-    </div>
-  </div>
-   -->

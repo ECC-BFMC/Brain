@@ -185,20 +185,17 @@ class BatteryLvl(Enum):
     msgID = 1
     msgType = "int"
 
-
 class ImuData(Enum):
     Queue = "General"
     Owner = "threadRead"
     msgID = 2
-    msgType = "str"
-
+    msgType = "dict"
 
 class InstantConsumption(Enum):
     Queue = "General"
     Owner = "threadRead"
     msgID = 3
     msgType = "float"
-
 
 class ResourceMonitor(Enum):
     Queue = "General"
@@ -217,6 +214,12 @@ class CurrentSteer(Enum):
     Owner = "threadRead"
     msgID = 6
     msgType = "float"
+
+class ImuAck(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 7
+    msgType = "dict"
 
 ################################# From Locsys ##################################
 class Location(Enum):

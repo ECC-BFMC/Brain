@@ -37,7 +37,7 @@ export class AppComponent {
 
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:
-    this.startNUCLEOFunctions()
+    //this.startNUCLEOFunctions()
   }
 
   ngOnDestroy() {
@@ -93,10 +93,10 @@ export class AppComponent {
   
   startNUCLEOFunctions()
   {
-    this.sendMessage("{\"Name\": \"ToggleInstant\", \"Value\": \"1\"}")
-    this.sendMessage("{\"Name\": \"ToggleBatteryLvl\", \"Value\": \"1\"}")
-    this.sendMessage("{\"Name\": \"ToggleImuData\", \"Value\": \"1\"}")
-    this.sendMessage("{\"Name\": \"ToggleResourceMonitor\", \"Value\": \"1\"}")
+    this.sendMessage("{\"Name\": \"ToggleInstant\", \"Value\": 1}")
+    this.sendMessage("{\"Name\": \"ToggleBatteryLvl\", \"Value\": 1}")
+    this.sendMessage("{\"Name\": \"ToggleImuData\", \"Value\": 1}")
+    this.sendMessage("{\"Name\": \"ToggleResourceMonitor\", \"Value\": 1}")
   }
 
   sendMessage(message: string) {

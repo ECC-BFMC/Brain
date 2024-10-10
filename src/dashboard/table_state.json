@@ -1,27 +1,52 @@
 [
     {
-        "channel": "DropdownChannelExample",
-        "value": "3",
-        "initialValue": "3",
+        "channel": "ToggleInstant",
+        "value": "False",
+        "initialValue": "False",
         "interval": 0,
         "type": "dropdown",
         "values": [
-            1,
-            2,
-            3
+            "True",
+            "False"
         ],
         "checked": false,
         "hasChanged": false
     },
     {
-        "channel": "SliderChannelExample",
-        "value": 22,
-        "initialValue": 22,
+        "channel": "ToggleBatteryLvl",
+        "value": "False",
+        "initialValue": "False",
         "interval": 0,
-        "type": "slider",
+        "type": "dropdown",
         "values": [
-            1,
-            30
+            "True",
+            "False"
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "ToggleImuData",
+        "value": "False",
+        "initialValue": "False",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            "True",
+            "False"
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "ToggleResourceMonitor",
+        "value": "False",
+        "initialValue": "False",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            "True",
+            "False"
         ],
         "checked": false,
         "hasChanged": false

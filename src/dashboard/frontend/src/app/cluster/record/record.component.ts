@@ -11,15 +11,18 @@ import { CommonModule } from '@angular/common'
 })
 export class RecordComponent {
   recording: boolean = false;
+  text: string = "Start Record"
 
   constructor( private webSocketService: WebSocketService) { }
 
   changeState() {
     if(this.recording == false){
       this.recording = true;
+      this.text = "Stop Record"
     }
     else {
       this.recording = false;
+      this.text = "Stop Record"
     }
 
     this.webSocketService.sendMessageToFlask(`{"Name": "Record", "Value": "${this.recording}"}`);

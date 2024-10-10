@@ -33,6 +33,7 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
     BatteryLvl,
     ImuData,
+    ImuAck,
     InstantConsumption,
     EnableButton,
     ResourceMonitor,
@@ -69,6 +70,7 @@ class threadRead(ThreadWithStop):
         self.batteryLvlSender = messageHandlerSender(self.queuesList, BatteryLvl)
         self.instantConsumptionSender = messageHandlerSender(self.queuesList, InstantConsumption)
         self.imuDataSender = messageHandlerSender(self.queuesList, ImuData)
+        self.imuAckSender = messageHandlerSender(self.queuesList, ImuAck)
         self.resourceMonitorSender = messageHandlerSender(self.queuesList, ResourceMonitor)
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
@@ -112,6 +114,7 @@ class threadRead(ThreadWithStop):
         threading.Timer(1, self.Queue_Sending).start()
 
     def sendqueue(self, buff):
+        print(buff)
         """This function select which type of message we receive from NUCLEO and send the data further."""
         action, value = buff.split(":") # @action:value;;
         action = action[1:]
@@ -153,8 +156,8 @@ class threadRead(ThreadWithStop):
                     self.resourceMonitorSender.send(message)
 
         elif action == "imu":
-            if self.checkValidValue(action, value):
-                splittedValue = value.split(";")
+            splittedValue = value.split(";")
+            if(len(buff)>9):
                 data = {
                     "roll": splittedValue[0],
                     "pitch": splittedValue[1],
@@ -164,7 +167,9 @@ class threadRead(ThreadWithStop):
                     "accelz": splittedValue[5],
                 }
                 self.imuDataSender.send(data)
-
+            else:
+                self.imuAckSender.send(splittedValue[0])
+                
         elif action == "kl":
             self.checkValidValue(action, value)
 

@@ -1,11 +1,11 @@
 <div class="input-section">
-    <label for="time">time</label>
+    <label for="time">Time to run (seconds)</label>
     <input type="number" id="time" [(ngModel)]="time" placeholder="Enter time" />
 
-    <label for="speed">speed</label>
+    <label for="speed">Constant speed (cm/s) [-50,50]</label>
     <input type="number" id="speed" [(ngModel)]="speed" placeholder="Enter speed" />
 
-    <label for="steer">steer</label>
+    <label for="steer">Steering angle (degrees) [-24,24]</label>
     <input type="number" id="steer" [(ngModel)]="steer" placeholder="Enter steer" />
 
     <button (click)="activateFunction()">Submit</button>

@@ -1,61 +1,61 @@
 {
-  "hash": "c5a7fa68",
-  "configHash": "4ff590d3",
-  "lockfileHash": "21b1236d",
-  "browserHash": "bb2e18af",
+  "hash": "780438b5",
+  "configHash": "15fa0285",
+  "lockfileHash": "9e2eabb9",
+  "browserHash": "7c9a8e26",
   "optimized": {
     "@angular/animations": {
       "src": "../../../../../node_modules/@angular/animations/fesm2022/animations.mjs",
       "file": "@angular_animations.js",
-      "fileHash": "ecaee533",
+      "fileHash": "20afa5b1",
       "needsInterop": false
     },
     "@angular/common": {
       "src": "../../../../../node_modules/@angular/common/fesm2022/common.mjs",
       "file": "@angular_common.js",
-      "fileHash": "d0b73d48",
+      "fileHash": "755740ff",
       "needsInterop": false
     },
     "@angular/core": {
       "src": "../../../../../node_modules/@angular/core/fesm2022/core.mjs",
       "file": "@angular_core.js",
-      "fileHash": "fb370ed7",
+      "fileHash": "a0ad8dbf",
       "needsInterop": false
     },
     "@angular/forms": {
       "src": "../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
       "file": "@angular_forms.js",
-      "fileHash": "95e2d0c3",
+      "fileHash": "1d154bf3",
       "needsInterop": false
     },
     "@angular/platform-browser": {
       "src": "../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
       "file": "@angular_platform-browser.js",
-      "fileHash": "dd401f0a",
+      "fileHash": "55e6b2e2",
       "needsInterop": false
     },
     "@angular/platform-browser/animations/async": {
       "src": "../../../../../node_modules/@angular/platform-browser/fesm2022/animations/async.mjs",
       "file": "@angular_platform-browser_animations_async.js",
-      "fileHash": "c0e9af34",
+      "fileHash": "2a8081da",
       "needsInterop": false
     },
     "crypto-js": {
       "src": "../../../../../node_modules/crypto-js/index.js",
       "file": "crypto-js.js",
-      "fileHash": "2b771e0e",
+      "fileHash": "42ea8048",
       "needsInterop": true
     },
     "ngx-socket-io": {
       "src": "../../../../../node_modules/ngx-socket-io/fesm2022/ngx-socket-io.mjs",
       "file": "ngx-socket-io.js",
-      "fileHash": "1612b251",
+      "fileHash": "8d6fe9cd",
       "needsInterop": false
     },
     "rxjs": {
       "src": "../../../../../node_modules/rxjs/dist/esm5/index.js",
       "file": "rxjs.js",
-      "fileHash": "1612d8a4",
+      "fileHash": "a20e3fd8",
       "needsInterop": false
     }
   },

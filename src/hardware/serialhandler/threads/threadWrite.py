@@ -104,6 +104,7 @@ class threadWrite(ThreadWithStop):
 
     def sendToSerial(self, msg):
         command_msg = self.messageConverter.get_command(**msg)
+        print(command_msg)
         if command_msg != "error":
             self.serialCom.write(command_msg.encode("ascii"))
             self.logFile.write(command_msg)

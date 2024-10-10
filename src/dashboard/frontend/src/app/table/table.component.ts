@@ -49,7 +49,7 @@ export class TableComponent implements OnInit {
     const existingItem = this.items.find(item => item.channel === channel);
 
     if (existingItem) {
-      existingItem.value = value;
+      existingItem.value = String(value);
       existingItem.interval = interval;
 
       // Compare current value to initial value and mark as changed if necessary
@@ -57,8 +57,8 @@ export class TableComponent implements OnInit {
     } else {
       this.items.push({ 
         channel, 
-        value: value, 
-        initialValue: value, 
+        value: String(value), 
+        initialValue: String(value), 
         interval, 
         type: 'default', 
         values: [], 
@@ -82,11 +82,20 @@ export class TableComponent implements OnInit {
   }
 
   load() {
-    const nonDefaultItems = this.items.filter(item => item.type !== 'default' && item.checked == true);
-    nonDefaultItems.forEach(item => {
+    const SliderItems = this.items.filter(item => item.type == 'slider' && item.checked == true);
+    SliderItems.forEach(item => {
       let value = item.value
       let channel = item.channel
       this.webSocketService.sendMessageToFlask(`{"Name": "${channel}", "Value": "${value/100}"}`);
+    });
+    const nonDefaultItems = this.items.filter(item => item.type == 'dropdown' && item.checked == true);
+    nonDefaultItems.forEach(item => {
+      let value = 1
+      if (item.value == "False")
+        value = 0
+
+      let channel = item.channel
+      this.webSocketService.sendMessageToFlask(`{"Name": "${channel}", "Value": "${value}"}`);
     });
   }
 }

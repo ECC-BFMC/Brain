@@ -17,8 +17,8 @@ export class MapComponent {
   @ViewChild('imageElement') imageElementRef!: ElementRef<HTMLImageElement>;
   @ViewChild('imageContainer') imageContainerRef!: ElementRef<HTMLImageElement>;
 
-  private mapX: number = 0;
-  private mapY: number = 0;
+  private mapX: number = 3.3;
+  private mapY: number = 72.0;
   private screenSize = {"width": 100, "height": 100}; // screen size in %
   private mapSize: number = 500; // map size in % for width
   private mapWidth: number = 0;
@@ -30,15 +30,19 @@ export class MapComponent {
   
   ngOnInit()
   {
-    this.updateMap()
-
+  
     this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
       (message) => {
-        this.mapX = parseFloat(message.value.x)
-        this.mapY = parseFloat(message.value.y)
+        this.mapX = (parseFloat(message.value.x)*100/20.67)
+        this.mapY = (100 - parseFloat(message.value.y)*100/13.76) //magic procent + same system of coordinates
         this.updateMap()
+        console.log(this.mapX,this.mapY)
       },
     );
+
+    this.mapX = 3.3
+    this.mapY = 72.3
+    this.updateMap()
   }
 
   ngOnDestroy() {

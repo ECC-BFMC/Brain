@@ -1,12 +1,12 @@
 {
     "init": { 
-        "batteryCapacity": { "capacity": 6400.0 }
+        "batteryCapacity": { "capacity": 9000.0 }
     },
 
     "sensors": { 
-        "instant": { "activate": true },
-        "battery": { "activate": true },
-        "resourceMonitor": { "activate": false },
-        "imu": { "activate": false }
+        "instant": { "activate": 0 },
+        "battery": { "activate": 0 },
+        "resourceMonitor": { "activate": 0 },
+        "imu": { "activate": 0 }
     }
 }

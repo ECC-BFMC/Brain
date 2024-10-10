@@ -57,7 +57,7 @@ export class ClusterComponent {
 
     this.speedSubscription = this.webSocketService.receiveCurrentSpeed().subscribe(
       (message) => {
-        this.speed = Math.abs(parseInt(message.value)/10);
+        this.speed = Math.abs(parseInt(message.value));
       },
       (error) => {
         console.error('Error receiving disk usage:', error);
