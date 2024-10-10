@@ -1,5 +1,4 @@
 import { Component, ViewChild } from '@angular/core';
-import { HeaderComponent } from './header/header.component';
 import { ClusterComponent } from './cluster/cluster.component';
 import { FormsModule } from '@angular/forms';
 import { WebSocketService } from './webSocket/web-socket.service';
@@ -10,7 +9,7 @@ import * as CryptoJS from 'crypto-js';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [HeaderComponent, TableComponent, ClusterComponent, FormsModule, CommonModule],
+  imports: [TableComponent, ClusterComponent, FormsModule, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

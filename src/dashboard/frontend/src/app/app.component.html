@@ -9,7 +9,6 @@
 
 <!-- The actual content that will be shown only after correct password -->
 <div *ngIf="isAuthenticated">
-  <!-- <app-header class="header" /> -->
   <div class="cluster-container">
     <app-cluster class="cluster"
       [cursorRotation]="cursorRotationSliderValue"
@@ -20,35 +19,4 @@
   </div>
 
   <app-table></app-table>
-
-
-  <!-- <div class="sliders">
-    <div>
-      <p>
-        <label>Cursor Rotation: </label>
-        <input type="range" min="0" max="360" [(ngModel)]="cursorRotationSliderValue" />
-      </p>
-      
-      <p>
-        <label>Car Position: </label>
-        <input type="range" min="-100" max="100" [(ngModel)]="carPositionSliderValue" />
-      </p>
-
-      <p>
-        <label>Car Left Lane: </label>
-        <input type="checkbox" [(ngModel)]="carLeftLaneOn">
-      </p>
-
-      <p>
-        <label>Car Right Lane: </label>
-        <input type="checkbox" [(ngModel)]="carRightLaneOn">
-      </p>
-    </div>
-
-    <div>
-      <label for="userInput">Warning Light: </label>
-      <input type="text" id="userInput" [(ngModel)]="clusterLightType" placeholder="Type something..." />
-      <button (click)="submit()">Submit</button>
-    </div>
-  </div> -->
 </div>

@@ -5,6 +5,11 @@
     position: absolute;
 }
 
+.side-marker-right, .side-marker-right-background, .side-marker-left, .side-marker-left-background {
+    width: 10%;
+    height: auto;
+}
+
 .side-marker-left, .side-marker-left-background {
     position: absolute;
     left: 0%;

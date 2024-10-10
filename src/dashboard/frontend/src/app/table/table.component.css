@@ -1,20 +1,24 @@
 .my-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #ddd; /* Outer border for the whole table */
+  border-left: 0.1vw solid gray;
+  border-right: 0.1vw solid gray;
+  border-bottom: 0.1vw solid gray;
 }
 
 .header {
-  border-bottom: 2px solid #ddd; /* Keep the bottom border for the header */
-  padding: 8px;
-  text-align: center; /* Horizontally center header content */
+  border-bottom: 0.1vw solid gray;
+  padding: 0.8vw;
+  font-size: 1vw;
+  text-align: center;
 }
 
 .cell {
-  padding: 8px;
-  text-align: center; /* Horizontally center content */
-  vertical-align: middle; /* Vertically center content */
-  border: none; /* Remove borders from table cells */
+  padding: 0.8vw;
+  font-size: 1vw;
+  text-align: center;
+  vertical-align: middle;
+  border: none;
 }
 
 .button-group {
@@ -24,32 +28,33 @@
 
 .full-width-button {
   flex: 1;
-  padding: 10px;
-  margin: 5px;
-  background-color: #a77cec; /* Pale blue background color */
+  padding: 1vw;
+  margin: 0.5vw;
+  font-size: 1vw;
+  background-color: #a77cec;
   color: white;
   border: none;
-  border-radius: 15px; /* Round corners */
+  border-radius: 15px;
   cursor: pointer;
   text-align: center;
-  transition: background-color 0.3s ease; /* Smooth transition on hover */
+  transition: background-color 0.3s ease;
 }
 
 .full-width-button:hover {
-  background-color: #6497b1; /* Slightly darker blue on hover */
+  background-color: #6497b1; 
 }
 
 .slider-wrapper {
   display: flex;
-  align-items: center; /* Vertically center the slider and its layers */
+  align-items: center;
 }
 
 .layer-front,
 .layer-back {
-  margin: 0 10px; /* Add some space around the layers */
+  margin: 0 1vw;
 }
 
 input[type="range"] {
-  flex-grow: 1; /* Make the slider take up remaining space */
-  margin: 0 10px; /* Optional: add margin around the slider */
+  flex-grow: 1;
+  margin: 0 1vw;
 }

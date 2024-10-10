@@ -1,42 +1,39 @@
-.cluster { 
-    position: relative;
-    /* top: -250px; */
-}
-
-.sliders { 
-    display: flex;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    gap: 100px;
+.main-container { 
+  width: 100%;
+  height: 100%;
 }
 
 .cluster-container { 
-    width: var(--cluster-width);
-    height: calc(var(--cluster-width) / var(--aspect-ratio));
-    display: flex;
-    position: relative;
-    justify-content: center;
-    align-items: center;
+  width: var(--cluster-width);
+  height: calc(var(--cluster-width) / var(--aspect-ratio));
+  display: flex;
+  position: relative;
+  justify-content: center;
+  align-items: center;
 }
 
 .cluster { 
-    width: 100%;
-    height: 100%;
-    background-color: rgb(45, 54, 58);
+  width: 100%;
+  height: 100%;
+  background-color: rgb(45, 54, 58);
+}
+
+.table { 
+  width: 100%;
+  height: 100%;
 }
   
 /* Modal styles */
 .modal {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-content {
