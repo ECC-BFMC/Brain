@@ -8,7 +8,7 @@
 </div>
 
 <!-- The actual content that will be shown only after correct password -->
-<div *ngIf="isAuthenticated">
+<div class="main-container" *ngIf="isAuthenticated">
   <div class="cluster-container">
     <app-cluster class="cluster"
       [cursorRotation]="cursorRotationSliderValue"
@@ -18,5 +18,5 @@
     ></app-cluster>
   </div>
 
-  <app-table></app-table>
+  <app-table class="table" />
 </div>
