@@ -13,6 +13,7 @@
     color: white;
     font-size: 0.9vw;
     text-shadow: 0 0 0.3vw rgba(0, 0, 0, 1);
+    filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.3));
     user-select: none;
     text-align: center;
     text-decoration: none;

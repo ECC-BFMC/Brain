@@ -43,7 +43,6 @@ export class WarningLightComponent {
     );
   }
 
-
   startRepeatingFunction(): void {
     this.intervalId = setInterval(() => {
       this.repeatingFunction();

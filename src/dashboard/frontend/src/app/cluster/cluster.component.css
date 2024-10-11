@@ -147,7 +147,7 @@
 .cluster-record { 
     position: absolute;
     width: 8%;
-    left: 63%;
+    left: 65%;
     height: 5.5%;
     top: 84.5%;
     z-index: 5;
@@ -160,7 +160,7 @@
     /* padding-left: 72%;
     padding-right: 6%; */
     top: 76.5%;
-    left: 72%;
+    left: 75%;
     width: 22%;
     height: auto;
     /* border: 3px solid darkorange; */
@@ -180,10 +180,11 @@
 
 .cluster-hardware-data { 
     position: absolute;
-    padding-left: 0.5%;
-    padding-right: 61.5%;
+    /* padding-left: 0.5%;
+    padding-right: 61.5%; */
     top: 82%;
-    width: 100%;
+    left: 0.5%;
+    width: 30%;
     height: 16%;
     /* border: 3px solid red; */
 }
@@ -191,8 +192,8 @@
 .cluster-time-speed-steer { 
     position: absolute;
     top: 80%;
-    left: 44%;
-    width: 12%;
+    left: 43.5%;
+    width: 13%;
     height: 18%;
     z-index: 5;
     /* border: 3px solid red; */

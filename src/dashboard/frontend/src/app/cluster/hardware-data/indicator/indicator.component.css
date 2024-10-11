@@ -34,7 +34,7 @@
 
 .indicator-text label { 
     position: absolute;
-    font-size: 0.65vw;
+    font-size: 0.6vw;
     right: 0%;
     transition: opacity 0.2s;
 }

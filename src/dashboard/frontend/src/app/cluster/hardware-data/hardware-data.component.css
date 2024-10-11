@@ -3,24 +3,60 @@
     height: 100%;
     /* border: 3px solid blue; */
     display: flex;
-    gap: 2%;
+    gap: 6.7%;
     flex-direction: row;
 }
 
-.cpu-temp {
-    width: 13%;
+.hardware-data-raspberry {
+    display: flex;
+    flex-direction: column;
+    width: 70%;
     height: 100%;
-    /* border: 3px solid green; */
+    /* border: 3px solid rgb(214, 39, 39); */
 }
 
-.cpu-usage { 
-    width: 13%;
+.hardware-data-nucleo { 
+    display: flex;
+    flex-direction: column;
+    width: 23.3%;
+    height: 100%;
+    /* border: 3px solid rgb(48, 202, 27); */
+}
+
+.hardware-data-raspberry-title, .hardware-data-nucleo-title {
+    width: 100%;
+    height: 20%;
+    /* border: 3px solid rgb(179, 233, 51); */
+}
+
+.hardware-data-raspberry-title-text, .hardware-data-nucleo-title-text { 
+    position: relative;
+    bottom: 25%;
+    /* right: 5%; */
+    color: white;
+    font-size: 0.6vw;
+    text-align: center;
+}
+
+.hardware-data-raspberry-indicators, .hardware-data-nucleo-indicators {
+    width: 100%;
+    height: 80%;
+    /* border: 3px solid rgb(222, 159, 222); */
+}
+
+.hardware-data-raspberry-indicators, .hardware-data-nucleo-indicators {
+    display: flex;
+    flex-direction: row;
+    gap: 1%;
+}
+
+.cpu-temp, .cpu-usage, .memory-usage { 
+    width: 16.66%;
     height: 100%;
     /* border: 3px solid yellow; */
 }
 
-.memory-usage {
-    width: 13%;
+.heap-usage, .stack-usage { 
+    width: 50%;
     height: 100%;
-    /* border: 3px solid red; */
 }

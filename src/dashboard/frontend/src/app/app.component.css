@@ -37,11 +37,13 @@
 }
 
 .modal-content {
-  background-color: white;
+  /* background-color: white; */
+  background-color: rgb(45, 54, 58);
   padding: 20px;
   border-radius: 5px;
   width: 300px;
   text-align: center;
+  color: white;
 }
 
 .modal input {
@@ -53,6 +55,7 @@
 .modal button {
   padding: 10px;
   width: 100%;
+  border-radius: 10px;
   background-color: #007bff;
   color: white;
   border: none;
