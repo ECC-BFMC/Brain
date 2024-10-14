@@ -71,6 +71,8 @@ class threadTrafficCommunication(ThreadWithStop):
         self.udp_factory.stopListening()
         self.period_task.start()
 
+
+
     # ======================================= RUN ==========================================
     def run(self):
         self.reactor.run(installSignalHandlers=False)
