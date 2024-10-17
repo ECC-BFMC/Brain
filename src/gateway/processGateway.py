@@ -25,10 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 if __name__ == "__main__":
     import sys
-
     sys.path.insert(0, "../..")
+
 from src.templates.workerprocess import WorkerProcess
 from src.gateway.threads.threadGateway import threadGateway
 
@@ -49,11 +50,13 @@ class processGateway(WorkerProcess):
     # ===================================== RUN ===========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
+
         super(processGateway, self).run()
 
     # ===================================== INIT TH ==========================================
     def _init_threads(self):
         """Initializes the gateway thread."""
+        
         gatewayThread = threadGateway(self.queuesList, self.logger, self.debugging)
         self.threads.append(gatewayThread)
 

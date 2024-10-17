@@ -25,10 +25,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 import time
 import threading
 import re
 import os
+
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
     BatteryLvl,
@@ -38,7 +40,8 @@ from src.utils.messages.allMessages import (
     EnableButton,
     ResourceMonitor,
     CurrentSpeed,
-    CurrentSteer
+    CurrentSteer,
+    WarningSignal
 )
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
@@ -54,7 +57,6 @@ class threadRead(ThreadWithStop):
 
     # ===================================== INIT =========================================
     def __init__(self, f_serialCon, f_logFile, queueList, logger, debugger = False):
-        
         self.serialCon = f_serialCon
         self.logFile = f_logFile
         self.buff = ""
@@ -74,13 +76,14 @@ class threadRead(ThreadWithStop):
         self.resourceMonitorSender = messageHandlerSender(self.queuesList, ResourceMonitor)
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
+        self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25", 
                                "speed": "between -500 and 500", "break": "between -250 and 250"}
         
         self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
-        self.resourceMonitorPattern = r'Heap\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\);Stack\s\((100|0|\d{1,2}(?:\.\d{1,2})?)%\)'
+        self.resourceMonitorPattern = r'Heap \((\d+\.\d+)\);Stack \((\d+\.\d+)\)'
 
         self.Queue_Sending()
         
@@ -94,28 +97,26 @@ class threadRead(ThreadWithStop):
                 read_chr = read_chr.decode("ascii")
                 if read_chr == "@":
                     self.isResponse = True
-                    if len(self.buff) != 0:
-                        self.sendqueue(self.buff)
                     self.buff = ""
                 elif read_chr == "\r":
                     self.isResponse = False
                     if len(self.buff) != 0:
                         self.sendqueue(self.buff)
-                    self.buff = ""
                 if self.isResponse:
                     self.buff += read_chr
-            except UnicodeDecodeError:
-                pass
+            except Exception as e :
+                print(e)
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
         """Callback function for enable button flag."""
+
         self.enableButtonSender.send(True)
         threading.Timer(1, self.Queue_Sending).start()
 
     def sendqueue(self, buff):
-        print(buff)
         """This function select which type of message we receive from NUCLEO and send the data further."""
+
         action, value = buff.split(":") # @action:value;;
         action = action[1:]
         value = value[:-2]
@@ -134,12 +135,7 @@ class threadRead(ThreadWithStop):
 
         elif action == "battery":
             if self.checkValidValue(action, value):
-                # to calculate the battery percentage we will use the linear equation y = m*x + b
-                # m - slope, b - y intercept
-                # (x1, y1) = (7.1, 0)  (x2, y2) = (8.4, 100)
-                m = 76.92  # (y2-y1) / (x2-x1) 
-                b = -546 # y1 = m*x1 + b
-                percentage = m*float(value) + b
+                percentage = (int(value)-7200)/12
                 percentage = max(0, min(100, round(percentage)))
 
                 self.batteryLvlSender.send(percentage)
@@ -157,7 +153,7 @@ class threadRead(ThreadWithStop):
 
         elif action == "imu":
             splittedValue = value.split(";")
-            if(len(buff)>9):
+            if(len(buff)>20):
                 data = {
                     "roll": splittedValue[0],
                     "pitch": splittedValue[1],
@@ -177,13 +173,13 @@ class threadRead(ThreadWithStop):
             data = re.match(self.warningPattern, value)
             if data:
                 print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
-
+                self.warningSender.send(action,data)
+                
         elif action == "shutdown":
             print("SHUTTING DOWN!")
             time.sleep(3)
             os.system("sudo shutdown -h now")
             
-
     def checkValidValue(self, action, message):
         if message == "syntax error":
             print(f"WARNING! Invalid value for {action.upper()} (expected {self.expectedValues[action]})")

@@ -37,6 +37,7 @@
 #       fnm install --lts
 #       npm install -g @angular/cli@17
 #       npm install
+#       if needed: npm audit fix
 #
 # ===================================== GENERAL IMPORTS ==================================
 import sys
@@ -71,11 +72,11 @@ queueList = {
 
 logging = logging.getLogger()
 
-TrafficCommunication = False
-Camera = True
 Dashboard = True
-Semaphores = False
-SerialHandler = True
+Camera = False
+Semaphores = True
+TrafficCommunication = False
+SerialHandler = False
 
 # ------ New component flags starts here ------#
  
@@ -109,7 +110,7 @@ if TrafficCommunication:
 
 # Initializing serial connection NUCLEO - > PI
 if SerialHandler:
-    processSerialHandler = processSerialHandler(queueList, logging, debugging = True)
+    processSerialHandler = processSerialHandler(queueList, logging, debugging = False)
     allProcesses.append(processSerialHandler)
 
 # ------ New component runs starts here ------#

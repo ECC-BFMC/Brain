@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 import cv2
 import threading
 import base64
@@ -74,16 +75,18 @@ class threadCamera(ThreadWithStop):
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
+
         self.recordSubscriber = messageHandlerSubscriber(self.queuesList, Record, "lastOnly", True)
         self.brightnessSubscriber = messageHandlerSubscriber(self.queuesList, Brightness, "lastOnly", True)
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
 
     def Queue_Sending(self):
         """Callback function for recording flag."""
+
         self.recordingSender.send(self.recording)
         threading.Timer(1, self.Queue_Sending).start()
         
-    # ================ STOP ================================================
+    # =============================== STOP ================================================
     def stop(self):
         if self.recording:
             self.video_writer.release()
@@ -92,6 +95,7 @@ class threadCamera(ThreadWithStop):
     # =============================== CONFIG ==============================================
     def Configs(self):
         """Callback function for receiving configs on the pipe."""
+
         if self.brightnessSubscriber.isDataInPipe():
             message = self.brightnessSubscriber.receive()
             if self.debugger:
@@ -119,18 +123,18 @@ class threadCamera(ThreadWithStop):
     # ================================ RUN ================================================
     def run(self):
         """This function will run while the running flag is True. It captures the image from camera and make the required modifies and then it send the data to process gateway."""
+
         send = True
         while self._running:
             try:
                 recordRecv = self.recordSubscriber.receive()
                 if recordRecv is not None: 
                     self.recording = bool(recordRecv)
-                    print(self.recording, type(self.recording))
                     if recordRecv == False:
                         self.video_writer.release()
                     else:
                         fourcc = cv2.VideoWriter_fourcc(
-                            *"MJPG"
+                            *"XVID"
                         )  # You can choose different codecs, e.g., 'MJPG', 'XVID', 'H264', etc.
                         self.video_writer = cv2.VideoWriter(
                             "output_video" + str(time.time()) + ".avi",
@@ -169,6 +173,7 @@ class threadCamera(ThreadWithStop):
     # ================================ INIT CAMERA ========================================
     def _init_camera(self):
         """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
+
         self.camera = picamera2.Picamera2()
         config = self.camera.create_preview_configuration(
             buffer_count=1,

@@ -29,7 +29,7 @@
 import json
 from src.utils.messages.allMessages import Cars, Semaphores
 from twisted.internet import protocol
-
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 class udpListener(protocol.DatagramProtocol):
     """This class is used to receive the information from the servers.
@@ -38,8 +38,10 @@ class udpListener(protocol.DatagramProtocol):
         queue (multiprocessing.queues.Queue): the queue to send the info
     """
 
-    def __init__(self, queue):
-        self.queue = queue
+    def __init__(self, queuesList, logger, debugging):
+        self.semaphoresSender = messageHandlerSender(queuesList, Semaphores)
+        self.logger = logger
+        self.debugging = debugging
 
     def datagramReceived(self, datagram, addr):
         """Specific function for receiving the information. It will select and create different dictionary for each type of data we receive(car or semaphore)
@@ -47,36 +49,17 @@ class udpListener(protocol.DatagramProtocol):
         Args:
             datagram (dictionary): In this we store the data we get from servers.
         """
-        # Decode the received datagram
         dat = datagram.decode("utf-8")
-        # Convert the decoded datagram to a dictionary
         dat = json.loads(dat)
 
         if dat["device"] == "semaphore":
-            # Create a dictionary for semaphore data
             tmp = {"id": dat["id"], "state": dat["state"], "x": dat["x"], "y": dat["y"]}
-            # Put the semaphore data into the queue
-            self.queue.put(
-                {
-                    "Owner": Semaphores.Owner.value,
-                    "msgID": Semaphores.msgID.value,
-                    "msgType": Semaphores.msgType.value,
-                    "msgValue": tmp,
-                }
-            )
+
         elif dat["device"] == "car":
-            # Create a dictionary for car data
             tmp = {"id": dat["id"], "x": dat["x"], "y": dat["y"]}
-            # Put the car data into the queue
-            self.queue.put(
-                {
-                    "Owner": Cars.Owner.value,
-                    "msgID": Cars.msgID.value,
-                    "msgType": Cars.msgType.value,
-                    "msgValue": tmp,
-                }
-            )
+        if self.debugging:
+            self.logger.info(tmp)
+        self.semaphoresSender.send(tmp)
 
     def stopListening(self):
-        # Call the stopListening method of the parent class
         super().stopListening()

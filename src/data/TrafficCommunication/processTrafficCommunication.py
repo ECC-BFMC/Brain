@@ -25,9 +25,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 if __name__ == "__main__":
     import sys
-
     sys.path.insert(0, "../../..")
 
 # Import necessary modules
@@ -61,6 +61,7 @@ class processTrafficCommunication(WorkerProcess):
     # ===================================== STOP ==========================================
     def stop(self):
         """Function for stopping threads and the process."""
+        
         for thread in self.threads:
             thread.stop()
             thread.join()
@@ -69,11 +70,13 @@ class processTrafficCommunication(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
+
         super(processTrafficCommunication, self).run()
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Traffic Communication thread and add it to the list of threads."""
+
         TrafficComTh = threadTrafficCommunication(
             self.shared_memory, self.queuesList, self.deviceID, self.frequency, self.filename
         )

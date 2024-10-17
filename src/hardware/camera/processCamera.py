@@ -28,11 +28,11 @@
 
 if __name__ == "__main__":
     import sys
-
     sys.path.insert(0, "../../..")
 
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.camera.threads.threadCamera import threadCamera
+
 from multiprocessing import Pipe
 
 

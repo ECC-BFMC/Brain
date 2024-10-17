@@ -25,8 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from enum import Enum
 
+from enum import Enum
 
 ####################################### processCamera #######################################
 class mainCamera(Enum):
@@ -34,7 +34,6 @@ class mainCamera(Enum):
     Owner = "threadCamera"
     msgID = 1
     msgType = "str"
-
 
 class serialCamera(Enum):
     Queue = "General"
@@ -54,7 +53,6 @@ class Signal(Enum):
     msgID = 4
     msgType = "str"
 
-
 ################################# processCarsAndSemaphores ##################################
 class Cars(Enum):
     Queue = "General"
@@ -62,13 +60,11 @@ class Cars(Enum):
     msgID = 1
     msgType = "dict"
 
-
 class Semaphores(Enum):
     Queue = "General"
     Owner = "threadCarsAndSemaphores"
     msgID = 2
     msgType = "dict"
-
 
 ################################# From Dashboard ##################################
 class SpeedMotor(Enum):
@@ -77,13 +73,11 @@ class SpeedMotor(Enum):
     msgID = 1
     msgType = "str"
 
-
 class SteerMotor(Enum):
     Queue = "General"
     Owner = "Dashboard"
     msgID = 2
     msgType = "str"
-
 
 class Control(Enum):
     Queue = "General"
@@ -91,20 +85,17 @@ class Control(Enum):
     msgID = 3
     msgType = "dict"
 
-
 class Brake(Enum):
     Queue = "General"
     Owner = "Dashboard"
     msgID = 4
     msgType = "float"
 
-
 class Record(Enum):
     Queue = "General"
     Owner = "Dashboard"
     msgID = 5
     msgType = "str"
-
 
 class Config(Enum):
     Queue = "General"
@@ -219,7 +210,13 @@ class ImuAck(Enum):
     Queue = "General"
     Owner = "threadRead"
     msgID = 7
-    msgType = "dict"
+    msgType = "str"
+    
+class WarningSignal(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 7
+    msgType = "str"
 
 ################################# From Locsys ##################################
 class Location(Enum):
@@ -228,7 +225,6 @@ class Location(Enum):
     msgID = 1
     msgType = "dict"
 
-
 ######################    From processSerialHandler  ###########################
 class EnableButton(Enum):
     Queue = "General"
@@ -236,14 +232,11 @@ class EnableButton(Enum):
     msgID = 1
     msgType = "bool"
 
-
 class SignalRunning(Enum):
     Queue = "General"
     Owner = "threadWrite"
     msgID = 2
     msgType = "bool"
-
-
 
 class WarningSignal(Enum):
     Queue = "General"

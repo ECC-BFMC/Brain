@@ -44,6 +44,7 @@ class ThreadStartFrontend(ThreadWithStop):
         Args:
             project_path (str): The file path to the Angular project directory.
         """
+        
         self.project_path = project_path
         self.logger= logger
         super().__init__()
@@ -52,6 +53,7 @@ class ThreadStartFrontend(ThreadWithStop):
 
     def run(self):
         """Overrides the Thread.run. Starts the Angular server and monitors the _running flag."""
+
         try:
             subprocess.run(f"cd {self.project_path} && npm start", shell=True, check=True)
             self.logger.info("Angular server started successfully.")
@@ -62,6 +64,7 @@ class ThreadStartFrontend(ThreadWithStop):
 
     def stop(self):
         """Stops the Angular development server if running."""
+
         self.logger.warning("Angular server stopped.")
 
 # ================================= EXAMPLE ===============================================

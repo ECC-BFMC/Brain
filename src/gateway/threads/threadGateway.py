@@ -25,8 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-from src.templates.threadwithstop import ThreadWithStop
 
+from src.templates.threadwithstop import ThreadWithStop
 
 class threadGateway(ThreadWithStop):
     """Thread which will handle processGateway functionalities.\n
@@ -53,6 +53,7 @@ class threadGateway(ThreadWithStop):
         Args:
             message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
         """
+        
         # Declaration of variables:
         Owner = message["Owner"]
         Id = message["msgID"]
@@ -77,6 +78,7 @@ class threadGateway(ThreadWithStop):
         Args:
             message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
         """
+
         Owner = message["Owner"]
         Id = message["msgID"]
         To = message["To"]["receiver"]
@@ -94,6 +96,7 @@ class threadGateway(ThreadWithStop):
         Args:
             message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
         """
+
         Owner = message["Owner"]
         Id = message["msgID"]
         Type = message["msgType"]
@@ -112,6 +115,7 @@ class threadGateway(ThreadWithStop):
     # Function for debugging:
     def printList(self):
         """Made for debugging"""
+
         self.logger.warning(self.sendingList)
 
     # ==================================== RUN ===========================================
@@ -120,6 +124,7 @@ class threadGateway(ThreadWithStop):
         """This function will take the messages in priority order form the queues.\n
         the prioirty is: Critical > Warning > General
         """
+        
         while self._running:
             message = None
             # We are using "elif" because we are processing one message at a time.

@@ -51,7 +51,7 @@ class MessageConverter:
     """
 
     commands = {
-        "speed": [["speed"], [2], [False]],
+        "speed": [["speed"], [3], [False]],
         "steer": [["steerAngle"], [3], [False]],
         "brake": [["steerAngle"], [3], [False]],
         "batteryCapacity": [["capacity"], [5], [False]],
@@ -59,7 +59,7 @@ class MessageConverter:
         "instant": [["activate"], [1], [False]],
         "resourceMonitor": [["activate"], [1], [False]],
         "imu": [["activate"], [1], [False]],
-        "vcd": [["speed", "time", "steer"], [3, 3, 3], [False]],
+        "vcd": [["speed", "steer", "time"], [3, 3, 3], [False]],
         "kl": [["mode"], [2], [False]]
     }
     """ The 'commands' attribute is a dictionary, which contains key word and the acceptable format for each action type. """

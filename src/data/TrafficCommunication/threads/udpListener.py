@@ -25,9 +25,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 from twisted.internet import protocol
 import src.data.TrafficCommunication.useful.keyDealer as keyDealer
-
 
 class udpListener(protocol.DatagramProtocol):
     """This class will handle the connection.
@@ -47,6 +47,7 @@ class udpListener(protocol.DatagramProtocol):
 
     def datagramReceived(self, datagram, address):
         """In this function we split the receive data and we call the callbackfunction"""
+        
         try:
             dat = datagram.split(b"(-.-)")
             if len(dat) != 2:

@@ -25,9 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 import json
 import time
 import threading
+
 from src.hardware.serialhandler.threads.messageconverter import MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
@@ -74,7 +76,7 @@ class threadWrite(ThreadWithStop):
         self.speedMotorSender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.configPath = "src/utils/initConfig.json"
 
-        self.loadConfig("init")
+        #self.loadConfig("init")
         self.subscribe()
         self.Queue_Sending()
 
@@ -86,6 +88,7 @@ class threadWrite(ThreadWithStop):
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
+
         self.klSubscriber = messageHandlerSubscriber(self.queuesList, Klem, "lastOnly", True)
         self.controlSubscriber = messageHandlerSubscriber(self.queuesList, Control, "lastOnly", True)
         self.steerMotorSubscriber = messageHandlerSubscriber(self.queuesList, SteerMotor, "lastOnly", True)
@@ -99,12 +102,12 @@ class threadWrite(ThreadWithStop):
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
         """Callback function for engine running flag."""
+
         self.signalRunningSender.send(self.running)
         threading.Timer(1, self.Queue_Sending).start()
 
     def sendToSerial(self, msg):
         command_msg = self.messageConverter.get_command(**msg)
-        print(command_msg)
         if command_msg != "error":
             self.serialCom.write(command_msg.encode("ascii"))
             self.logFile.write(command_msg)
@@ -124,28 +127,29 @@ class threadWrite(ThreadWithStop):
             return 1
         else :
             return 0
+        
     # ===================================== RUN ==========================================
     def run(self):
         """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""
+
         while self._running:
             try:
                 klRecv = self.klSubscriber.receive()
                 if klRecv is not None:
                     if self.debugger:
                         self.logger.info(klRecv)
-
                     if klRecv == "30":
                         self.running = True
                         self.engineEnabled = True
                         command = {"action": "kl", "mode": 30}
                         self.sendToSerial(command)
-                        self.loadConfig("sensors")
+                        #self.loadConfig("sensors")
                     elif klRecv == "15":
                         self.running = True
                         self.engineEnabled = False
                         command = {"action": "kl", "mode": 15}
                         self.sendToSerial(command)
-                        self.loadConfig("sensors")
+                        #self.loadConfig("sensors")
                     elif klRecv == "0":
                         self.running = False
                         self.engineEnabled = False
@@ -225,18 +229,17 @@ class threadWrite(ThreadWithStop):
     # ==================================== STOP ==========================================
     def stop(self):
         """This function will close the thread and will stop the car."""
-        import time
 
         self.exampleFlag = False
         command = {"action": "kl", "mode": 0.0}
         self.sendToSerial(command)
-
         time.sleep(2)
         super(threadWrite, self).stop()
 
     # ================================== EXAMPLE =========================================
     def example(self):
         """This function simulte the movement of the car."""
+
         if self.exampleFlag:
             self.signalRunningSender.send({"Type": "Run", "value": True})
             self.speedMotorSender.send({"Type": "Speed", "value": self.s})

@@ -32,19 +32,18 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
-from flask import Flask, jsonify
-from flask_socketio import SocketIO, emit
-from flask_cors import CORS
-
-from enum import Enum
-
 import inspect, psutil, json, threading
 
-import src.utils.messages.allMessages as allMessages
+from flask import Flask
+from flask_socketio import SocketIO, emit
+from flask_cors import CORS
+from enum import Enum
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.templates.workerprocess import WorkerProcess
 from src.dashboard.threads.threadStartFrontend import ThreadStartFrontend  
+from src.utils.messages.allMessages import Semaphores
+import src.utils.messages.allMessages as allMessages
 
 class processDashboard(WorkerProcess):
     """This process handles the dashboard interactions, updating the UI based on the system's state.
@@ -72,18 +71,14 @@ class processDashboard(WorkerProcess):
         CORS(self.app, supports_credentials=True)
 
         self.getNamesAndVals()
-        # Remove the mainCamera and serialCamera message sender
+        # Remove the mainCamera and Semaphores message sender
         self.messagesAndVals.pop("mainCamera")
+        self.messagesAndVals.pop("Semaphores")
 
         self.subscribe()
-        # Define routes
-        self.app.add_url_rule('/', view_func=self.index)
 
         # Define WebSocket event handlers
-        self.socketio.on_event('connect', self.test_connect)
-        self.socketio.on_event('disconnect', self.test_disconnect)
         self.socketio.on_event('message', self.handle_message)
-
         self.socketio.on_event('save', self.handle_saveTableState)
         self.socketio.on_event('load', self.handle_loadTableState)
 
@@ -107,29 +102,24 @@ class processDashboard(WorkerProcess):
 
         self.socketio.run(self.app, host='0.0.0.0', port=5005)
 
-    def index(self):
-        return jsonify({"message": "Welcome to the Flask-SocketIO server!"})
-
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
+        
         for name, enum in self.messagesAndVals.items():
             if enum["owner"] != "Dashboard":
                 subscriber = messageHandlerSubscriber(self.queueList, enum["enum"], "lastOnly", True)
-                self.messages[name] = {"obj": subscriber, "type": enum["type"]}
+                self.messages[name] = {"obj": subscriber}
             else:
                 sender = messageHandlerSender(self.queueList,enum["enum"])
                 self.sendMessages[str(name)] = {"obj": sender}
+        subscriber = messageHandlerSubscriber(self.queueList, Semaphores, "fifo", True) # we need it as a fifo so we can see all the semaphores status
+        self.messages["Semaphores"] = {"obj": subscriber}
                 
     def getNamesAndVals(self):
         classes = inspect.getmembers(allMessages, inspect.isclass)
         for name, cls in classes:
             if name != "Enum" and issubclass(cls, Enum):
-                self.messagesAndVals[name] = {"enum": cls, "type": cls.msgType.value, "owner": cls.Owner.value}
-
-    def test_connect(self):
-        if self.debugging:
-            self.logger.info("Client connected")
-        emit('after connect', {'data': 'Connected to server.'})
+                self.messagesAndVals[name] = {"enum": cls, "owner": cls.Owner.value}
 
     def handle_message(self, data):
         if self.debugging:
@@ -157,31 +147,31 @@ class processDashboard(WorkerProcess):
         except json.JSONDecodeError:
             emit('response', {'error': 'Failed to parse JSON data from the file.'})
 
-    def test_disconnect(self):
-        if self.debugging:
-            self.logger.info("Client disconnected")
-
     def send_continuous_hardware_data(self):   
         self.memory_usage = psutil.virtual_memory().percent
         self.cpu_core_usage = psutil.cpu_percent(interval=1, percpu=True)
         self.cpu_temperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
-
         threading.Timer(1, self.send_continuous_hardware_data).start()
 
-    def send_continuous_messages(self):   
+    def send_continuous_messages(self):
+        counter = 1   
+        socketSleep = 0.025
+        sendTime = 1 
         while self.running == True:
             for msg in self.messages:
                 resp = self.messages[msg]["obj"].receive()
-
                 if resp is not None:
                     self.socketio.emit(msg, {"value": resp})
                     if self.debugging:
                         self.logger.info(str(msg))
                         self.logger.info(str(resp))
-
-            self.socketio.emit('memory_channel', {'data': self.memory_usage})
-            self.socketio.emit('cpu_channel', {'data': {'usage': self.cpu_core_usage, 'temp': self.cpu_temperature}})
-            self.socketio.sleep(0.1)
+            if counter < sendTime:
+                counter += socketSleep
+            else:
+                self.socketio.emit('memory_channel', {'data': self.memory_usage})
+                self.socketio.emit('cpu_channel', {'data': {'usage': self.cpu_core_usage, 'temp': self.cpu_temperature}})
+                counter = 0
+            self.socketio.sleep(socketSleep)
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):

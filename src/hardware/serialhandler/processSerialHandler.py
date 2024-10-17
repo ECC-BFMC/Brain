@@ -25,11 +25,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
 if __name__ == "__main__":
     import sys
-
     sys.path.insert(0, "../../..")
+
 import serial
+
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.serialhandler.threads.filehandler import FileHandler
 from src.hardware.serialhandler.threads.threadRead import threadRead
@@ -82,6 +84,7 @@ class processSerialHandler(WorkerProcess):
 # =================================== EXAMPLE =========================================
 #             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
 #                  in terminal:    python3 processSerialHandler.py
+
 if __name__ == "__main__":
     from multiprocessing import Queue, Pipe
     import logging
