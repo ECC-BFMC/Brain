@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 # Import necessary modules
+
 from twisted.internet import reactor
 from src.templates.threadwithstop import ThreadWithStop
 from src.data.TrafficCommunication.threads.udpListener import udpListener
@@ -61,12 +62,14 @@ class threadTrafficCommunication(ThreadWithStop):
     # =================================== CONNECTION =======================================
     def serverLost(self):
         """If the server disconnects, we stop the factory listening and start the reactor listening"""
+
         self.reactor.listenUDP(self.listenPort, self.udp_factory)
         self.tcp_factory.stopListening()
         self.period_task.stop()
 
     def serverFound(self, address, port):
         """If the server was found, we stop the factory listening, connect the reactor, and start the periodic task"""
+        
         self.reactor.connectTCP(address, port, self.tcp_factory)
         self.udp_factory.stopListening()
         self.period_task.start()
