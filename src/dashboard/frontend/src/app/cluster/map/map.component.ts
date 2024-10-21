@@ -30,12 +30,21 @@ import { Component, Input, ViewChild, ElementRef } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WebSocketService} from '../../webSocket/web-socket.service'
 
+import { CommonModule } from '@angular/common';
+
 import { MapCursorComponent } from './map-cursor/map-cursor.component';
+import { MapSemaphoreComponent } from './map-semaphore/map-semaphore.component';
+ 
+interface Semaphore { 
+  x: number;
+  y: number;
+  state: string;
+}
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [MapCursorComponent],
+  imports: [MapCursorComponent, MapSemaphoreComponent, CommonModule],
   templateUrl: './map.component.html',
   styleUrl: './map.component.css'
 })
@@ -45,13 +54,22 @@ export class MapComponent {
   @ViewChild('imageElement') imageElementRef!: ElementRef<HTMLImageElement>;
   @ViewChild('imageContainer') imageContainerRef!: ElementRef<HTMLImageElement>;
 
-  private mapX: number = 3.3;
-  private mapY: number = 72.0;
+  private mapX: number = 0;
+  private mapY: number = 0;
+
   private screenSize = {"width": 100, "height": 100}; // screen size in %
   private mapSize: number = 500; // map size in % for width
   private mapWidth: number = 0;
   private mapHeight: number = 0;
+
   private cursorSize: number = 6; // cursor size in % for width
+  private semaphoreSize: number = 3;
+
+  private semaphoreXOffset: number = 10;
+  private semaphoreYOffset: number = 1.45;
+  
+  public semaphores: Map<number, Semaphore> = new Map<number, Semaphore>();
+
   private locationSubscription: Subscription | undefined;
   private semaphoresAndCarsSubscription: Subscription | undefined;
 
@@ -59,7 +77,6 @@ export class MapComponent {
   
   ngOnInit()
   {
-  
     this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
       (message) => {
         this.mapX = (parseFloat(message.value.x)*100/20.67)
@@ -70,11 +87,18 @@ export class MapComponent {
 
     this.semaphoresAndCarsSubscription = this.webSocketService.receiveSemaphores().subscribe(
       (message) => {
-        console.log(message.value)
+        const recv = message.value;
+        this.semaphores.set(recv.id, {x: recv.x, y: recv.y, state: recv.state});
       },
     );
     this.updateMap()
   }
+
+  // ngAfterViewInit() { 
+  //   this.mapX = (1.5*100/20.67)
+  //   this.mapY = (2*100/13.76) //magic procent + same system of coordinates
+  //   this.updateMap()
+  // }
 
   ngOnDestroy() {
     if (this.locationSubscription) {
@@ -116,6 +140,18 @@ export class MapComponent {
     }
   }
 
+  onLoadSemaphore(id: number): void {
+    const semaphore = document.getElementById("map-semaphore" + id) as HTMLElement;
+
+    if (semaphore) {
+      semaphore.style.position = "absolute";
+      semaphore.style.width = `${this.semaphoreSize}%`;
+      semaphore.style.height = `auto`;
+
+      this.updateMap();
+    }
+  }
+
   updateMap(): void {
     const map = document.getElementById("map-track-image") as HTMLElement;
     let imageContainerHeight: number = 0;
@@ -138,6 +174,21 @@ export class MapComponent {
 
       map.style.top = `${-top}%`;
       map.style.left = `${-left}%`;
+
+      this.semaphores.forEach((value: Semaphore, key: number) => {
+        const semaphore = document.getElementById("map-semaphore" + key) as HTMLElement;
+
+        if (semaphore) { 
+          const x = (value.x * 100/20.67);
+          const y = (value.y * 100/13.76);
+
+          const top_new = (y * this.mapHeight) / 100;
+          const left_new = (x * this.mapWidth) / 100;
+          
+          semaphore.style.top = `${(-top - this.semaphoreXOffset) + top_new}%`;
+          semaphore.style.left = `${(-left - this.semaphoreYOffset) + left_new}%`;
+        }
+      });
     }
   }
 }

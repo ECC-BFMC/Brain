@@ -27,16 +27,16 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
 <!-- Password Modal -->
-<div *ngIf="!isAuthenticated" class="modal">
+<!-- <div *ngIf="!isAuthenticated" class="modal">
   <div class="modal-content">
     <h2>Please enter the password</h2>
     <input type="password" [(ngModel)]="enteredPassword" placeholder="Enter password">
     <button (click)="submitPassword()">Submit</button>
   </div>
-</div>
+</div> -->
 
 <!-- The actual content that will be shown only after correct password -->
-<div class="main-container" *ngIf="isAuthenticated">
+<!-- <div class="main-container" *ngIf="isAuthenticated"> -->
   <div class="cluster-container">
     <app-cluster class="cluster"
       [cursorRotation]="cursorRotationSliderValue"
@@ -47,4 +47,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   </div>
 
   <app-table class="table" />
-</div>
+<!-- </div> -->

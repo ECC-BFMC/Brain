@@ -60,7 +60,7 @@ export class WebSocketService {
  constructor() {
 
   this.webSocket = new Socket({
-   url: "http://192.168.88.165:5005",
+   url: "http://192.168.0.109:5005",
    options: {},
   });
 
@@ -70,7 +70,6 @@ export class WebSocketService {
       this.eventSubject.next({ channel: eventName, data });
     }
   });
-
  }
 
   // Method to start connection/handshake with the server
