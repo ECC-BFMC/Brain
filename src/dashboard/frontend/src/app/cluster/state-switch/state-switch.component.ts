@@ -41,8 +41,7 @@ export class StateSwitchComponent {
   public states: string[] = ['stop', 'manual', 'legacy', 'auto'];
   public currentStateIndex: number = 0;
 
-  private isArrowUpHeld: boolean = false;
-  private isArrowDownHeld: boolean = false;
+  private activeKey: string | null = null;
 
   private speed: number = 0;
   private speedIncrement: number = 5;
@@ -50,33 +49,45 @@ export class StateSwitchComponent {
   private minSpeed: number = -50;
 
   private steer: number = 0;
-  private steerIncrement: number = 2.5;
+  private steerIncrement: number = 1;
+  private steerDecrement: number = 1;
+  private steerInterval: any;
+  private steerDecreaseInterval: any;
+  private isSteering: boolean = false;
   private maxSteer: number = 25;
   private minSteer: number = -25;
 
   constructor(private  webSocketService: WebSocketService) { }
 
   @HostListener('window:keydown', ['$event'])
-  handleKeyDown(event: KeyboardEvent): void {
+  handleKeyDown(event: KeyboardEvent) {
     if (this.currentState == 'manual') {
+
+      if (this.activeKey === event.key)
+        return;
+    
+      this.activeKey = event.key;
+
       switch(event.key) {
         case 'w':
-          if (!this.isArrowUpHeld) {
-            this.isArrowUpHeld = true;
-            this.increaseSpeed();
-          }
+          this.increaseSpeed();
           break;
         case 's':
-          if (!this.isArrowDownHeld) {
-            this.isArrowDownHeld = true;
-            this.decreaseSpeed();
-          }
+          this.decreaseSpeed();
           break;
         case 'a':
-          this.steerLeft();
+          if (!this.isSteering) { 
+            this.isSteering = true
+            this.stopDecreasingSteering();
+            this.startSteeringLeft();
+          }
           break;
         case 'd':
-          this.steerRight();
+          if (!this.isSteering) { 
+            this.isSteering = true
+            this.stopDecreasingSteering();
+            this.startSteeringRight();  
+          }
           break;
         default:
           break;
@@ -85,22 +96,11 @@ export class StateSwitchComponent {
   }
 
   @HostListener('window:keyup', ['$event'])
-  handleKeyUp(event: KeyboardEvent): void {
-    if (this.currentState == 'manual') {
-      switch(event.key) {
-        case 'w':
-          if (this.isArrowUpHeld) {
-            this.isArrowUpHeld = false;
-          }
-          break;
-        case 's':
-          if (this.isArrowDownHeld) {
-            this.isArrowDownHeld = false;
-          }
-          break;
-        default:
-          break;
-      }
+  handleKeyUp(event: KeyboardEvent) {
+    if (this.currentState === 'manual' && this.activeKey === event.key) {
+      this.activeKey = null;
+      this.stopSteering();
+      this.startDecreasingSteer();
     }
   }
 
@@ -122,6 +122,102 @@ export class StateSwitchComponent {
     const totalStates = this.states.length;
     const percentage = (index / totalStates) * 100;
     return `calc(${percentage}%)`;
+  }
+
+  private increaseSpeed(): void {
+    this.speed += this.speedIncrement;
+    if (this.speed > this.maxSpeed) {
+      this.speed = this.maxSpeed;
+    }
+
+    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
+  }
+
+  private decreaseSpeed(): void {
+    this.speed -= this.speedIncrement;
+    if (this.speed < this.minSpeed) {
+      this.speed = this.minSpeed;
+    }
+
+    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
+  }
+
+  private startSteeringRight() {
+    this.steerInterval = setInterval(() => {
+
+      this.steer += this.steerIncrement;
+
+      if (this.steer > this.maxSteer) {
+        this.steer = this.maxSteer;
+      }
+  
+      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
+
+    }, 50);
+  }
+   
+  private startSteeringLeft() {
+    this.steerInterval = setInterval(() => {
+
+      this.steer -= this.steerIncrement;
+
+      if (this.steer < this.minSteer) {
+        this.steer = this.minSteer;
+      }
+
+      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
+
+    }, 50);
+  }
+
+  private startDecreasingSteer() { 
+    this.steerDecreaseInterval = setInterval(() => {
+      if (this.steer == 0 || this.isSteering)
+        return;
+    
+      if (this.steer < 0) {
+        this.steer += this.steerDecrement;
+    
+        if (this.steer > 0) { 
+          this.steer = 0;
+        }
+      }
+    
+      if (this.steer > 0) {
+        this.steer -= this.steerDecrement;
+    
+        if (this.steer < 0) { 
+          this.steer = 0;
+        }
+      }
+    
+      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`); 
+    }, 100)
+  }
+
+  private speedReset(): void { 
+    this.speed = 0;
+    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
+  }
+
+  private steerReset(): void { 
+    this.steer = 0;
+    this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
+  }
+
+  private stopSteering() {
+    if (this.steerInterval) {
+      clearInterval(this.steerInterval); 
+      this.steerInterval = null; 
+    }
+    this.isSteering = false; 
+  }
+
+  private stopDecreasingSteering() {
+    if (this.steerDecreaseInterval) { 
+      clearInterval(this.steerDecreaseInterval);
+      this.steerDecreaseInterval = null;
+    }
   }
 
   getSliderWidth(): string {
@@ -148,50 +244,7 @@ export class StateSwitchComponent {
     return '#2b8fd1';
   }
 
-  private increaseSpeed(): void {
-    this.speed += this.speedIncrement;
-    if (this.speed > this.maxSpeed) {
-      this.speed = this.maxSpeed;
-    }
-
-    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
-  }
-
-  private decreaseSpeed(): void {
-    this.speed -= this.speedIncrement;
-    if (this.speed < this.minSpeed) {
-      this.speed = this.minSpeed;
-    }
-
-    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
-  }
-
-  private steerLeft(): void {
-    this.steer -= this.steerIncrement;
-    if (this.steer < this.minSteer) {
-      this.steer = this.minSteer;
-    }
-
-    this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
-  }
-
-  private steerRight(): void {
-    this.steer += this.steerIncrement;
-    if (this.steer > this.maxSteer) {
-      this.steer = this.maxSteer;
-    }
-
-    this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
-  }
-
-  private speedReset(): void { 
-    this.speed = 0;
-    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
-  }
-
-  private steerReset(): void { 
-    this.steer = 0;
-    this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
+  private delay(milliseconds: number) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
   }
 }
-
