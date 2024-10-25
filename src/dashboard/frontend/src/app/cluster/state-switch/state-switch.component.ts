@@ -49,8 +49,8 @@ export class StateSwitchComponent {
   private minSpeed: number = -50;
 
   private steer: number = 0;
-  private steerIncrement: number = 1;
-  private steerDecrement: number = 1;
+  private steerIncrement: number = 5;
+  private steerDecrement: number = 5;
   private steerInterval: any;
   private steerDecreaseInterval: any;
   private isSteering: boolean = false;
