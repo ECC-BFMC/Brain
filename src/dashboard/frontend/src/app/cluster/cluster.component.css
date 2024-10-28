@@ -235,3 +235,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     height: 5%;
     /* border: 3px solid darkgoldenrod; */
 }
+
+@keyframes pulseRedShadow {
+    0%, 100% {
+      box-shadow: 0 0 10px 5px rgba(255, 0, 0, 0.8);
+    }
+    50% {
+      box-shadow: 0 0 20px 10px rgba(255, 0, 0, 0.5);
+    }
+  }
+  
+  .pulse-red {
+    animation: pulseRedShadow 1s infinite;
+  }

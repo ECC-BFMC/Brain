@@ -53,6 +53,12 @@ class Signal(Enum):
     msgID = 4
     msgType = "str"
 
+class LaneKeeping(Enum):
+    Queue = "General"
+    Owner = "threadCamera" # here you will send an offset of the car position between the lanes of the road + - from 0 point to dashboard
+    msgID = 5
+    msgType = "int"
+
 ################################# processCarsAndSemaphores ##################################
 class Cars(Enum):
     Queue = "General"
@@ -232,16 +238,10 @@ class EnableButton(Enum):
     msgID = 1
     msgType = "bool"
 
-class SignalRunning(Enum):
-    Queue = "General"
-    Owner = "threadWrite"
-    msgID = 2
-    msgType = "bool"
-
 class WarningSignal(Enum):
     Queue = "General"
     Owner = "brain"
-    msgID = 1
+    msgID = 3
     msgType = "str"
 
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}

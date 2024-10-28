@@ -29,6 +29,7 @@
 import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { WebSocketService } from '../../webSocket/web-socket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-kl-switch',
@@ -40,14 +41,29 @@ import { WebSocketService } from '../../webSocket/web-socket.service';
 export class KlSwitchComponent {
   public states = ['0', '15', '30'];
   public currentStateIndex = 0;
+  public enableButon : Boolean = false;
+  private enableButtonSubscription: Subscription | undefined;
 
   constructor( private  webSocketService: WebSocketService) { }
+
+  ngOnInit()
+  {
+    this.enableButtonSubscription = this.webSocketService.receiveEnableButton().subscribe(
+      (message) => {
+        this.enableButon = message.value
+        console.log(this.enableButon)
+      },
+      (error) => {
+        console.error('Error receiving enablebutton signal:', error);
+      }
+    );
+  }
 
   setState(index: number) {
     if (this.currentState == '30' && this.currentState != this.states[index]) {
     }
-
-    this.currentStateIndex = index; 
+    if(this.enableButon)
+      this.currentStateIndex = index; 
     this.webSocketService.sendMessageToFlask(`{"Name": "Klem", "Value": "${this.states[this.currentStateIndex]}"}`);   
   }
 

@@ -29,7 +29,6 @@
 import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WebSocketService} from '../../webSocket/web-socket.service'
-
 @Component({
   selector: 'app-battery-level',
   standalone: true,
@@ -46,7 +45,6 @@ export class BatteryLevelComponent {
   private yOffset: number = -48;
   private angleAmplifier: number = 1.2;
   private batterySubscription: Subscription | undefined;
-  private batterySubscription2: Subscription | undefined;
   constructor( private  webSocketService: WebSocketService) { }
 
   ngOnInit()
@@ -61,20 +59,14 @@ export class BatteryLevelComponent {
         this.updateNeedle();
       },
       (error) => {
-        console.error('Error receiving disk usage:', error);
+        console.error('Error receiving battery level:', error);
       }
     );
-    this.batterySubscription2 = this.webSocketService.receiveImuData().subscribe(
-      (message) => {
-        console.log(message.value)
-      },
-      (error) => {
-        console.error('Error receiving disk usage:', error);
-      }
-    );
+    
   }
 
   ngOnDestroy() {
+    
     if (this.batterySubscription) {
       this.batterySubscription.unsubscribe();
     }

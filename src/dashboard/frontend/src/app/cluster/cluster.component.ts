@@ -44,7 +44,7 @@ import { HardwareDataComponent} from './hardware-data/hardware-data.component';
 import { RecordComponent} from './record/record.component';
 import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.component'
 import { SideMarkerComponent } from './side-marker/side-marker.component'
-
+import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-cluster',
   standalone: true,
@@ -52,7 +52,7 @@ import { SideMarkerComponent } from './side-marker/side-marker.component'
             CarComponent, InstantConsumptionComponent, StateSwitchComponent,
             KlSwitchComponent, SteeringComponent, LiveCameraComponent,
             WarningLightComponent, HardwareDataComponent, RecordComponent,
-            TimeSpeedSteerComponent, SideMarkerComponent],
+            TimeSpeedSteerComponent, SideMarkerComponent, CommonModule],
   templateUrl: './cluster.component.html',
   styleUrl: './cluster.component.css'
 })
@@ -69,7 +69,8 @@ export class ClusterComponent {
   public speed: number = 0;
   private batterySubscription: Subscription | undefined;
   private speedSubscription: Subscription | undefined;
-
+  private warningSubscription: Subscription | undefined;
+  public warningSignal: Boolean = false;
   constructor( private  webSocketService: WebSocketService) { }
 
   ngOnInit()
@@ -79,7 +80,7 @@ export class ClusterComponent {
         this.battery = message.value;
       },
       (error) => {
-        console.error('Error receiving disk usage:', error);
+        console.error('Error receiving battery:', error);
       }
     );
 
@@ -88,7 +89,15 @@ export class ClusterComponent {
         this.speed = Math.abs(parseInt(message.value)/10);
       },
       (error) => {
-        console.error('Error receiving disk usage:', error);
+        console.error('Error receiving speed:', error);
+      }
+    );
+    this.warningSubscription = this.webSocketService.receiveWarningSignal().subscribe(
+      (message) => {
+        this.warningSignal = true
+      },
+      (error) => {
+        console.error('Error receiving warning signal:', error);
       }
     );
   }

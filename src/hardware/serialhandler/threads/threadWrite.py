@@ -33,7 +33,6 @@ import threading
 from src.hardware.serialhandler.threads.messageconverter import MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
-    SignalRunning,
     Klem,
     Control,
     SteerMotor,
@@ -71,14 +70,12 @@ class threadWrite(ThreadWithStop):
         self.running = False
         self.engineEnabled = False
         self.messageConverter = MessageConverter()
-        self.signalRunningSender = messageHandlerSender(self.queuesList, SignalRunning)
         self.steerMotorSender = messageHandlerSender(self.queuesList, SteerMotor)
         self.speedMotorSender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.configPath = "src/utils/initConfig.json"
 
         #self.loadConfig("init")
         self.subscribe()
-        self.Queue_Sending()
 
         if example:
             self.i = 0.0
@@ -100,11 +97,6 @@ class threadWrite(ThreadWithStop):
         self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
 
     # ==================================== SENDING =======================================
-    def Queue_Sending(self):
-        """Callback function for engine running flag."""
-
-        self.signalRunningSender.send(self.running)
-        threading.Timer(1, self.Queue_Sending).start()
 
     def sendToSerial(self, msg):
         command_msg = self.messageConverter.get_command(**msg)
