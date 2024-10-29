@@ -28,12 +28,12 @@
 
 import { Component, HostListener } from '@angular/core';
 import { WebSocketService } from '../../webSocket/web-socket.service';
-import { NgFor } from '@angular/common';
-
+import { NgFor, NgIf } from '@angular/common';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 @Component({
   selector: 'app-state-switch',
   standalone: true,
-  imports: [NgFor],
+  imports: [NgFor, NgIf],
   templateUrl: './state-switch.component.html',
   styleUrl: './state-switch.component.css'
 })
@@ -57,7 +57,15 @@ export class StateSwitchComponent {
   private maxSteer: number = 25;
   private minSteer: number = -25;
 
-  constructor(private  webSocketService: WebSocketService) { }
+  isMobile: boolean = false;
+
+  constructor(private  webSocketService: WebSocketService,private breakpointObserver: BreakpointObserver) { }
+
+  ngOnInit() {
+    this.breakpointObserver.observe(['(max-width: 767px)']).subscribe((state: BreakpointState) => {
+      this.isMobile = state.matches;
+    });
+  }
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
@@ -124,7 +132,7 @@ export class StateSwitchComponent {
     return `calc(${percentage}%)`;
   }
 
-  private increaseSpeed(): void {
+  increaseSpeed(): void {
     this.speed += this.speedIncrement;
     if (this.speed > this.maxSpeed) {
       this.speed = this.maxSpeed;
@@ -133,7 +141,7 @@ export class StateSwitchComponent {
     this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
   }
 
-  private decreaseSpeed(): void {
+  decreaseSpeed(): void {
     this.speed -= this.speedIncrement;
     if (this.speed < this.minSpeed) {
       this.speed = this.minSpeed;
@@ -142,7 +150,7 @@ export class StateSwitchComponent {
     this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
   }
 
-  private startSteeringRight() {
+  startSteeringRight() {
     this.steerInterval = setInterval(() => {
 
       this.steer += this.steerIncrement;
@@ -156,7 +164,7 @@ export class StateSwitchComponent {
     }, 50);
   }
    
-  private startSteeringLeft() {
+  startSteeringLeft() {
     this.steerInterval = setInterval(() => {
 
       this.steer -= this.steerIncrement;

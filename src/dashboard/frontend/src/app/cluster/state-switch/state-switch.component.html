@@ -45,4 +45,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
       [style.backgroundColor]="getSliderColor()">
     </a>
   </div> 
+  <div *ngIf="isMobile" class="button-container">
+    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="increaseSpeed()">speed+</button>
+    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="decreaseSpeed()">speed-</button>
+    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="startSteeringLeft()">steer-</button>
+    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="startSteeringRight()">steer+</button>
+  </div>
+  
+  
 </div>
