@@ -32,14 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     width: 100%;
     height: 100%;
     gap: 10%;
-    /* border: 3px solid salmon; */
 }
 
 .indicator-slider { 
     width: 30%;
     height: 85%;
     background-color: rgba(0, 0, 0, 0.363);
-    /* border: 3px solid pink; */
 }
 
 .indicator-slider-value {
@@ -48,7 +46,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     transform: rotatex(180deg);
     transform-origin: top;
     background-color: rgb(81, 180, 81);
-    /* border: 3px solid palevioletred; */
 }
 
 .indicator-text { 
@@ -57,7 +54,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     position: relative;
     width: 50%;
     height: 100%;
-    /* border: 3px solid red; */
 }
 
 .indicator-text label { 

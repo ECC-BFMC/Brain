@@ -51,7 +51,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   height: 100%;
 }
   
-/* Modal styles */
 .modal {
   display: flex;
   justify-content: center;
@@ -65,7 +64,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 }
 
 .modal-content {
-  /* background-color: white; */
   background-color: rgb(45, 54, 58);
   padding: 20px;
   border-radius: 5px;

@@ -80,7 +80,7 @@ export class MapComponent {
     this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
       (message) => {
         this.mapX = (parseFloat(message.value.x)*100/20.67)
-        this.mapY = (100 - parseFloat(message.value.y)*100/13.76) //magic procent + same system of coordinates
+        this.mapY = (100 - parseFloat(message.value.y)*100/13.76) //magic percent + same system of coordinates
         this.updateMap()
       },
     );
@@ -93,12 +93,6 @@ export class MapComponent {
     );
     this.updateMap()
   }
-
-  // ngAfterViewInit() { 
-  //   this.mapX = (1.5*100/20.67)
-  //   this.mapY = (2*100/13.76) //magic procent + same system of coordinates
-  //   this.updateMap()
-  // }
 
   ngOnDestroy() {
     if (this.locationSubscription) {
@@ -176,6 +170,8 @@ export class MapComponent {
       map.style.left = `${-left}%`;
 
       this.semaphores.forEach((value: Semaphore, key: number) => {
+        console.log("???");
+        
         const semaphore = document.getElementById("map-semaphore" + key) as HTMLElement;
 
         if (semaphore) { 

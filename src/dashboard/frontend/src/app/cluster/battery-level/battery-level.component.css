@@ -27,20 +27,15 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .battery-level {
-    /* width: 400px;
-    height: 170px; */
     width: 100%;
     height: 100%;
-    /* padding: 100px 300px; */
     position: relative;
-    /* border: 3px solid whitesmoke; */
 }
 
 .battery-level-body { 
     width: 100%;
     height: 100%;
     position: relative;
-    /* border: 3px solid yellow; */
 }
 
 .battery-level-indicator-svg { 
@@ -48,7 +43,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     position: absolute;
     width: 100%;
     height: 100%;
-    /* border: 3px solid red; */
 }
 
 #battery-level-needle-group {

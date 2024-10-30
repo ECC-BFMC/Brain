@@ -40,7 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   font-size: 0.6vw;
   color: white;
   opacity: 0.8;
-  /* border: 3px solid blue; */
 }
 
 .state-switch-body {
@@ -53,7 +52,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   background-color: rgba(21, 23, 24, 0.3);
   border-radius: 0.3vw;
   filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.2));
-  /* border: 3px solid salmon; */
 }
 
 .state-switch-body input[type="radio"] {
@@ -110,61 +108,3 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 .full-width-button:hover {
   background-color: #6497b1;
 }
-
-
-/* .state-switch { 
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-  
-.state-switch-body { 
-  display: flex;
-  position: relative;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: 1fr 1fr;
-  background-color: #2b8fd1;
-  border-radius: 6%;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0px 8px rgba(0, 0, 0, 0.5);
-  border: 1px solid #e6e6e680;
-}
-
-.state-switch-body input[type="radio"] {
-  display: none;
-}
-
-.states { 
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 100%;
-  height: 100%;
-}
-
-.state-switch-body label {
-  display: flex;
-  position: relative;
-  user-select: none;
-  z-index: 1;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 1vw;
-  color: #fff;
-  align-items: center;
-  justify-content: center;
-}
-
-.state-switch-body label:active {
-    background-color: #21262927;
-}
-
-#state-switch-arrow { 
-  position: absolute;
-  transform-origin: center center;
-  width: 20%;
-  rotate: -45deg;
-  transition: transform 0.3s ease-in-out;
-  z-index: 2;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
-} */

@@ -30,14 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     width: 100%;
     height: 100%;
     position: relative;
-    /* border: 1px solid black; */
   }
 
 .speedometer-body { 
     width: 100%;
     height: 100%;
     position: relative;
-    /* border: 3px solid yellow; */
 }
 
 .speedometer-indicator-svg { 

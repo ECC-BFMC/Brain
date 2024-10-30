@@ -30,12 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   width: 100%;
   height: auto; 
   position: relative;
-  /* border: 3px solid forestgreen; */
 }
 
 .scaled-image {
   width: 100%;
-  height: auto; /* Maintain aspect ratio */
+  height: auto;
   position: relative;
   object-fit: cover; 
   border: 0.2vw solid rgb(188, 188, 188);

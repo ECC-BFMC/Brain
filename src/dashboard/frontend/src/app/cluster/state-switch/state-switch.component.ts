@@ -251,8 +251,4 @@ export class StateSwitchComponent {
 
     return '#2b8fd1';
   }
-
-  private delay(milliseconds: number) {
-    return new Promise(resolve => setTimeout(resolve, milliseconds));
-  }
 }

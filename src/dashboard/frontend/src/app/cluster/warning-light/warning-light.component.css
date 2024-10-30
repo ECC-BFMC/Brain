@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-gap: 5%;
-    /* border: 3px solid red; */
 }
 
 .warning-light-items {  

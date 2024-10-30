@@ -51,7 +51,6 @@ export class KlSwitchComponent {
     this.enableButtonSubscription = this.webSocketService.receiveEnableButton().subscribe(
       (message) => {
         this.enableButon = message.value
-        console.log(this.enableButon)
       },
       (error) => {
         console.error('Error receiving enablebutton signal:', error);

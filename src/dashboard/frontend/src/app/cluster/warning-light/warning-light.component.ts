@@ -61,7 +61,6 @@ export class WarningLightComponent {
 
   constructor( private  webSocketService: WebSocketService) { }
   ngOnInit() {
-    // this.setWarningLightType("1");
     this.warningsSubscription = this.webSocketService.receiveWarningSignal().subscribe(
       (message) => {
         let id = message.value.WarningID
@@ -120,10 +119,6 @@ export class WarningLightComponent {
     }
 
     this.warningLights.push({"type": warningLightDictionary[lightTypeInt.toString()], "time": this.warningLightDisplayTime});
-
-    // for (let i=1; i<=21; i++) { 
-    //   this.warningLights.push({"type": warningLightDictionary[i.toString()], "time": this.warningLightDisplayTime});
-    // }
 
     if (!this.intervalId) {
       this.startRepeatingFunction();

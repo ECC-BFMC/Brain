@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     flex-direction: column;
     width: 100%;
     height: 100%;
-    /* border: 3px solid tomato; */
     border: 0.1vw solid gray;
 }
 
@@ -49,12 +48,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     flex-direction: row;
     top: 30%;
     left: 5%;
-    /* padding-inline: 5%; */
     width: 90%;
     height: 40%;
     justify-content: center;
     gap: 25%;
-    /* border: 3px solid blueviolet; */
 }
 
 .cluster-instruments-secondary {
@@ -64,24 +61,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     top: 54%;
     width: 100%;
     height: 30%;
-    /* justify-content: center; */
     gap: 43.5%;
-    /* padding-left: 0%; */
     padding-right: 1%;
-    /* border: 3px solid rgb(10, 194, 50); */
 }
 
 .cluster-instruments-switches { 
     display: flex;
     flex-direction: column;
     position: relative;
-    /* margin-right: 10%; */
-    /* align-items: center; */
     top: 17%;
     gap: 10%;
     width: 30%;
     height: 50%;
-    /* border: 3px solid yellow; */
 }
 
 .cluster-battery-level, .cluster-speedometer { 
@@ -93,32 +84,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     width: 20%;
     height: 100%;
     padding-bottom: 5%;
-    /* border: 3px solid red; */
 }
 
 .cluster-state-switch { 
-    /* width: 40%;
-    height: 50%; */
     width: 100%;
     height: 45%;
-    /* top: 20%; */
-    /* border: 3px solid red; */
 }
 
 .cluster-kl-switch { 
     width: 50%;
     height: 45%;
-    /* border: 3px solid red; */
 }
 
 .cluster-map { 
     position: absolute;
-    /* padding-inline: 20%; */
     top: 3%;
     left: 20%;
     width: 60%;
     height: 47%;
-    /* border: 3px solid cadetblue; */
 }
 
 .cluster-digital-container { 
@@ -131,7 +114,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     align-items: center;
     font-size: 1.7vw;
     filter: drop-shadow(0 0 8vw rgba(0, 0, 0, 0.7));
-    /* border: 3px solid greenyellow */
 }
 
 .cluster-digital-text-container {
@@ -154,22 +136,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .cluster-car { 
     position: absolute;
-    /* padding-inline: 40%; */
     top: 58%;
     left: 40%;
     width: 20%;
     height: 20%;
-    /* border: 3px solid darkorange; */
 }
 
 .cluster-steering { 
     position: absolute;
-    /* padding-inline: 43%; */
     top: 51%;
     left: 43%;
     width: 14%;
     height: 3%;
-    /* border: 3px solid red; */
 }
 
 .cluster-record { 
@@ -179,42 +157,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     height: 5.5%;
     top: 84.5%;
     z-index: 5;
-    /* border: 3px solid red; */
 }
 
 .cluster-live-camera { 
     position: absolute;
-    /* padding-inline: 42%; */
-    /* padding-left: 72%;
-    padding-right: 6%; */
     top: 76.5%;
     left: 75%;
     width: 22%;
     height: auto;
-    /* border: 3px solid darkorange; */
 }
 
 .cluster-warning-light { 
     position: absolute;
-    /* padding-inline: 49%; */
-    /* padding-left: 19%;
-    padding-right: 62%; */
     top: 60%;
     left: 19%;
     width: 19%;
     height: auto;
-    /* border: 3px solid darkorange; */
 }
 
 .cluster-hardware-data { 
     position: absolute;
-    /* padding-left: 0.5%;
-    padding-right: 61.5%; */
     top: 82%;
     left: 0.5%;
     width: 30%;
     height: 16%;
-    /* border: 3px solid red; */
 }
 
 .cluster-time-speed-steer { 
@@ -224,7 +190,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     width: 13%;
     height: 18%;
     z-index: 5;
-    /* border: 3px solid red; */
 }
 
 .cluster-side-marker { 
@@ -233,7 +198,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     left: 39%;
     width: 22%;
     height: 5%;
-    /* border: 3px solid darkgoldenrod; */
 }
 
 @keyframes pulseRedShadow {
