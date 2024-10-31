@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
 <div class="kl-switch">  
-  <label class="kl-switch-text">Battery status (KL)</label>
-  <div class="kl-switch-body">
+  <label *ngIf="!isMobile" class="kl-switch-text">Battery status (KL)</label>
+  <div *ngIf="!isMobile" class="kl-switch-body">
     <ng-container *ngFor="let state of states; let i = index">
       <input type="radio" 
              id="kl-switch-{{i}}" 
@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
       <label for="kl-switch-{{i}}">{{ state }}</label>
     </ng-container>
   
-    <a class="slide" aria-hidden="true" 
+    <a *ngIf="!isMobile" class="slide" aria-hidden="true" 
       [style.left]="getSliderPosition(currentStateIndex)" 
       [style.width]="getSliderWidth()"
       [style.backgroundColor]="getSliderColor()">

@@ -48,7 +48,7 @@ export class HardwareDataComponent {
   public heap: number = 0;
   public stack: number = 0;
   
-  constructor( private  webSocketService: WebSocketService) { }
+  constructor(private  webSocketService: WebSocketService) { }
 
   ngOnInit()
   {
@@ -68,8 +68,8 @@ export class HardwareDataComponent {
     
     this.resourceSubscription = this.webSocketService.receiveResourceMonitor().subscribe(
       (message) =>{
-        this.heap = message.value["heap"];
-        this.stack = message.value["stack"];
+        this.heap = Math.round(message.value['heap']);
+        this.stack = Math.round(message.value['stack']);
       },
       (error) => {
         console.error('Error receiving resource monitor:', error);
@@ -78,7 +78,8 @@ export class HardwareDataComponent {
 
     this.memorySubscription = this.webSocketService.receiveMemoryUsage().subscribe(
       (message) => {
-        this.memoryUsage = parseInt(message['data']);
+        this.memoryUsage = Math.round(message['data']);
+        
       },
       (error) => {
         console.error('Error receiving disk usage:', error);

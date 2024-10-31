@@ -27,24 +27,30 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { Component } from '@angular/core';
-import { NgFor } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { WebSocketService } from '../../webSocket/web-socket.service';
 import { Subscription } from 'rxjs';
+import { ClusterService } from '../cluster.service';
 
 @Component({
   selector: 'app-kl-switch',
   standalone: true,
-  imports: [NgFor],
+  imports: [NgFor, NgIf],
   templateUrl: './kl-switch.component.html',
   styleUrl: './kl-switch.component.css'
 })
 export class KlSwitchComponent {
   public states = ['0', '15', '30'];
   public currentStateIndex = 0;
+  
+  public isMobile: boolean = false;
+
   public enableButon : Boolean = false;
   private enableButtonSubscription: Subscription | undefined;
 
-  constructor( private  webSocketService: WebSocketService) { }
+  constructor(private webSocketService: WebSocketService,
+    private clusterService: ClusterService
+  ) { }
 
   ngOnInit()
   {
@@ -56,6 +62,10 @@ export class KlSwitchComponent {
         console.error('Error receiving enablebutton signal:', error);
       }
     );
+
+    this.clusterService.isMobileDriving$.subscribe(isMobileDriving => {
+      this.isMobile = isMobileDriving;
+    });
   }
 
   setState(index: number) {
@@ -63,6 +73,8 @@ export class KlSwitchComponent {
     }
     if(this.enableButon)
       this.currentStateIndex = index; 
+
+    this.clusterService.updateKL(this.states[this.currentStateIndex])
     this.webSocketService.sendMessageToFlask(`{"Name": "Klem", "Value": "${this.states[this.currentStateIndex]}"}`);   
   }
 

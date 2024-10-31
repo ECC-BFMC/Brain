@@ -29,17 +29,21 @@
 import { Component, HostListener } from '@angular/core';
 import { WebSocketService } from '../../webSocket/web-socket.service';
 import { NgFor, NgIf } from '@angular/common';
-import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
+import { MatIconModule } from '@angular/material/icon';
+import { ClusterService } from '../cluster.service';
+
 @Component({
   selector: 'app-state-switch',
   standalone: true,
-  imports: [NgFor, NgIf],
+  imports: [NgFor, NgIf, MatIconModule],
   templateUrl: './state-switch.component.html',
   styleUrl: './state-switch.component.css'
 })
 export class StateSwitchComponent {
   public states: string[] = ['stop', 'manual', 'legacy', 'auto'];
   public currentStateIndex: number = 0;
+
+  public isMobile: boolean = false;
 
   private activeKey: string | null = null;
 
@@ -57,13 +61,13 @@ export class StateSwitchComponent {
   private maxSteer: number = 25;
   private minSteer: number = -25;
 
-  isMobile: boolean = false;
-
-  constructor(private  webSocketService: WebSocketService,private breakpointObserver: BreakpointObserver) { }
+  constructor(private  webSocketService: WebSocketService, 
+    private clusterService: ClusterService
+  ) { }
 
   ngOnInit() {
-    this.breakpointObserver.observe(['(max-width: 767px)']).subscribe((state: BreakpointState) => {
-      this.isMobile = state.matches;
+    this.clusterService.isMobileDriving$.subscribe(isMobileDriving => {
+      this.isMobile = isMobileDriving;
     });
   }
 
@@ -119,6 +123,7 @@ export class StateSwitchComponent {
     }
 
     this.currentStateIndex = index;    
+    this.clusterService.updateDrivingMode(this.states[index]);
     this.webSocketService.sendMessageToFlask(`{"Name": "DrivingMode", "Value": "${this.states[index]}"}`);   
   }
 
@@ -132,7 +137,23 @@ export class StateSwitchComponent {
     return `calc(${percentage}%)`;
   }
 
-  increaseSpeed(): void {
+  public onButtonPress(direction: string): void { 
+    if (direction == "left") {
+      this.stopDecreasingSteering();
+      this.startSteeringLeft();
+    }
+    else if (direction == "right") {
+      this.stopDecreasingSteering();
+      this.startSteeringRight();
+    }
+  }
+
+  public onButtonRelease(): void { 
+    this.stopSteering();
+    this.startDecreasingSteer();
+  }
+
+  public increaseSpeed(): void {
     this.speed += this.speedIncrement;
     if (this.speed > this.maxSpeed) {
       this.speed = this.maxSpeed;
@@ -141,7 +162,7 @@ export class StateSwitchComponent {
     this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
   }
 
-  decreaseSpeed(): void {
+  public decreaseSpeed(): void {
     this.speed -= this.speedIncrement;
     if (this.speed < this.minSpeed) {
       this.speed = this.minSpeed;
@@ -150,7 +171,7 @@ export class StateSwitchComponent {
     this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
   }
 
-  startSteeringRight() {
+  private startSteeringRight() {
     this.steerInterval = setInterval(() => {
 
       this.steer += this.steerIncrement;
@@ -164,7 +185,7 @@ export class StateSwitchComponent {
     }, 50);
   }
    
-  startSteeringLeft() {
+  private startSteeringLeft() {
     this.steerInterval = setInterval(() => {
 
       this.steer -= this.steerIncrement;

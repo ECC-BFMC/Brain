@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
 <div class="state-switch">
-  <label class="state-switch-text">Driving Mode</label>
-  <div class="state-switch-body">
+  <label *ngIf="!isMobile" class="state-switch-text">Driving Mode</label>
+  <div *ngIf="!isMobile" class="state-switch-body">
     <ng-container *ngFor="let state of states; let i = index">
       <input type="radio" 
             id="state-switch-{{i}}" 
@@ -39,18 +39,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
       <label for="state-switch-{{i}}">{{ state }}</label>
     </ng-container>
 
-    <a class="slide" aria-hidden="true" 
+    <a *ngIf="!isMobile" class="slide" aria-hidden="true" 
       [style.left]="getSliderPosition(currentStateIndex)" 
       [style.width]="getSliderWidth()"
       [style.backgroundColor]="getSliderColor()">
     </a>
   </div> 
+  
   <div *ngIf="isMobile" class="button-container">
-    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="increaseSpeed()">speed+</button>
-    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="decreaseSpeed()">speed-</button>
-    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="startSteeringLeft()">steer-</button>
-    <button *ngIf="isMobile && currentStateIndex === 1" class = "full-width-button" (click)="startSteeringRight()">steer+</button>
+    <button *ngIf="isMobile" class = "control-button" (click)="increaseSpeed()">
+      <mat-icon>arrow_upward</mat-icon>
+    </button>
+    <button *ngIf="isMobile" class = "control-button" (click)="decreaseSpeed()">
+      <mat-icon>arrow_downward</mat-icon>
+    </button>
+    <button *ngIf="isMobile" class = "control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <button *ngIf="isMobile" class = "control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
+      <mat-icon>arrow_forward</mat-icon>
+    </button>
   </div>
-  
-  
+
+  <div *ngIf="isMobile" class="stop-button-container">
+    <button *ngIf="isMobile" class = "stop-button" (click)="setState(0)">stop car</button>
+  </div>
 </div>

@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     width: 100%;
     height: 100%;
     display: flex;
-    gap: 6.7%;
+    gap: 4%;
     flex-direction: row;
 }
 
@@ -59,6 +59,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     color: white;
     font-size: 0.6vw;
     text-align: center;
+}
+
+.hardware-data-raspberry-title-text {
+    left: 3.7%;
+} 
+
+.hardware-data-nucleo-title-text {
+    left: 12%;
 }
 
 .hardware-data-raspberry-indicators, .hardware-data-nucleo-indicators {

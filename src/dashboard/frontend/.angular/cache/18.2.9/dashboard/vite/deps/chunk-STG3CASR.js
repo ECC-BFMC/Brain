@@ -8,7 +8,7 @@ import {
   isPlatformServer,
   parseCookieValue,
   setRootDomAdapter
-} from "./chunk-UAYDFGOY.js";
+} from "./chunk-DUSABYAR.js";
 import {
   APP_BOOTSTRAP_LISTENER,
   APP_ID,
@@ -74,7 +74,7 @@ import {
   ɵɵdefineInjector,
   ɵɵdefineNgModule,
   ɵɵinject
-} from "./chunk-F4FVNKD6.js";
+} from "./chunk-W2XXILQY.js";
 import {
   Observable,
   concatMap,
@@ -85,7 +85,7 @@ import {
   of,
   switchMap,
   tap
-} from "./chunk-66JPAEYR.js";
+} from "./chunk-OGW7HQS4.js";
 import {
   __async,
   __objRest,
@@ -4149,6 +4149,7 @@ function provideClientHydration(...features) {
 var VERSION = new Version("18.2.8");
 
 export {
+  HttpClient,
   BrowserDomAdapter,
   BrowserGetTestability,
   EVENT_MANAGER_PLUGINS,
@@ -4202,4 +4203,4 @@ export {
    * License: MIT
    *)
 */
-//# sourceMappingURL=chunk-J3F7YR5Q.js.map
+//# sourceMappingURL=chunk-STG3CASR.js.map
