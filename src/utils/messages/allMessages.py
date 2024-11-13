@@ -186,7 +186,7 @@ class ImuData(Enum):
     Queue = "General"
     Owner = "threadRead"
     msgID = 2
-    msgType = "dict"
+    msgType = "str"
 
 class InstantConsumption(Enum):
     Queue = "General"

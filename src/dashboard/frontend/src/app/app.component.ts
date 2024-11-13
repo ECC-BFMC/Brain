@@ -67,10 +67,6 @@ export class AppComponent {
     //this.startNUCLEOFunctions()
   }
 
-  ngOnDestroy() {
-    this.webSocketService.disconnectSocket();
-  }
-
   submit(): void {
     if (this.clusterComponent) {
       this.clusterComponent.setWarningLightType(this.clusterLightType); 
@@ -84,8 +80,6 @@ export class AppComponent {
 
   submitPassword() {
     const decryptedCorrectPassword = this.decryptPassword(this.correctPassword);
-    
-    console.log('Decrypted Password:', decryptedCorrectPassword);
     if (this.enteredPassword=== decryptedCorrectPassword) {
       this.isAuthenticated = true;
     } else {

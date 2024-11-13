@@ -38,15 +38,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     </tr>
   </thead>
   <tbody>
-    <tr *ngFor="let item of items">
-      <td class="cell">{{ item.channel }}</td>
-      <td class="cell">{{ item.interval }}</td>
-      <td class="cell">{{ item.value}}</td>
-      <td class="cell">
+    <tr *ngFor="let item of items" >
+      <td class="cell" *ngIf="item.type !== 'Config'" >{{ item.channel }}</td>
+      <td class="cell" *ngIf="item.type !== 'Config'" >{{ item.interval }}</td>
+      <td class="cell" *ngIf="item.type !== 'Config'" >{{ item.value}}</td>
+      <td class="cell" *ngIf="item.type !== 'Config'" >
         <ng-container [ngSwitch]="item.type">
           <!-- Default type -->
           <span *ngSwitchCase="'default'">{{ item.values }}</span>
-          
+          <span *ngSwitchCase="'Config'"></span>
           <!-- Dropdown type -->
           <select *ngSwitchCase="'dropdown'" [(ngModel)]="item.value" (change)="item.hasChanged = item.value !== item.initialValue">
             <option *ngFor="let option of item.values" [value]="option">{{ option }}</option>
@@ -66,10 +66,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
           </div>
         </ng-container>
       </td>
-      <td class="cell" *ngIf="item.type !== 'default'">
+      <td class="cell" *ngIf="item.type !== 'Config' && item.type !== 'default'">
         <input type="checkbox" [(ngModel)]="item.checked" />
       </td>
-      <td class="cell" *ngIf="item.type !== 'default'">
+      <td class="cell" *ngIf="item.type !== 'Config' && item.type !== 'default'">
         <span *ngIf="item.hasChanged">Yes</span>
         <span *ngIf="!item.hasChanged">No</span>
       </td>

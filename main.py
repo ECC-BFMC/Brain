@@ -41,6 +41,7 @@
 #
 # ===================================== GENERAL IMPORTS ==================================
 import sys
+import subprocess
 
 sys.path.append(".")
 from multiprocessing import Queue, Event
@@ -56,7 +57,7 @@ from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.data.Semaphores.Semaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
-
+from src.utils.ipManager.IpReplacement import IPManager
 # ------ New component imports starts here ------#
 
 # ------ New component imports ends here ------#
@@ -73,7 +74,7 @@ queueList = {
 logging = logging.getLogger()
 
 Dashboard = True
-Camera = False
+Camera = True
 Semaphores = False
 TrafficCommunication = False
 SerialHandler = True
@@ -87,6 +88,12 @@ SerialHandler = True
 # Initializing gateway
 processGateway = processGateway(queueList, logging)
 processGateway.start()
+
+# Ip replacement
+path = './src/dashboard/frontend/src/app/webSocket/web-socket.service.ts'
+IpChanger = IPManager(path)
+IpChanger.replace_ip_in_file()
+
 
 # Initializing dashboard
 if Dashboard:

@@ -53,7 +53,7 @@ class processSerialHandler(WorkerProcess):
         logFile = "historyFile.txt"
 
         # comm init
-        self.serialCom = serial.Serial(devFile, 19200, timeout=0.1)
+        self.serialCom = serial.Serial(devFile, 115200, timeout=0.1)
         self.serialCom.flushInput()
         self.serialCom.flushOutput()
 

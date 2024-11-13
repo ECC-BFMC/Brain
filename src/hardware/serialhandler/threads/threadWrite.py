@@ -72,9 +72,9 @@ class threadWrite(ThreadWithStop):
         self.messageConverter = MessageConverter()
         self.steerMotorSender = messageHandlerSender(self.queuesList, SteerMotor)
         self.speedMotorSender = messageHandlerSender(self.queuesList, SpeedMotor)
-        self.configPath = "src/utils/initConfig.json"
+        self.configPath = "src/utils/table_state.json"
 
-        #self.loadConfig("init")
+        self.loadConfig("init")
         self.subscribe()
 
         if example:
@@ -106,11 +106,20 @@ class threadWrite(ThreadWithStop):
 
     def loadConfig(self, configType):
         with open(self.configPath, "r") as file:
-            data = json.load(file)[configType]
+            data = json.load(file)
 
-        for action, dictionary in data.items():
-            for key, value in dictionary.items():
-                command = {"action": action, key: value}
+        if configType == "init":
+            data = data[len(data)-1]
+            command = {"action": "batteryCapacity", "capacity": data["batteryCapacity"]["capacity"]}
+            self.sendToSerial(command)
+            time.sleep(0.05)
+        else:
+            for e in range(4):
+                if data[e]["value"] == "False":
+                    value = 0
+                else:
+                    value = 1 
+                command = {"action": data[e]['command'], "activate": value}
                 self.sendToSerial(command)
                 time.sleep(0.05)
 
@@ -135,13 +144,13 @@ class threadWrite(ThreadWithStop):
                         self.engineEnabled = True
                         command = {"action": "kl", "mode": 30}
                         self.sendToSerial(command)
-                        #self.loadConfig("sensors")
+                        self.loadConfig("sensors")
                     elif klRecv == "15":
                         self.running = True
                         self.engineEnabled = False
                         command = {"action": "kl", "mode": 15}
                         self.sendToSerial(command)
-                        #self.loadConfig("sensors")
+                        self.loadConfig("sensors")
                     elif klRecv == "0":
                         self.running = False
                         self.engineEnabled = False
