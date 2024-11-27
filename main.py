@@ -53,7 +53,7 @@ logging.basicConfig(level=logging.INFO)
 
 from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
-from src.hardware.camera.processCamera import processCamera
+# from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.data.Semaphores.Semaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
@@ -74,10 +74,10 @@ queueList = {
 logging = logging.getLogger()
 
 Dashboard = True
-Camera = True
+Camera = False
 Semaphores = False
 TrafficCommunication = False
-SerialHandler = True
+SerialHandler = False
 
 # ------ New component flags starts here ------#
  
@@ -101,9 +101,9 @@ if Dashboard:
     allProcesses.append(processDashboard)
 
 # Initializing camera
-if Camera:
-    processCamera = processCamera(queueList, logging , debugging = False)
-    allProcesses.append(processCamera)
+# if Camera:
+    # processCamera = processCamera(queueList, logging , debugging = False)
+    # allProcesses.append(processCamera)
 
 # Initializing semaphores
 if Semaphores:

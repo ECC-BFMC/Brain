@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
 import inspect, psutil, json, threading
 
-from flask import Flask
+from flask import Flask, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from enum import Enum
@@ -54,7 +54,6 @@ class processDashboard(WorkerProcess):
     """
     # ====================================== INIT ==========================================
     def __init__(self, queueList, logging, debugging = False):
-
         self.running = True
         self.queueList = queueList
         self.logger = logging
@@ -62,12 +61,14 @@ class processDashboard(WorkerProcess):
         self.messages = {}
         self.sendMessages = {}
         self.messagesAndVals = {}
-        self.memory_usage = 0
-        self.cpu_core_usage = 0
-        self.cpu_temperature = 0
+        self.memoryUsage = 0
+        self.cpuCoreUsage = 0
+        self.cpuTemperature = 0
+
+        self.sessionActive = False
         
         self.app = Flask(__name__)
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*",async_mode='eventlet')
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
         CORS(self.app, supports_credentials=True)
 
         self.getNamesAndVals()
@@ -78,13 +79,13 @@ class processDashboard(WorkerProcess):
         self.subscribe()
 
         # Define WebSocket event handlers
-        self.socketio.on_event('message', self.handle_message)
-        self.socketio.on_event('save', self.handle_saveTableState)
-        self.socketio.on_event('load', self.handle_loadTableState)
+        self.socketio.on_event('message', self.handleMessage)
+        self.socketio.on_event('save', self.handleSaveTableState)
+        self.socketio.on_event('load', self.handleLoadTableState)
 
         # Setting up a background task to automatically send the information to the host
-        self.send_continuous_hardware_data()
-        self.socketio.start_background_task(self.send_continuous_messages)
+        self.sendContinuousHardwareData()
+        self.socketio.start_background_task(self.sendContinuousMessages)
         super(processDashboard, self).__init__(self.queueList)
 
     # ===================================== STOP ==========================================
@@ -121,21 +122,35 @@ class processDashboard(WorkerProcess):
             if name != "Enum" and issubclass(cls, Enum):
                 self.messagesAndVals[name] = {"enum": cls, "owner": cls.Owner.value}
 
-    def handle_message(self, data):
+    def handleMessage(self, data):
         if self.debugging:
             self.logger.info("Received message: " + str(data))
-        dataDict= json.loads(data)
-        self.sendMessages[dataDict["Name"]]["obj"].send(dataDict["Value"])
-        emit('response', {'data': 'Message received: ' + str(data)})
 
-    def handle_saveTableState(self, data):
+        dataDict = json.loads(data)
+        dataName = dataDict["Name"]
+        socketId = request.sid
+        
+        if dataName == "SessionAccess":
+            if not self.sessionActive:
+                self.sessionActive = True
+                self.socketio.emit('session_access', {'data': True}, room=socketId)
+            else:
+                self.socketio.emit('session_access', {'data': False}, room=socketId)
+        elif dataName == "SessionEnd":
+            self.sessionActive = False
+        else:
+            self.sendMessages[dataName]["obj"].send(dataDict["Value"])
+
+        emit('response', {'data': 'Message received: ' + str(data)}, room=socketId)
+
+    def handleSaveTableState(self, data):
         if self.debugging:
             self.logger.info("Received message: " + data)
         dataDict = json.loads(data)
         with open('/home/pi/Brain/src/utils/table_state.json', 'w') as json_file: # change me(path) 
             json.dump(dataDict, json_file, indent=4)  
 
-    def handle_loadTableState(self, data):
+    def handleLoadTableState(self, data):
         file_path = '/home/pi/Brain/src/utils/table_state.json' # change me(path)
         
         try:
@@ -147,16 +162,17 @@ class processDashboard(WorkerProcess):
         except json.JSONDecodeError:
             emit('response', {'error': 'Failed to parse JSON data from the file.'})
 
-    def send_continuous_hardware_data(self):   
-        self.memory_usage = psutil.virtual_memory().percent
-        self.cpu_core_usage = psutil.cpu_percent(interval=1, percpu=True)
-        self.cpu_temperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
-        threading.Timer(1, self.send_continuous_hardware_data).start()
+    def sendContinuousHardwareData(self):   
+        self.memoryUsage = psutil.virtual_memory().percent
+        self.cpuCoreUsage = psutil.cpu_percent(interval=1, percpu=True)
+        self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        threading.Timer(1, self.sendContinuousHardwareData).start()
 
-    def send_continuous_messages(self):
+    def sendContinuousMessages(self):
         counter = 1   
         socketSleep = 0.025
         sendTime = 1 
+
         while self.running == True:
             for msg in self.messages:
                 resp = self.messages[msg]["obj"].receive()
@@ -165,11 +181,12 @@ class processDashboard(WorkerProcess):
                     if self.debugging:
                         self.logger.info(str(msg))
                         self.logger.info(str(resp))
+
             if counter < sendTime:
                 counter += socketSleep
             else:
-                self.socketio.emit('memory_channel', {'data': self.memory_usage})
-                self.socketio.emit('cpu_channel', {'data': {'usage': self.cpu_core_usage, 'temp': self.cpu_temperature}})
+                self.socketio.emit('memory_channel', {'data': self.memoryUsage})
+                self.socketio.emit('cpu_channel', {'data': {'usage': self.cpuCoreUsage, 'temp': self.cpuTemperature}})
                 counter = 0
             self.socketio.sleep(socketSleep)
 

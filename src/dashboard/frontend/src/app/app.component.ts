@@ -26,9 +26,10 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ViewChild } from '@angular/core';
+import { Component, HostListener, ViewChild } from '@angular/core';
 import { ClusterComponent } from './cluster/cluster.component';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { WebSocketService } from './webSocket/web-socket.service';
 import { TableComponent } from './table/table.component';
 import { CommonModule } from '@angular/common'
@@ -54,17 +55,29 @@ export class AppComponent {
   private intervalId: any;
 
   enteredPassword = ''; // User input password
-  
   isAuthenticated = false; // Controls whether the content is displayed or not
+
+  private sessionAccessSubscription: Subscription | undefined;
 
   @ViewChild(ClusterComponent) clusterComponent!: ClusterComponent;
   @ViewChild(TableComponent) tableComponent!: TableComponent;
 
-  constructor( private webSocketService: WebSocketService) { }
+  constructor( private webSocketService: WebSocketService ) { }
 
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:
     //this.startNUCLEOFunctions()
+
+    this.sessionAccessSubscription = this.webSocketService.receiveSessionAccess().subscribe(
+      (message) => {
+        if (message.data == true) { 
+          this.isAuthenticated = true;
+        }
+      },
+      (error) => {
+        console.error('Error receiving session access:', error);
+      }
+    );
   }
 
   submit(): void {
@@ -80,11 +93,22 @@ export class AppComponent {
 
   submitPassword() {
     const decryptedCorrectPassword = this.decryptPassword(this.correctPassword);
-    if (this.enteredPassword=== decryptedCorrectPassword) {
-      this.isAuthenticated = true;
-    } else {
-      alert('Incorrect password!');
+
+    if (this.enteredPassword === decryptedCorrectPassword) {
+      this.webSocketService.sendMessageToFlask(`{"Name": "SessionAccess"}`);
     }
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  handleUnload(event: Event) {
+    if (this.isAuthenticated) {
+      this.logout();
+    }
+  }
+
+  logout() {
+    this.isAuthenticated = false;
+    this.webSocketService.sendMessageToFlask(`{"Name": "SessionEnd"}`);
   }
 
   startInfiniteLoop(): void {

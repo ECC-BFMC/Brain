@@ -5,8 +5,8 @@ import {
   ɵɵdefineInjector,
   ɵɵdefineNgModule
 } from "./chunk-W2XXILQY.js";
-import "./chunk-6XISFZPP.js";
 import "./chunk-WNPMEE2K.js";
+import "./chunk-6XISFZPP.js";
 import {
   Observable,
   share
