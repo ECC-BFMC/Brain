@@ -53,6 +53,7 @@ export class StateSwitchComponent {
   private minSpeed: number = -50;
 
   private steer: number = 0;
+  private lastSteer: number = 0;
   private steerIncrement: number = 5;
   private steerDecrement: number = 5;
   private steerInterval: any;
@@ -155,6 +156,7 @@ export class StateSwitchComponent {
 
   public increaseSpeed(): void {
     this.speed += this.speedIncrement;
+
     if (this.speed > this.maxSpeed) {
       this.speed = this.maxSpeed;
     }
@@ -164,6 +166,7 @@ export class StateSwitchComponent {
 
   public decreaseSpeed(): void {
     this.speed -= this.speedIncrement;
+
     if (this.speed < this.minSpeed) {
       this.speed = this.minSpeed;
     }
@@ -179,9 +182,12 @@ export class StateSwitchComponent {
       if (this.steer > this.maxSteer) {
         this.steer = this.maxSteer;
       }
-  
-      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
-
+      
+      if (this.lastSteer != this.maxSteer) { 
+        this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);  
+      }
+ 
+      this.lastSteer = this.steer;
     }, 50);
   }
    
@@ -194,8 +200,11 @@ export class StateSwitchComponent {
         this.steer = this.minSteer;
       }
 
-      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
-
+      if (this.lastSteer != this.minSteer) { 
+        this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);
+      }
+        
+      this.lastSteer = this.steer;
     }, 50);
   }
 

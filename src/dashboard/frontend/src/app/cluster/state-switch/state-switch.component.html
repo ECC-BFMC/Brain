@@ -47,21 +47,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   </div> 
   
   <div *ngIf="isMobile" class="button-container">
-    <button *ngIf="isMobile" class = "control-button" (click)="increaseSpeed()">
-      <mat-icon>arrow_upward</mat-icon>
+    <button *ngIf="isMobile" class="control-button" (click)="increaseSpeed()">
+      <mat-icon class="control-arrow">arrow_upward</mat-icon>
     </button>
-    <button *ngIf="isMobile" class = "control-button" (click)="decreaseSpeed()">
-      <mat-icon>arrow_downward</mat-icon>
+    <button *ngIf="isMobile" class="control-button" (click)="decreaseSpeed()">
+      <mat-icon class="control-arrow">arrow_downward</mat-icon>
     </button>
-    <button *ngIf="isMobile" class = "control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
-      <mat-icon>arrow_back</mat-icon>
+    <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
+      <mat-icon class="control-arrow">arrow_back</mat-icon>
     </button>
-    <button *ngIf="isMobile" class = "control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
-      <mat-icon>arrow_forward</mat-icon>
+    <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
+      <mat-icon class="control-arrow">arrow_forward</mat-icon>
     </button>
   </div>
 
   <div *ngIf="isMobile" class="stop-button-container">
-    <button *ngIf="isMobile" class = "stop-button" (click)="setState(0)">stop car</button>
+    <button *ngIf="isMobile" class="stop-button" (click)="setState(0)">stop car</button>
   </div>
 </div>

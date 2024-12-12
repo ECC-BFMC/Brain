@@ -104,6 +104,8 @@ export class AppComponent {
     if (this.isAuthenticated) {
       this.logout();
     }
+
+    event.preventDefault();
   }
 
   logout() {

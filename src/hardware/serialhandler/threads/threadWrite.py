@@ -232,7 +232,7 @@ class threadWrite(ThreadWithStop):
         """This function will close the thread and will stop the car."""
 
         self.exampleFlag = False
-        command = {"action": "kl", "mode": 0.0}
+        command = {"action": "kl", "mode": 0}
         self.sendToSerial(command)
         time.sleep(2)
         super(threadWrite, self).stop()
