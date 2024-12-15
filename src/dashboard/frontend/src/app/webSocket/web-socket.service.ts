@@ -59,19 +59,18 @@ export class WebSocketService {
   ]);
   
  constructor() {
+    this.webSocket = new Socket({
+    url: "http://192.168.0.110:5005",
+    options: {},
+    });
 
-  this.webSocket = new Socket({
-   url: "http://192.168.76.132:5005",
-   options: {},
-  });
-
-  // Listen for all messages from the WebSocket server
-  this.webSocket.onAny((eventName: string, data: any) => {
-    if (!this.handledEvents.has(eventName)) {
-      this.eventSubject.next({ channel: eventName, data });
-    }
-  });
- }
+    // Listen for all messages from the WebSocket server
+    this.webSocket.onAny((eventName: string, data: any) => {
+      if (!this.handledEvents.has(eventName)) {
+        this.eventSubject.next({ channel: eventName, data });
+      }
+    });
+  }
 
   // Method to start connection/handshake with the server
   sendMessageToFlask(message: any) {
@@ -84,6 +83,10 @@ export class WebSocketService {
 
   LoadTable(message: any) {
     this.webSocket.emit('load', message);
+  }
+
+  receiveSessionAccess(): Observable<any> {
+    return this.webSocket.fromEvent('session_access');
   }
 
   // Method to receive memory usage updates

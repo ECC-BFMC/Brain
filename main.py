@@ -74,10 +74,10 @@ queueList = {
 logging = logging.getLogger()
 
 Dashboard = True
-Camera = True
+Camera = False
 Semaphores = False
 TrafficCommunication = False
-SerialHandler = True
+SerialHandler = False
 
 # ------ New component flags starts here ------#
  
@@ -117,7 +117,7 @@ if TrafficCommunication:
 
 # Initializing serial connection NUCLEO - > PI
 if SerialHandler:
-    processSerialHandler = processSerialHandler(queueList, logging, debugging = False)
+    processSerialHandler = processSerialHandler(queueList, logging, debugging = True)
     allProcesses.append(processSerialHandler)
 
 # ------ New component runs starts here ------#
