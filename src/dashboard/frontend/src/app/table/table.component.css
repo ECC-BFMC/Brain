@@ -26,6 +26,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
+/* Responsive Table */
 .my-table {
   width: 100%;
   border-collapse: collapse;
@@ -43,15 +44,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .cell {
   padding: 0.8vw;
-  font-size: 1vw;
+  font-size: 1vw; 
   text-align: center;
   vertical-align: middle;
   border: none;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  max-width: 150px; 
+}
+
+.cell.value {
+  font-size: clamp(0.6vw, 1vw - 0.1vw * (var(--content-length, 10) / 10), 1vw);
+}
+
+.cell.value:hover::after {
+  content: attr(data-tooltip); 
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 0.5vw;
+  font-size: 0.8vw;
+  border-radius: 5px;
+  white-space: normal; 
+  z-index: 10;
+  top: 100%; 
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .button-group {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap; 
 }
 
 .full-width-button {
@@ -72,6 +98,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   background-color: #6497b1; 
 }
 
+/* Responsive Slider */
 .slider-wrapper {
   display: flex;
   align-items: center;
@@ -85,4 +112,47 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 input[type="range"] {
   flex-grow: 1;
   margin: 0 1vw;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+  .header, .cell {
+    font-size: 0.8rem; /* Smaller text for smaller screens */
+    padding: 0.5rem;
+  }
+
+  .slider-wrapper {
+    flex-direction: column; /* Stack slider components */
+    align-items: stretch;
+  }
+
+  .layer-front,
+  .layer-back {
+    margin: 0.5rem 0;
+  }
+
+  input[type="range"] {
+    margin: 0.5rem 0;
+  }
+
+  .button-group {
+    flex-direction: column; /* Stack buttons vertically */
+  }
+
+  .full-width-button {
+    margin: 0.5rem 0; /* Add space between buttons */
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header, .cell {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+
+  .full-width-button {
+    font-size: 0.8rem;
+    padding: 0.7rem;
+  }
 }

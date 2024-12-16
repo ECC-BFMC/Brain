@@ -106,7 +106,7 @@ class processDashboard(WorkerProcess):
         self.socketio.run(self.app, host='0.0.0.0', port=5005)
 
     def subscribe(self):
-    """Subscribe function. In this function we make all the required subscribe to process gateway"""
+        """Subscribe function. In this function we make all the required subscribe to process gateway"""
         for name, enum in self.messagesAndVals.items():
             if enum["owner"] != "Dashboard":
                 subscriber = messageHandlerSubscriber(self.queueList, enum["enum"], "lastOnly", True)

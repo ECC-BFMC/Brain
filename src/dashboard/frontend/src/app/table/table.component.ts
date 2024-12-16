@@ -126,5 +126,11 @@ export class TableComponent implements OnInit {
       this.webSocketService.sendMessageToFlask(`{"Name": "${channel}", "Value": "${value}"}`);
     });
   }
+  getFontSize(value: string): string {
+    const baseSize = 1; 
+    const maxLength = 15; 
+    return `${Math.max(baseSize - (value.length / maxLength) * 0.5, 0.5)}vw`;
+  }
+  
 }
 

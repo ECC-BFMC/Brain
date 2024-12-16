@@ -110,7 +110,6 @@ class threadRead(ThreadWithStop):
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
         """Callback function for enable button flag."""
-
         self.enableButtonSender.send(True)
         threading.Timer(1, self.Queue_Sending).start()
 

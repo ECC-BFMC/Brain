@@ -56,9 +56,9 @@ export class InstantConsumptionComponent {
     // Listen for instant
     this.instantSubscription = this.webSocketService.receiveInstantConsumption().subscribe(
       (message) => {
-        // 100% - 40Ah
+        // 100% - 40000 mAh
         // 0%   - 0Ah
-        this.instant = message.value * 100 / 40;
+        this.instant = message.value * 100 / 40000;
         this.updateNeedle();
       },
       (error) => {

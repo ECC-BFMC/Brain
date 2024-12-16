@@ -24,7 +24,7 @@ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
 SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  -->
 
 <table class="my-table">
   <thead>
@@ -38,30 +38,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     </tr>
   </thead>
   <tbody>
-    <tr *ngFor="let item of items" >
-      <td class="cell" *ngIf="item.type !== 'Config'" >{{ item.channel }}</td>
-      <td class="cell" *ngIf="item.type !== 'Config'" >{{ item.interval }}</td>
-      <td class="cell" *ngIf="item.type !== 'Config'" >{{ item.value}}</td>
-      <td class="cell" *ngIf="item.type !== 'Config'" >
+    <tr *ngFor="let item of items">
+      <td class="cell" *ngIf="item.type !== 'Config'">{{ item.channel }}</td>
+      <td class="cell" *ngIf="item.type !== 'Config'">{{ item.interval }}</td>
+      <td 
+        class="cell value" 
+        *ngIf="item.type !== 'Config'" 
+        [style.fontSize]="getFontSize(item.value)" 
+        [attr.data-tooltip]="item.value"
+      >
+        {{ item.value }}
+      </td>
+      <td class="cell" *ngIf="item.type !== 'Config'">
         <ng-container [ngSwitch]="item.type">
-          <!-- Default type -->
           <span *ngSwitchCase="'default'">{{ item.values }}</span>
           <span *ngSwitchCase="'Config'"></span>
-          <!-- Dropdown type -->
           <select *ngSwitchCase="'dropdown'" [(ngModel)]="item.value" (change)="item.hasChanged = item.value !== item.initialValue">
             <option *ngFor="let option of item.values" [value]="option">{{ option }}</option>
           </select>
-          
-          <!-- Slider type with layers in a row -->
           <div *ngSwitchCase="'slider'" class="slider-wrapper">
-            <!-- Layer in front of the slider -->
             <div class="layer-front">{{ item.values[0] / 100 }}</div>
-            
-            <!-- The slider itself -->
-            <input type="range" [min]="item.values[0]" [max]="item.values[1]" [(ngModel)]="item.value"
-              (change)="item.hasChanged = item.value !== item.initialValue" />
-            
-            <!-- Layer after the slider -->
+            <input 
+              type="range" 
+              [min]="item.values[0]" 
+              [max]="item.values[1]" 
+              [(ngModel)]="item.value" 
+              (change)="item.hasChanged = item.value !== item.initialValue" 
+            />
             <div class="layer-back">{{ item.values[1] / 100 }}</div>
           </div>
         </ng-container>
