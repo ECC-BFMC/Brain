@@ -169,7 +169,7 @@ class threadRead(ThreadWithStop):
                 self.imuAckSender.send(splittedValue[0])
         elif action == "ultra":
             splittedValue = value.split(";")
-            message = {"right":splittedValue[0],"top":splittedValue[1],"left":splittedValue[2],"bottom":splittedValue[3]}  
+            message = {key: int(splittedValue[i]) for i, key in enumerate(["right", "top", "left", "bottom"])}
             self.ultraSender.send(message);      
         elif action == "kl":
             self.checkValidValue(action, value)
