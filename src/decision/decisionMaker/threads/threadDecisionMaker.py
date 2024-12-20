@@ -24,7 +24,8 @@ class threadDecisionMaker(ThreadWithStop):
             ultraVals = self.subscribers["Ultra"].receive()
             if ultraVals is not None:
                 if ultraVals["top"] < 30:
-                    self.speedSender.send(0) #stop the vehicle if front distance is less than 30 cm 
+                    self.speedSender.send("0") #stop the vehicle if front distance is less than 30 cm 
+                    print(ultraVals)
             
 
     def subscribe(self):
