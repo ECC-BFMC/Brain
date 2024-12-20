@@ -59,7 +59,6 @@ class threadGateway(ThreadWithStop):
         Id = message["msgID"]
         To = message["To"]["receiver"]
         Pipe = message["To"]["pipe"]
-        print(Owner, Id, To, Pipe)
         if not Owner in self.sendingList.keys():
             self.sendingList[Owner] = {}
         if not Id in self.sendingList[Owner].keys():

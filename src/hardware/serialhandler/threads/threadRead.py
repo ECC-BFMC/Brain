@@ -92,20 +92,28 @@ class threadRead(ThreadWithStop):
     # ====================================== RUN ==========================================
     def run(self):
         while self._running:
-            read_chr = self.serialCon.read()
-            try:
-                read_chr = read_chr.decode("ascii")
-                if read_chr == "@":
-                    self.isResponse = True
-                    self.buff = ""
-                elif read_chr == "\r":
-                    self.isResponse = False
-                    if len(self.buff) != 0:
-                        self.sendqueue(self.buff)
-                if self.isResponse:
-                    self.buff += read_chr
-            except Exception as e :
-                print(e)
+            # read_chr = self.serialCon.read()
+
+            if self.serialCon.in_waiting > 0:
+                try:
+                    self.buff = self.serialCon.readline().decode("ascii")
+                    self.sendqueue(self.buff)
+                except Exception as e:
+                    print("ThreadRead -> run method:", e)
+            
+            # try:
+            #     read_chr = read_chr.decode("ascii")
+            #     if read_chr == "@":
+            #         self.isResponse = True
+            #         self.buff = ""
+            #     elif read_chr == "\r":
+            #         self.isResponse = False
+            #         if len(self.buff) != 0:
+            #             self.sendqueue(self.buff)
+            #     if self.isResponse:
+            #         self.buff += read_chr
+            # except Exception as e :
+            #     print(e)
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
@@ -116,68 +124,67 @@ class threadRead(ThreadWithStop):
     def sendqueue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
-        action, value = buff.split(":") # @action:value;;
-        action = action[1:]
-        value = value[:-2]
-        if self.debugger:
-            self.logger.info(buff)
+        if '@' in buff and ':' in buff:
+            action, value = buff.split(":") # @action:value;;
+            action = action[1:]
+            value = value[:-4]
 
-        if action == "speed":
-            speed = value.split(",")[0]
-            if self.isFloat(speed):
-                self.currentSpeedSender.send(float(speed))
+            if self.debugger:
+                self.logger.info(buff)
 
-        elif action == "steer":
-            steer = value.split(",")[0]
-            if self.isFloat(steer):
-                self.currentSteerSender.send(float(steer))
+            if action == "imu":
+                splittedValue = value.split(";")
+                if(len(buff)>20):
+                    data = {
+                        "roll": splittedValue[0],
+                        "pitch": splittedValue[1],
+                        "yaw": splittedValue[2],
+                        "accelx": splittedValue[3],
+                        "accely": splittedValue[4],
+                        "accelz": splittedValue[5],
+                    }
+                    self.imuDataSender.send(str(data))
+                else:
+                    self.imuAckSender.send(splittedValue[0])
 
-        elif action == "battery":
-            if self.checkValidValue(action, value):
-                percentage = (int(value)-7200)/12
-                percentage = max(0, min(100, round(percentage)))
+            elif action == "speed":
+                speed = value.split(",")[0]
+                if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(speed):
+                    self.currentSpeedSender.send(float(speed))
 
-                self.batteryLvlSender.send(percentage)
+            elif action == "steer":
+                steer = value.split(",")[0]
+                if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(steer):
+                    self.currentSteerSender.send(float(steer))
 
-        elif action == "instant":
-            if self.checkValidValue(action, value):
-                self.instantConsumptionSender.send(float(value))
+            elif action == "instant":
+                if self.checkValidValue(action, value):
+                    self.instantConsumptionSender.send(float(value)/1000.0)
 
-        elif action == "resourceMonitor":
-            if self.checkValidValue(action, value):
-                data = re.match(self.resourceMonitorPattern, value)
+            elif action == "battery":
+                if self.checkValidValue(action, value):
+                    percentage = (int(value)-7200)/12
+                    percentage = max(0, min(100, round(percentage)))
+
+                    self.batteryLvlSender.send(percentage)
+
+            elif action == "resourceMonitor":
+                if self.checkValidValue(action, value):
+                    data = re.match(self.resourceMonitorPattern, value)
+                    if data:
+                        message = {"heap": data.group(1), "stack": data.group(2)}
+                        self.resourceMonitorSender.send(message)
+
+            elif action == "warning":
+                data = re.match(self.warningPattern, value)
                 if data:
-                    message = {"heap": data.group(1), "stack": data.group(2)}
-                    self.resourceMonitorSender.send(message)
-
-        elif action == "imu":
-            splittedValue = value.split(";")
-            if(len(buff)>20):
-                data = {
-                    "roll": splittedValue[0],
-                    "pitch": splittedValue[1],
-                    "yaw": splittedValue[2],
-                    "accelx": splittedValue[3],
-                    "accely": splittedValue[4],
-                    "accelz": splittedValue[5],
-                }
-                self.imuDataSender.send(str(data))
-            else:
-                self.imuAckSender.send(splittedValue[0])
-                
-        elif action == "kl":
-            self.checkValidValue(action, value)
-
-        elif action == "warning":
-            data = re.match(self.warningPattern, value)
-            if data:
-                print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
-                self.warningSender.send(action,data)
-                
-        elif action == "shutdown":
-            print("SHUTTING DOWN!")
-            time.sleep(3)
-            os.system("sudo shutdown -h now")
+                    print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
+                    self.warningSender.send(action,data)
+                    
+            elif action == "shutdown":
+                print("SHUTTING DOWN!")
+                time.sleep(3)
+                os.system("sudo shutdown -h now")
             
     def checkValidValue(self, action, message):
         if message == "syntax error":
