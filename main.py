@@ -59,7 +59,7 @@ from src.data.Semaphores.Semaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 from src.utils.ipManager.IpReplacement import IPManager
 # ------ New component imports starts here ------#
-
+from src.decision.decisionMaker.processDecisionMaker import processDecisionMaker
 # ------ New component imports ends here ------#
 # ======================================== SETTING UP ====================================
 allProcesses = list()
@@ -74,13 +74,13 @@ queueList = {
 logging = logging.getLogger()
 
 Dashboard = True
-Camera = False
+Camera = True
 Semaphores = False
-TrafficCommunication = False
-SerialHandler = False
+TrafficCommunication = True
+SerialHandler = True
 
 # ------ New component flags starts here ------#
- 
+DecisionMaker = True
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
@@ -121,7 +121,9 @@ if SerialHandler:
     allProcesses.append(processSerialHandler)
 
 # ------ New component runs starts here ------#
- 
+if DecisionMaker:
+    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = False)
+    allProcesses.append(processDecisionMaker)
 # ------ New component runs ends here ------#
 
 # ===================================== START PROCESSES ==================================

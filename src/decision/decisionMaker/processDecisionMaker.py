@@ -5,7 +5,7 @@ if __name__ == "__main__":
 from src.templates.workerprocess import WorkerProcess
 from src.decision.decisionMaker.threads.threadDecisionMaker import threadDecisionMaker
 
-class processdecisionMaker(WorkerProcess):
+class processDecisionMaker(WorkerProcess):
     """This process handles decisionMaker.
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
@@ -17,11 +17,11 @@ class processdecisionMaker(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        super(processdecisionMaker, self).__init__(self.queuesList)
+        super(processDecisionMaker, self).__init__(self.queuesList)
 
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processdecisionMaker, self).run()
+        super(processDecisionMaker, self).run()
 
     def _init_threads(self):
         """Create the decisionMaker Publisher thread and add to the list of threads."""
