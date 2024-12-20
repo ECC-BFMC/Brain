@@ -221,8 +221,14 @@ class ImuAck(Enum):
 class WarningSignal(Enum):
     Queue = "General"
     Owner = "threadRead"
-    msgID = 7
+    msgID = 8
     msgType = "str"
+
+class Ultra(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 9
+    msgType = "dict"
 
 ################################# From Locsys ##################################
 class Location(Enum):

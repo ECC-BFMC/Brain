@@ -41,6 +41,7 @@ from src.utils.messages.allMessages import (
     ResourceMonitor,
     CurrentSpeed,
     CurrentSteer,
+    Ultra,
     WarningSignal
 )
 from src.utils.messages.messageHandlerSender import messageHandlerSender
@@ -77,6 +78,7 @@ class threadRead(ThreadWithStop):
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
+        self.ultraSender = messageHandlerSender(self.queuesList, Ultra)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25", 
@@ -165,7 +167,10 @@ class threadRead(ThreadWithStop):
                 self.imuDataSender.send(str(data))
             else:
                 self.imuAckSender.send(splittedValue[0])
-                
+        elif action == "ultra":
+            splittedValue = value.split(";")
+            message = {"right":splittedValue[0],"top":splittedValue[1],"left":splittedValue[2],"bottom":splittedValue[3]}  
+            self.ultraSender.send(message);      
         elif action == "kl":
             self.checkValidValue(action, value)
 
