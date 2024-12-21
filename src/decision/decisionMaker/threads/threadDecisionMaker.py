@@ -1,5 +1,5 @@
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (SpeedMotor, Ultra, mainCamera)
+from src.utils.messages.allMessages import (CurrentSpeed, SpeedMotor, Ultra, mainCamera)
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 class threadDecisionMaker(ThreadWithStop):
@@ -14,6 +14,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
+        self.currentSpeed = "0"
         self.subscribers = {}
         self.speedSender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.subscribe()
@@ -22,13 +23,15 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             ultraVals = self.subscribers["Ultra"].receive()
+            self.currentSpeed  = self.subscribers["CurrentSpeed"].receive() or self.currentSpeed 
             if ultraVals is not None:
-                if ultraVals["top"] < 30:
+                if ultraVals["top"] < 30 and int(self.currentSpeed) > 0:
                     self.speedSender.send("0") #stop the vehicle if front distance is less than 30 cm 
-                    print(ultraVals)
             
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
         subscriber = messageHandlerSubscriber(self.queuesList, Ultra, "lastOnly", True)
         self.subscribers["Ultra"] = subscriber
+        subscriber = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastOnly", True)
+        self.subscribers["CurrentSpeed"] = subscriber

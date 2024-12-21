@@ -272,4 +272,9 @@ export class StateSwitchComponent {
 
     return '#2b8fd1';
   }
+  public setSpeed(newSpeed: number): void {
+    this.speed = newSpeed;
+    console.log(`Speed updated to: ${this.speed}`);
+    // Aquí puedes agregar lógica adicional si es necesario
+  }
 }

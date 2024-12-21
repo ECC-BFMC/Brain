@@ -63,6 +63,7 @@ export class ClusterComponent {
   @Input() carRightLaneOn: boolean = false;
 
   @ViewChild(WarningLightComponent) warningLightComponent!: WarningLightComponent;
+  @ViewChild(StateSwitchComponent) stateSwitchComponent!: StateSwitchComponent;
 
   warningLightType: string = '';
   public battery: number = 0;
@@ -87,6 +88,7 @@ export class ClusterComponent {
     this.speedSubscription = this.webSocketService.receiveCurrentSpeed().subscribe(
       (message) => {
         this.speed = Math.abs(parseInt(message.value)/10);
+        this.stateSwitchComponent.setSpeed(this.speed);
       },
       (error) => {
         console.error('Error receiving speed:', error);
