@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import json
-from src.utils.messages.allMessages import Cars, Semaphores
+from src.utils.messages.allMessages import Semaphores
 from twisted.internet import protocol
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
