@@ -93,7 +93,7 @@ class SingleConnection(protocol.Protocol):
 
         if da["type"] == "location":
             da["id"] = self.factory.locsysID
-            self.sendLocation.send_message(da)
+            self.factory.sendLocation.send(da)
         else:
             print(
                 "got message from trafficcommunication server: ",
