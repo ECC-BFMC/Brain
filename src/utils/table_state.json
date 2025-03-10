@@ -1,8 +1,8 @@
 [
     {
         "channel": "ToggleInstant",
-        "value": "True",
-        "initialValue": "True",
+        "value": "False",
+        "initialValue": "False",
         "interval": 0,
         "type": "dropdown",
         "values": [
@@ -10,13 +10,13 @@
             "False"
         ],
         "command": "instant",
-        "checked": false,
+        "checked": true,
         "hasChanged": false
     },
     {
         "channel": "ToggleBatteryLvl",
-        "value": "True",
-        "initialValue": "True",
+        "value": "False",
+        "initialValue": "False",
         "interval": 0,
         "type": "dropdown",
         "values": [
@@ -24,7 +24,7 @@
             "False"
         ],
         "command": "battery",
-        "checked": false,
+        "checked": true,
         "hasChanged": false
     },
     {
@@ -38,13 +38,13 @@
             "False"
         ],
         "command": "imu",
-        "checked": false,
+        "checked": true,
         "hasChanged": false
     },
     {
         "channel": "ToggleResourceMonitor",
-        "value": "True",
-        "initialValue": "True",
+        "value": "False",
+        "initialValue": "False",
         "interval": 0,
         "type": "dropdown",
         "values": [
@@ -52,7 +52,7 @@
             "False"
         ],
         "command": "resourceMonitor",
-        "checked": false,
+        "checked": true,
         "hasChanged": false
     },
     {

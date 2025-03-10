@@ -25,11 +25,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
-
+import logging
 import time
 import threading
 import re
 import os
+
+from datetime import datetime
+
 
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
@@ -91,29 +94,23 @@ class threadRead(ThreadWithStop):
 
     # ====================================== RUN ==========================================
     def run(self):
+        buffer = ""  
         while self._running:
-            # read_chr = self.serialCon.read()
-
             if self.serialCon.in_waiting > 0:
                 try:
-                    self.buff = self.serialCon.readline().decode("ascii")
-                    self.sendqueue(self.buff)
+                    data = self.serialCon.read(self.serialCon.in_waiting).decode("ascii")
+                    buffer += data  
+                    while ";;" in buffer:
+                        msg, buffer = buffer.split(";;", 1) 
+                        
+                        if msg.strip():
+                            try:
+                                self.sendqueue(msg.strip()) 
+                            except Exception as e:
+                                print(f"Error processing message: {msg.strip()} ({e})")
+                            
                 except Exception as e:
-                    print("ThreadRead -> run method:", e)
-            
-            # try:
-            #     read_chr = read_chr.decode("ascii")
-            #     if read_chr == "@":
-            #         self.isResponse = True
-            #         self.buff = ""
-            #     elif read_chr == "\r":
-            #         self.isResponse = False
-            #         if len(self.buff) != 0:
-            #             self.sendqueue(self.buff)
-            #     if self.isResponse:
-            #         self.buff += read_chr
-            # except Exception as e :
-            #     print(e)
+                    print(f"ThreadRead -> run method: {e}")
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
@@ -125,10 +122,8 @@ class threadRead(ThreadWithStop):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
         if '@' in buff and ':' in buff:
-            action, value = buff.split(":") # @action:value;;
+            action, value = buff.split(":") 
             action = action[1:]
-            value = value[:-4]
-
             if self.debugger:
                 self.logger.info(buff)
 

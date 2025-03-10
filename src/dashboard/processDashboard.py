@@ -192,7 +192,7 @@ class processDashboard(WorkerProcess):
     def sendContinuousHardwareData(self):
         """Monitor and update hardware metrics periodically."""
         self.memoryUsage = psutil.virtual_memory().percent
-        self.cpuCoreUsage = psutil.cpu_percent(interval=1, percpu=True)
+        self.cpuCoreUsage = psutil.cpu_percent(interval=0.05, percpu=True)
         self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
         eventlet.spawn_after(1, self.sendContinuousHardwareData)
 
