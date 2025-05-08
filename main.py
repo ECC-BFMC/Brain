@@ -41,8 +41,12 @@
 #
 # ===================================== GENERAL IMPORTS ==================================
 import sys
-import subprocess
 import time
+import os
+import psutil
+
+# Pin to CPU cores 0–3
+psutil.Process(os.getpid()).cpu_affinity([0, 1, 2, 3])
 
 sys.path.append(".")
 from multiprocessing import Queue, Event

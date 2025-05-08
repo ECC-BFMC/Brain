@@ -31,9 +31,6 @@ import threading
 import re
 import os
 
-from datetime import datetime
-
-
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
     BatteryLvl,

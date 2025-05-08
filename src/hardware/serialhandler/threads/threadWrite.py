@@ -111,10 +111,7 @@ class threadWrite(ThreadWithStop):
         if configType == "init":
             data = data[len(data)-1]
             command = {"action": "batteryCapacity", "capacity": data["batteryCapacity"]["capacity"]}
-            self.sendToSerial(command)
-            time.sleep(0.05)
-
-            
+            self.sendToSerial(command)      
         else:
             for e in range(4):
                 if data[e]["value"] == "False":
