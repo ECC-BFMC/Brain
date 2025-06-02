@@ -93,6 +93,7 @@ class SingleConnection(protocol.Protocol):
 
         if da["type"] == "location":
             da["id"] = self.factory.locsysID
+            # fixed infinite loop on hooks (hopefully)
             self.factory.sendLocation.send(da)
         else:
             print(
