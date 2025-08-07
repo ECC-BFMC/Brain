@@ -25,11 +25,11 @@
     "rollup": "^4.22.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "vite": "^5.4.8",
+    "vite": "^5.4.19",
     "zone.js": "~0.14.10"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^18.2.6",
+    "@angular-devkit/build-angular": "^18.2.9",
     "@angular/cli": "^18.2.3",
     "@angular/compiler-cli": "^18.2.3",
     "@types/crypto-js": "^4.2.2",
