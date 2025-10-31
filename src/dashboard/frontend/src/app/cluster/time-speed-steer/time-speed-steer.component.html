@@ -30,11 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     <label for="time">Time to run (seconds)</label>
     <input type="number" id="time" [(ngModel)]="time" placeholder="Enter time" />
 
-    <label for="speed">Constant speed (cm/s) [-50,50]</label>
-    <input type="number" id="speed" [(ngModel)]="speed" placeholder="Enter speed" />
+    <label for="speed">Constant speed (cm/s) [-50, 50]</label>
+    <input type="number" id="speed" [(ngModel)]="speed" placeholder="Enter speed" min="-50" max="50" />
 
-    <label for="steer">Steering angle (degrees) [-24,24]</label>
-    <input type="number" id="steer" [(ngModel)]="steer" placeholder="Enter steer" />
+    <label for="steer">Steering angle (°) [{{maxSteerLowerLimit}}, {{maxSteerUpperLimit}}]</label>
+    <input type="number" id="steer" [(ngModel)]="steer" [min]="maxSteerLowerLimit" [max]="maxSteerUpperLimit" placeholder="Enter steer" />
 
     <button (click)="activateFunction()">submit</button>
   </div>

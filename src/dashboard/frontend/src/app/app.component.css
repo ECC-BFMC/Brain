@@ -40,6 +40,110 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   align-items: center;
 }
 
+.alert-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+}
+
+.alert-modal-content {
+  background-color: #ff4444;
+  color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  text-align: center;
+  max-width: 90vw;
+  width: 500px;
+  margin: 20px;
+  animation: modalPulse 2s infinite;
+}
+
+.alert-modal-content h2 {
+  margin: 0 0 15px 0;
+  font-size: clamp(24px, 5vw, 32px);
+}
+
+.alert-modal-content p {
+  margin: 0 0 20px 0;
+  font-size: clamp(16px, 3.5vw, 20px);
+  line-height: 1.4;
+}
+
+.close-btn {
+  padding: clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px);
+  background-color: #ffffff;
+  color: #ff4444;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: clamp(14px, 3vw, 16px);
+  font-weight: bold;
+  transition: background-color 0.3s;
+  min-width: 80px;
+}
+
+.close-btn:hover {
+  background-color: #f0f0f0;
+}
+
+@keyframes modalPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Responsive design for different screen sizes */
+@media (max-width: 768px) {
+  .alert-modal-content {
+    padding: 25px 20px;
+    margin: 15px;
+  }
+  
+  .alert-modal-content h2 {
+    margin: 0 0 12px 0;
+  }
+  
+  .alert-modal-content p {
+    margin: 0 0 18px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .alert-modal-content {
+    padding: 20px 15px;
+    margin: 10px;
+    border-radius: 8px;
+  }
+  
+  .alert-modal-content h2 {
+    margin: 0 0 10px 0;
+  }
+  
+  .alert-modal-content p {
+    margin: 0 0 15px 0;
+  }
+  
+  .close-btn {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 320px) {
+  .alert-modal-content {
+    padding: 15px 10px;
+    margin: 5px;
+  }
+}
+
 .cluster { 
   width: 100%;
   height: 100%;
@@ -50,6 +154,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   width: 100%;
   height: 100%;
 }
+
+/* Settings gear overlay anchored to cluster top-right */
+.settings-gear {
+  position: absolute;
+  top: clamp(6px, 1vw, 12px);
+  right: clamp(6px, 1vw, 12px);
+  background: rgba(45,54,58,0.85);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: clamp(28px, calc(var(--cluster-width) * 0.045), 56px);
+  height: clamp(28px, calc(var(--cluster-width) * 0.045), 56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  font-size: clamp(14px, calc(var(--cluster-width) * 0.02), 24px);
+  z-index: 5;
+}
+
+.settings-gear:hover {
+  background: rgba(45,54,58,1);
+}
+
+/* Settings modal removed; handled by SettingsComponent */
   
 .modal {
   display: flex;
@@ -89,5 +219,74 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 }
 
 .modal button:hover {
+  background-color: #0056b3;
+}
+
+/* Custom container for notification and modal */
+.custom-modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+}
+
+.backend-popup-notification {
+  min-width: 220px;
+  max-width: 380px;
+  width: 90vw;
+  background-color: #ff4444;
+  color: white;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 20px;
+  animation: modalPulse 2s infinite;
+}
+
+.backend-popup-notification h2 {
+  margin: 0 0 15px 0;
+  font-size: clamp(18px, 4vw, 26px);
+}
+
+.backend-popup-notification p {
+  margin: 0;
+  font-size: clamp(14px, 3vw, 18px);
+  line-height: 1.4;
+}
+
+.custom-modal-content {
+  background-color: rgb(45, 54, 58);
+  padding: 20px;
+  border-radius: 5px;
+  width: 300px;
+  text-align: center;
+  color: white;
+}
+
+.custom-modal-content input {
+  margin-bottom: 10px;
+  padding: 5px;
+  width: 100%;
+}
+
+.custom-modal-content button {
+  padding: 10px;
+  width: 100%;
+  border-radius: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.custom-modal-content button:hover {
   background-color: #0056b3;
 }

@@ -29,6 +29,7 @@
 import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WebSocketService} from '../../webSocket/web-socket.service'
+import { ClusterService } from '../cluster.service';
 
 @Component({
   selector: 'app-speedometer',
@@ -46,8 +47,8 @@ export class SpeedometerComponent {
   private yOffset: number = -44;
   private angleAmplifier: number = 1.2;
   private speedSubscription: Subscription | undefined;
-  
-  constructor( private  webSocketService: WebSocketService) { }
+  private klSubscription: Subscription | undefined;
+  constructor( private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
 
   ngOnInit()
   {
@@ -63,6 +64,18 @@ export class SpeedometerComponent {
       },
       (error) => {
         console.error('Error receiving disk usage:', error);
+      }
+    );
+
+    this.klSubscription = this.clusterService.kl$.subscribe(
+      (klState) => {
+        if (klState === '0') {
+          this.speed = 0;
+          this.updateNeedle();
+        }
+      },
+      (error) => {
+        console.error('Error receiving KL state:', error);
       }
     );
   }

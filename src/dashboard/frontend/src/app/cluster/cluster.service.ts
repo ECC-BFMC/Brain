@@ -16,6 +16,9 @@ export class ClusterService {
   private drivingModeSubject = new BehaviorSubject<string>('');
   drivingMode$ = this.drivingModeSubject.asObservable();
 
+  private serialConnectionStateSubject = new BehaviorSubject<boolean>(true);
+  serialConnectionState$ = this.serialConnectionStateSubject.asObservable();
+
   private isMobileDevice(): boolean {
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
     return /android|iPad|iPhone|iPod/i.test(userAgent) && !(window as any).MSStream;
@@ -33,5 +36,9 @@ export class ClusterService {
 
   updateDrivingMode(value: string) {
     this.drivingModeSubject.next(value);
+  }
+
+  updateSerialConnectionState(value: boolean) {
+    this.serialConnectionStateSubject.next(value);
   }
 }

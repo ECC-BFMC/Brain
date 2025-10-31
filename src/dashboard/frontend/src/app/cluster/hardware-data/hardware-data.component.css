@@ -74,7 +74,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     height: 80%;
 }
 
-.hardware-data-raspberry-indicators, .hardware-data-nucleo-indicators {
+.hardware-data-raspberry-indicators {
+    display: flex;
+    flex-direction: row;
+    gap: 1%;
+    margin-left: 23%;
+}
+
+.hardware-data-nucleo-indicators {
     display: flex;
     flex-direction: row;
     gap: 1%;

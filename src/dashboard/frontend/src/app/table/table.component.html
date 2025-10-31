@@ -26,37 +26,93 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  -->
 
-<table class="my-table">
-  <thead>
-    <tr>
-      <th class="header">Channel</th>
-      <th class="header">Interval</th>
-      <th class="header">Value</th>
-      <th class="header">RangeOfValues</th>
-      <th class="header">Action?</th>
-      <th class="header">Changed</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let item of items">
-      <td class="cell" *ngIf="item.type !== 'Config'">{{ item.channel }}</td>
-      <td class="cell" *ngIf="item.type !== 'Config'">{{ item.interval }}</td>
-      <td 
-        class="cell value" 
-        *ngIf="item.type !== 'Config'" 
-        [style.fontSize]="getFontSize(item.value)" 
-        [attr.data-tooltip]="item.value"
-      >
+<!-- Desktop Table View -->
+<div class="desktop-table">
+  <table class="my-table">
+    <thead>
+      <tr>
+        <th class="header">Channel</th>
+        <th class="header">Interval</th>
+        <th class="header">Value</th>
+        <th class="header">RangeOfValues</th>
+        <th class="header">Action?</th>
+        <th class="header">Changed</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of items">
+        <td class="cell" *ngIf="item.type !== 'Config'">{{ item.channel }}</td>
+        <td class="cell" *ngIf="item.type !== 'Config'">{{ item.interval }}</td>
+        <td 
+          class="cell value" 
+          *ngIf="item.type !== 'Config'" 
+          [style.fontSize]="getFontSize(item.value)"
+        >
+          {{ item.value }}
+        </td>
+        <td class="cell" *ngIf="item.type !== 'Config'">
+          <ng-container [ngSwitch]="item.type">
+            <span *ngSwitchCase="'default'">{{ item.values }}</span>
+            <span *ngSwitchCase="'Config'"></span>
+            <select *ngSwitchCase="'dropdown'" [(ngModel)]="item.value" (change)="item.hasChanged = item.value !== item.initialValue">
+              <option *ngFor="let option of item.values" [value]="option">{{ option }}</option>
+            </select>
+            <div *ngSwitchCase="'slider'" class="slider-wrapper">
+              <div class="layer-front">{{ item.values[0] / 100 }}</div>
+              <input 
+                type="range" 
+                [min]="item.values[0]" 
+                [max]="item.values[1]" 
+                [(ngModel)]="item.value" 
+                (change)="item.hasChanged = item.value !== item.initialValue" 
+              />
+              <div class="layer-back">{{ item.values[1] / 100 }}</div>
+            </div>
+          </ng-container>
+        </td>
+        <td class="cell" *ngIf="item.type !== 'Config' && item.type !== 'default'">
+          <input type="checkbox" [(ngModel)]="item.checked" />
+        </td>
+        <td class="cell" *ngIf="item.type !== 'Config' && item.type !== 'default'">
+          <span *ngIf="item.hasChanged">Yes</span>
+          <span *ngIf="!item.hasChanged">No</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Mobile Card View -->
+<div class="mobile-cards">
+  <div class="card" *ngFor="let item of items" [class.config-hidden]="item.type === 'Config'">
+    <div class="card-row">
+      <div class="card-label">Channel:</div>
+      <div class="card-value">{{ item.channel }}</div>
+    </div>
+    
+    <div class="card-row">
+      <div class="card-label">Interval:</div>
+      <div class="card-value">{{ item.interval }}</div>
+    </div>
+    
+    <div class="card-row">
+      <div class="card-label">Value:</div>
+      <div class="card-value value" 
+           [style.fontSize]="getFontSize(item.value)">
         {{ item.value }}
-      </td>
-      <td class="cell" *ngIf="item.type !== 'Config'">
+      </div>
+    </div>
+    
+    <div class="card-row">
+      <div class="card-label">Range of Values:</div>
+      <div class="card-value">
         <ng-container [ngSwitch]="item.type">
           <span *ngSwitchCase="'default'">{{ item.values }}</span>
           <span *ngSwitchCase="'Config'"></span>
           <select *ngSwitchCase="'dropdown'" [(ngModel)]="item.value" (change)="item.hasChanged = item.value !== item.initialValue">
             <option *ngFor="let option of item.values" [value]="option">{{ option }}</option>
           </select>
-          <div *ngSwitchCase="'slider'" class="slider-wrapper">
+          <div *ngSwitchCase="'slider'" class="slider-wrapper mobile-slider">
             <div class="layer-front">{{ item.values[0] / 100 }}</div>
             <input 
               type="range" 
@@ -68,17 +124,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  -->
             <div class="layer-back">{{ item.values[1] / 100 }}</div>
           </div>
         </ng-container>
-      </td>
-      <td class="cell" *ngIf="item.type !== 'Config' && item.type !== 'default'">
+      </div>
+    </div>
+    
+    <div class="card-row" *ngIf="item.type !== 'Config' && item.type !== 'default'">
+      <div class="card-label">Action:</div>
+      <div class="card-value">
         <input type="checkbox" [(ngModel)]="item.checked" />
-      </td>
-      <td class="cell" *ngIf="item.type !== 'Config' && item.type !== 'default'">
+      </div>
+    </div>
+    
+    <div class="card-row" *ngIf="item.type !== 'Config' && item.type !== 'default'">
+      <div class="card-label">Changed:</div>
+      <div class="card-value">
         <span *ngIf="item.hasChanged">Yes</span>
         <span *ngIf="!item.hasChanged">No</span>
-      </td>
-    </tr>
-  </tbody>
-</table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Buttons that cover the entire width of the table -->
 <div class="button-group">

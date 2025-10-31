@@ -43,7 +43,11 @@ class messageHandlerSubscriber:
         self._message = message
         self._deliveryMode = str.lower(deliveryMode)
         self._pipeRecv, self._pipeSend = Pipe(duplex=False)
-        self._receiver = inspect.currentframe().f_back.f_locals['self'].__class__.__name__
+        frame = inspect.currentframe().f_back # type: ignore
+        if 'self' in frame.f_locals: # type: ignore
+            self._receiver = frame.f_locals['self'].__class__.__name__ # type: ignore
+        else:
+            self._receiver = frame.f_globals.get('__name__', None) # type: ignore
         
         if subscribe == True:
             self.subscribe()
@@ -62,9 +66,9 @@ class messageHandlerSubscriber:
         if not self._pipeRecv.poll():
             return None
         else:
-            return self.receiveWithBlock()
+            return self.receive_with_block()
         
-    def receiveWithBlock(self):
+    def receive_with_block(self):
         """
         Waits until there is an existing message in the pipe 
         
@@ -121,7 +125,7 @@ class messageHandlerSubscriber:
             }
         )
 
-    def isDataInPipe(self):
+    def is_data_in_pipe(self):
         """
         Checks if there is any data in the receiving pipe.
 
@@ -130,13 +134,13 @@ class messageHandlerSubscriber:
         """
         return self._pipeRecv.poll()
 
-    def setDeliveryModeToFIFO(self):
+    def set_delivery_mode_to_fifo(self):
         """
         Sets delivery mode to FIFO.
         """
         self._deliveryMode = "fifo"
 
-    def setDeliveryModeToLastOnly(self):
+    def set_delivery_mode_to_last_only(self):
         """
         Sets delivery mode to LastOnly.
         """

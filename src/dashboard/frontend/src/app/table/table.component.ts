@@ -51,15 +51,26 @@ export class TableComponent implements OnInit {
   }[] = [];
   private loadsSubscription: Subscription | undefined;
   private lastReceivedTimestamp: { [key: string]: number } = {}; // Track last received timestamp
+  private loadedMap: any = {};
 
   constructor(private webSocketService: WebSocketService) { }
 
   ngOnInit() {
-    this.loadsSubscription = this.webSocketService.receiveLoadTable().subscribe(
-      (message) => {
-        this.items = message.data
-      },
-    );
+    this.loadsSubscription = this.webSocketService.receiveLoadTable().subscribe((message) => {
+      // New keyed-by-channel format: keep original map and derive UI items
+      this.loadedMap = message.data || {};
+      const entries = Object.entries(this.loadedMap) as [string, any][];
+      this.items = entries.map(([channel, item]) => ({
+        channel,
+        value: item?.value !== null && item?.value !== undefined ? String(item.value) : '',
+        initialValue: item?.initialValue !== null && item?.initialValue !== undefined ? String(item.initialValue) : '',
+        hasChanged: item?.hasChanged || false,
+        checked: item?.checked || false,
+        values: item?.values || [],
+        type: item?.type || 'default',
+        interval: item?.interval ?? 0,
+      }));
+    });
 
     this.webSocketService.receiveUnhandledEvents().subscribe(event => {
       this.updateTable(event.channel, event.data.value);
@@ -77,16 +88,17 @@ export class TableComponent implements OnInit {
     const existingItem = this.items.find(item => item.channel === channel);
 
     if (existingItem) {
-      existingItem.value = String(value);
+      existingItem.value = value !== null && value !== undefined ? String(value) : '';
       existingItem.interval = interval;
 
       // Compare current value to initial value and mark as changed if necessary
       existingItem.hasChanged = existingItem.value !== existingItem.initialValue;
     } else {
+      const stringValue = value !== null && value !== undefined ? String(value) : '';
       this.items.push({ 
         channel, 
-        value: String(value), 
-        initialValue: String(value), 
+        value: stringValue, 
+        initialValue: stringValue, 
         interval, 
         type: 'default', 
         values: [], 
@@ -96,12 +108,17 @@ export class TableComponent implements OnInit {
     }
   }
   save() {
-    const nonDefaultItems = this.items.filter(item => item.type !== 'default');
+    const nonDefaultItems = this.items.filter(item => item.type === 'dropdown' || item.type === 'slider');
+    // Update only fields in the loaded map for existing channels
     nonDefaultItems.forEach(item => {
-      item.initialValue = item.value;
-      item.hasChanged = false;
+      const entry = this.loadedMap[item.channel] || {};
+      entry.value = item.value;
+      entry.initialValue = item.value; // reset to saved value
+      entry.hasChanged = false;
+      // Preserve other fields as-is (type, values, checked, command, etc.)
+      this.loadedMap[item.channel] = entry;
     });
-    let valueToSend = JSON.stringify(nonDefaultItems, null, 2)
+    const valueToSend = JSON.stringify(this.loadedMap, null, 2);
     this.webSocketService.SaveTable(valueToSend)
   }
 
@@ -127,6 +144,9 @@ export class TableComponent implements OnInit {
     });
   }
   getFontSize(value: string): string {
+    if (!value || value === null || value === undefined) {
+      return '1vw'; // Return default size for undefined/null values
+    }
     const baseSize = 1; 
     const maxLength = 15; 
     return `${Math.max(baseSize - (value.length / maxLength) * 0.5, 0.5)}vw`;

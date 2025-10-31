@@ -1,0 +1,33 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .axis-label {
+      font-family: sans-serif;
+      font-size: 16px;
+      fill: white;
+      text-anchor: middle;
+    }
+  </style>
+  
+  <!-- Nicer background -->
+  <rect width="100%" height="100%" fill="#2C3E50"/>
+
+  <!-- Y Axis -->
+  <g stroke="white" stroke-width="1.5">
+    <!-- Axis line -->
+    <line x1="150" y1="34" x2="150" y2="164" />
+
+    <line x1="145" y1="155" x2="155" y2="155" />
+    <line x1="145" y1="122" x2="155" y2="122" />
+    <line x1="145" y1="88" x2="155" y2="88" />
+    <line x1="145" y1="55" x2="155" y2="55" />
+    <!-- Arrowhead -->
+    <path d="M 150 34 L 155 44" fill="none" />
+    <path d="M 150 34 L 145 44" fill="none" />
+  </g>
+  
+  <text x="135" y="45" class="axis-label">Y</text>
+  <text x="165" y="161" class="axis-label">0</text>
+  <text x="165" y="128" class="axis-label">1</text>
+  <text x="165" y="94" class="axis-label">2</text>
+  <text x="165" y="59" class="axis-label">3</text>
+</svg>

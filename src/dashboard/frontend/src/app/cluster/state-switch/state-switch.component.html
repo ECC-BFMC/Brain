@@ -48,16 +48,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   
   <div *ngIf="isMobile" class="button-container">
     <button *ngIf="isMobile" class="control-button" (click)="increaseSpeed()">
-      <mat-icon class="control-arrow">arrow_upward</mat-icon>
+      <span class="control-arrow up-arrow">▲</span>
     </button>
     <button *ngIf="isMobile" class="control-button" (click)="decreaseSpeed()">
-      <mat-icon class="control-arrow">arrow_downward</mat-icon>
+      <span class="control-arrow down-arrow">▼</span>
     </button>
     <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
-      <mat-icon class="control-arrow">arrow_back</mat-icon>
+      <span class="control-arrow left-arrow">◀</span>
     </button>
     <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
-      <mat-icon class="control-arrow">arrow_forward</mat-icon>
+      <span class="control-arrow right-arrow">▶</span>
     </button>
   </div>
 

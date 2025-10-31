@@ -26,11 +26,12 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { WebSocketService } from '../../webSocket/web-socket.service';
 import { NgFor, NgIf } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ClusterService } from '../cluster.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-state-switch',
@@ -39,47 +40,76 @@ import { ClusterService } from '../cluster.service';
   templateUrl: './state-switch.component.html',
   styleUrl: './state-switch.component.css'
 })
-export class StateSwitchComponent {
+export class StateSwitchComponent implements OnInit {
   public states: string[] = ['stop', 'manual', 'legacy', 'auto'];
   public currentStateIndex: number = 0;
 
   public isMobile: boolean = false;
 
-  private activeKey: string | null = null;
+  private activeKeys: Set<string> = new Set();
 
   private speed: number = 0;
   private speedIncrement: number = 5;
   private maxSpeed: number = 50;
   private minSpeed: number = -50;
 
+  private maxSteer: number = 25;
+  private minSteer: number = -25;
   private steer: number = 0;
   private lastSteer: number = 0;
-  private steerIncrement: number = 5;
-  private steerDecrement: number = 5;
+  private steerNumOfSteps: number = 10;
+  private steerIncrement: number = (Math.abs(this.maxSteer) / this.steerNumOfSteps);
+  private steerDecrement: number = (Math.abs(this.maxSteer) / this.steerNumOfSteps);
   private steerInterval: any;
   private steerDecreaseInterval: any;
   private isSteering: boolean = false;
-  private maxSteer: number = 25;
-  private minSteer: number = -25;
 
-  constructor(private  webSocketService: WebSocketService, 
+
+  private steerLimitsSubscription: Subscription | undefined;
+
+  klState: string = '';
+
+  constructor(
+    private webSocketService: WebSocketService,
     private clusterService: ClusterService
-  ) { }
+  ) {}
 
   ngOnInit() {
+    // Notify backend of the actual initial driving mode
+    this.webSocketService.sendMessageToFlask(`{"Name": "DrivingMode", "Value": "${this.currentState}"}`);   
+
     this.clusterService.isMobileDriving$.subscribe(isMobileDriving => {
       this.isMobile = isMobileDriving;
     });
+
+    this.clusterService.kl$.subscribe(state => {
+      this.klState = state;
+      
+      if (this.klState === '15' || this.klState === '0') {
+        this.speed = 0;
+        this.steer = 0; 
+      }
+    });
+
+    this.steerLimitsSubscription = this.webSocketService.receiveSteerLimits().subscribe(
+      (message) => {
+        this.maxSteer = Number((message.value["upperLimit"] / 10).toFixed(1));
+        this.minSteer = Number((message.value["lowerLimit"] / 10).toFixed(1));
+        this.steerIncrement = (Math.abs(this.maxSteer) / this.steerNumOfSteps);
+        this.steerDecrement = (Math.abs(this.maxSteer) / this.steerNumOfSteps);
+      }
+    );
   }
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
-    if (this.currentState == 'manual') {
 
-      if (this.activeKey === event.key)
+    if (this.currentState == 'manual' && this.klState === '30') {
+
+      if (this.activeKeys.has(event.key))
         return;
     
-      this.activeKey = event.key;
+      this.activeKeys.add(event.key);
 
       switch(event.key) {
         case 'w':
@@ -102,6 +132,9 @@ export class StateSwitchComponent {
             this.startSteeringRight();  
           }
           break;
+        case ' ':
+          this.brakeReset();
+          break;
         default:
           break;
       }
@@ -110,17 +143,21 @@ export class StateSwitchComponent {
 
   @HostListener('window:keyup', ['$event'])
   handleKeyUp(event: KeyboardEvent) {
-    if (this.currentState === 'manual' && this.activeKey === event.key) {
-      this.activeKey = null;
-      this.stopSteering();
-      this.startDecreasingSteer();
+    if (this.currentState === 'manual' && this.activeKeys.has(event.key)) {
+      this.activeKeys.delete(event.key);
+      
+      // Only stop steering when 'a' or 'd' is released
+      if (event.key === 'a' || event.key === 'd') {
+        this.stopSteering();
+        this.startDecreasingSteer();
+      }
     }
   }
 
   setState(index: number) {
     if (this.currentState == 'manual' && this.currentState != this.states[index]) {
-      this.speedReset();
-      this.steerReset();
+      this.brakeReset();
+      this.stopSteering();
     }
 
     this.currentStateIndex = index;    
@@ -161,7 +198,7 @@ export class StateSwitchComponent {
       this.speed = this.maxSpeed;
     }
 
-    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
+    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${Math.round(this.speed*10)}"}`);   
   }
 
   public decreaseSpeed(): void {
@@ -171,7 +208,7 @@ export class StateSwitchComponent {
       this.speed = this.minSpeed;
     }
 
-    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
+    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${Math.round(this.speed*10)}"}`);   
   }
 
   private startSteeringRight() {
@@ -184,7 +221,7 @@ export class StateSwitchComponent {
       }
       
       if (this.lastSteer != this.maxSteer) { 
-        this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);  
+        this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${Math.round(this.steer*10)}"}`);  
       }
  
       this.lastSteer = this.steer;
@@ -201,7 +238,7 @@ export class StateSwitchComponent {
       }
 
       if (this.lastSteer != this.minSteer) { 
-        this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);
+        this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${Math.round(this.steer*10)}"}`);
       }
         
       this.lastSteer = this.steer;
@@ -229,18 +266,24 @@ export class StateSwitchComponent {
         }
       }
     
-      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`); 
-    }, 100)
+      this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${Math.round(this.steer*10)}"}`); 
+    }, 50)
   }
 
   private speedReset(): void { 
     this.speed = 0;
-    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${this.speed*10}"}`);   
+    this.webSocketService.sendMessageToFlask(`{"Name": "SpeedMotor", "Value": "${Math.round(this.speed*10)}"}`);   
   }
 
   private steerReset(): void { 
     this.steer = 0;
-    this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${this.steer*10}"}`);   
+    this.webSocketService.sendMessageToFlask(`{"Name": "SteerMotor", "Value": "${Math.round(this.steer*10)}"}`);   
+  }
+
+  private brakeReset(): void { 
+    this.steer = 0;
+    this.speed = 0;
+    this.webSocketService.sendMessageToFlask(`{"Name": "Brake", "Value": "0"}`);   
   }
 
   private stopSteering() {
@@ -280,5 +323,11 @@ export class StateSwitchComponent {
     }
 
     return '#2b8fd1';
+  }
+
+  ngOnDestroy() {
+    if (this.steerLimitsSubscription) {
+      this.steerLimitsSubscription.unsubscribe();
+    }
   }
 }

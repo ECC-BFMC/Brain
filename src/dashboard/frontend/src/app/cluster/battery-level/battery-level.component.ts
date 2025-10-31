@@ -29,6 +29,7 @@
 import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WebSocketService} from '../../webSocket/web-socket.service'
+import { ClusterService } from '../cluster.service';
 @Component({
   selector: 'app-battery-level',
   standalone: true,
@@ -45,7 +46,8 @@ export class BatteryLevelComponent {
   private yOffset: number = -48;
   private angleAmplifier: number = 1.2;
   private batterySubscription: Subscription | undefined;
-  constructor( private  webSocketService: WebSocketService) { }
+  private klSubscription: Subscription | undefined;
+  constructor( private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
 
   ngOnInit()
   {
@@ -62,12 +64,26 @@ export class BatteryLevelComponent {
       }
     );
     
+    this.klSubscription = this.clusterService.kl$.subscribe(
+      (klState) => {
+        if (klState === '0') {
+          this.battery = 0;
+          this.updateNeedle();
+        }
+      },
+      (error) => {
+        console.error('Error receiving KL state:', error);
+      }
+    );
   }
 
   ngOnDestroy() {
     
     if (this.batterySubscription) {
       this.batterySubscription.unsubscribe();
+    }
+    if (this.klSubscription) {
+      this.klSubscription.unsubscribe();
     }
     this.webSocketService.disconnectSocket();
   }

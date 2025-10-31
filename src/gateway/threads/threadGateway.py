@@ -23,10 +23,11 @@
 # DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWITrueSE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 from src.templates.threadwithstop import ThreadWithStop
+import time
 
 class threadGateway(ThreadWithStop):
     """Thread which will handle processGateway functionalities.\n
@@ -39,7 +40,7 @@ class threadGateway(ThreadWithStop):
     # ===================================== INIT =========================================
 
     def __init__(self, queueList, logger, debugging):
-        super(threadGateway, self).__init__()
+        super(threadGateway, self).__init__(pause=0.001)
         self.logger = logger
         self.debugging = debugging
         self.sendingList = {}
@@ -68,7 +69,7 @@ class threadGateway(ThreadWithStop):
         self.messageApproved.append((Owner, Id))
         # Debugging( you can comment this):
         if self.debugging:
-            self.printList()
+            self.print_list()
 
     # ================================== UNSUBSCRIBE =====================================
 
@@ -86,7 +87,7 @@ class threadGateway(ThreadWithStop):
         del self.sendingList[Owner][Id][To]
         self.messageApproved.remove((Owner, Id))
         if self.debugging:
-            self.printList()
+            self.print_list()
 
     # =================================== SENDING ========================================
 
@@ -112,36 +113,38 @@ class threadGateway(ThreadWithStop):
     # ====================================================================================
 
     # Function for debugging:
-    def printList(self):
+    def print_list(self):
         """Made for debugging"""
 
         self.logger.warning(self.sendingList)
 
     # ==================================== RUN ===========================================
 
-    def run(self):
+    def thread_work(self):
         """This function will take the messages in priority order form the queues.\n
         the prioirty is: Critical > Warning > General
         """
         
-        while self._running:
-            message = None
-            # We are using "elif" because we are processing one message at a time.
-            # We work with the queues in the priority order( We start from the high priority to low priority)
-            if not self.queuesList["Critical"].empty():
-                message = self.queuesList["Critical"].get()
-            elif not self.queuesList["Warning"].empty():
-                message = self.queuesList["Warning"].get()
-            elif not self.queuesList["General"].empty():
-                message = self.queuesList["General"].get()
-            if message is not None:
-                self.send(message)
-            if not self.queuesList["Config"].empty():
-                message2 = self.queuesList["Config"].get()
-                if str.lower(message2["Subscribe/Unsubscribe"]) == "subscribe":
-                    self.subscribe(message2)
-                else:
-                    self.unsubscribe(message2)
+        # while self._running:
+        message = None
+        # We are using "elif" because we are processing one message at a time.
+        # We work with the queues in the priority order( We start from the high priority to low priority)
+        if not self.queuesList["Critical"].empty():
+            message = self.queuesList["Critical"].get()
+        elif not self.queuesList["Warning"].empty():
+            message = self.queuesList["Warning"].get()
+        elif not self.queuesList["General"].empty():
+            message = self.queuesList["General"].get()
+        if message is not None:
+            self.send(message)
+        if not self.queuesList["Config"].empty():
+            message2 = self.queuesList["Config"].get()
+            if str.lower(message2["Subscribe/Unsubscribe"]) == "subscribe":
+                self.subscribe(message2)
+            else:
+                self.unsubscribe(message2)
+
+        # print(time.perf_counter_ns())
 
 
 # =====================================================================================

@@ -53,7 +53,7 @@ export class IndicatorComponent implements OnChanges {
   }
 
   update(): void { 
-    if (this.value) { 
+    if (this.value !== undefined && this.value !== null) { 
       const currentValue = this.value * 100 / this.maxValue;
       this.valuePos = 80 - (currentValue * 0.85); // * 0.85 because we use only 85%
 

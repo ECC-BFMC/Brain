@@ -30,7 +30,7 @@
 #
 #       sudo apt update
 #       sudo apt upgrade
-#       xargs sudo apt install -y < "requirement.txt" 
+#       xargs sudo apt install -y < "requirements.txt" 
 #       cd src/dashboard/frontend/
 #       curl -fsSL https://fnm.vercel.app/install | bash
 #       source ~/.bashrc
@@ -40,16 +40,19 @@
 #       if needed: npm audit fix
 #
 # ===================================== GENERAL IMPORTS ==================================
+
 import sys
 import time
 import os
 import psutil
 
 # Pin to CPU cores 0–3
-psutil.Process(os.getpid()).cpu_affinity([0, 1, 2, 3])
+available_cores = list(range(psutil.cpu_count()))
+psutil.Process(os.getpid()).cpu_affinity(available_cores)
 
 sys.path.append(".")
 from multiprocessing import Queue, Event
+from src.utils.bigPrintMessages import BigPrint
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -60,14 +63,52 @@ from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
 from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
-from src.data.Semaphores.Semaphores import processSemaphores
+from src.data.Semaphores.processSemaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
-from src.utils.ipManager.IpReplacement import IPManager
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.allMessages import StateChange
+from src.statemachine.stateMachine import StateMachine
+from src.statemachine.systemMode import SystemMode
+
 # ------ New component imports starts here ------#
 
 # ------ New component imports ends here ------#
+
+# ===================================== SHUTDOWN PROCESS ====================================
+
+def shutdown_process(process, timeout=1):
+    """Helper function to gracefully shutdown a process."""
+    process.join(timeout)
+    if process.is_alive():
+        print(f"The process {process} cannot normally stop, it's blocked somewhere! Terminate it!")
+        process.terminate()  # force terminate if it won't stop
+        process.join(timeout)  # give it a moment to terminate
+        if process.is_alive():
+            print(f"The process {process} is still alive after terminate, killing it!")
+            process.kill()  # last resort
+    print(f"The process {process} stopped")
+
+# ===================================== PROCESS MANAGEMENT ==================================
+
+def manage_process_life(process_class, process_instance, process_args, enabled, allProcesses):
+    """Start or stop a process based on the enabled flag."""
+    if enabled:
+        if process_instance is None:
+            process_instance = process_class(*process_args)
+            allProcesses.append(process_instance)
+            process_instance.start()
+    else:
+        if process_instance is not None and process_instance.is_alive():
+            shutdown_process(process_instance)
+            allProcesses.remove(process_instance)
+            process_instance = None
+    return process_instance 
+
 # ======================================== SETTING UP ====================================
+
+print(BigPrint.PLEASE_WAIT.value)
 allProcesses = list()
+allEvents = list()
 
 queueList = {
     "Critical": Queue(),
@@ -77,107 +118,89 @@ queueList = {
 }
 logging = logging.getLogger()
 
-
-Dashboard = True
-Camera = True
-Semaphores = False
-TrafficCommunication = False
-SerialHandler = True
-
 # ------ New component flags starts here ------#
  
 # ------ New component flags ends here ------#
 
-# ===================================== SETUP PROCESSES ==================================
+# ===================================== INITIALIZE ==================================
+
+stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
+StateMachine.initialize_shared_state(queueList)
 
 # Initializing gateway
 processGateway = processGateway(queueList, logging)
 processGateway.start()
 
-# Ip replacement
-path = './src/dashboard/frontend/src/app/webSocket/web-socket.service.ts'
-IpChanger = IPManager(path)
-IpChanger.replace_ip_in_file()
-
+# ===================================== INITIALIZE PROCESSES ==================================
 
 # Initializing dashboard
-if Dashboard:
-    processDashboard = processDashboard( queueList, logging, debugging = False)
-    allProcesses.append(processDashboard)
+dashboard_ready = Event()
+processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
 
 # Initializing camera
-if Camera:
-    processCamera = processCamera(queueList, logging , debugging = False)
-    allProcesses.append(processCamera)
+camera_ready = Event()
+processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
 
 # Initializing semaphores
-if Semaphores:
-    processSemaphores = processSemaphores(queueList, logging, debugging = False)
-    allProcesses.append(processSemaphores)
+semaphore_ready = Event()
+processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
 
 # Initializing GPS
-if TrafficCommunication:
-    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3, debugging = False)
-    allProcesses.append(processTrafficCommunication)
+traffic_com_ready = Event()
+processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
 
 # Initializing serial connection NUCLEO - > PI
-if SerialHandler:
-    processSerialHandler = processSerialHandler(queueList, logging, debugging = False)
-    allProcesses.append(processSerialHandler)
+serial_handler_ready = Event()
+processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
 
-# ------ New component runs starts here ------#
+# Adding all processes to the list
+allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
+allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
+
+# ------ New component initialize starts here ------#
  
-# ------ New component runs ends here ------#
+# ------ New component initialize ends here ------#
 
 # ===================================== START PROCESSES ==================================
+
 for process in allProcesses:
     process.daemon = True
     process.start()
 
-time.sleep(10)
-c4_bomb = r"""
-  _______________________
- /                       \
-| [██████]    [██████]    |
-| [██████]    [██████]    |
-| [██████]    [██████]    |
-|       TIMER: 00:10      |
-|_________________________|
- \_______________________/
-        LET'S GO!!!
-
-        Press ctrl+C to close
-"""
-
-print(c4_bomb)
-
 # ===================================== STAYING ALIVE ====================================
+
 blocker = Event()
 try:
-    blocker.wait()
+    # wait for all events to be set
+    for event in allEvents:
+        event.wait()
+
+    # apply starting mode
+    StateMachine.initialize_starting_mode()
+
+    time.sleep(10)
+    print(BigPrint.C4_BOMB.value)
+    print(BigPrint.PRESS_CTRL_C.value)
+
+    while True:
+        message = stateChangeSubscriber.receive()
+        if message is not None:
+            modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
+            modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
+
+            processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logging, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
+            processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logging, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
+
+        blocker.wait(0.1)
+
 except KeyboardInterrupt:
     print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
-    big_text = """
-    PPPP   L        EEEEE    A    SSSS  EEEEE       W      W   A   III TTTTT
-    P   P  L        E       A A   S     E           W      W  A A   I    T  
-    PPPP   L        EEEE   A   A   SSS  EEEE        W  W   W A   A  I    T  
-    P      L        E      AAAAA      S E           W W W W  AAAAA  I    T  
-    P      LLLLLL   EEEEE  A   A  SSSS  EEEEE        W   W   A   A III   T  
-    """
 
-    print(big_text)
     for proc in reversed(allProcesses):
-        print("Process stopped", proc)
         proc.stop()
-    print("Process stopped", processGateway)
     processGateway.stop()
 
-    big_text = """
-    PPPP   RRRR   EEEEE  SSSS  SSSS       CCCC  TTTTT RRRR    L          ++      CCCC      !!! 
-    P   P  R   R  E     S     S          C        T   R   R   L          ++      C         !!! 
-    PPPP   RRRR   EEEE   SSS   SSS       C        T   RRRR    L      ++++++++++  C         !!! 
-    P      R R    E         S     S      C        T   R R     L          ++      C         !!! 
-    P      R  R   EEEEE  SSSS  SSSS       CCCC    T   R  R    LLLLL      ++      CCCC      !!!
-    """
-
-    print(big_text)
+    # wait for all processes to finish before exiting
+    for proc in reversed(allProcesses):
+        shutdown_process(proc)
+    shutdown_process(processGateway)

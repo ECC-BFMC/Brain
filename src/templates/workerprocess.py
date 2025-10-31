@@ -27,11 +27,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 from multiprocessing import Process, Event
-import time
 
 
 class WorkerProcess(Process):
-    def __init__(self, queuesList, daemon=True):
+    def __init__(self, queuesList, ready_event=None, daemon=True):
         """WorkerProcess is an abstract class for description a general structure and interface a process.
 
         Parameters
@@ -40,16 +39,24 @@ class WorkerProcess(Process):
             input pipes
         outPs : list(Pipe)
             output pipes
+        ready_event : multiprocessing.Event, optional
+            event to signal when threads are ready
         daemon : bool, optional
             daemon process flag, by default True
         """
         super(WorkerProcess, self).__init__()
 
         self.queuesList = queuesList
+        self.ready_event = ready_event
 
         self.daemon = daemon
         self.threads = list()
 
+        # Inter-process communication for pause/resume
+        self._pause_event = Event()
+        self._resume_event = Event()
+        
+        # Intra-process coordination
         self._blocker = Event()
 
     def _init_threads(self):
@@ -71,17 +78,47 @@ class WorkerProcess(Process):
             th.daemon = self.daemon
             th.start()
             
-        # Wait to set internal flag true for the event
+        # Signal that threads are ready
+        if self.ready_event:
+            self.ready_event.set()
+            
+        # wait to set internal flag true for the event
         while not self._blocker.is_set():
             try:
-                self._blocker.wait(1)
-            except KeyboardInterrupt as e: 
-                print(e)
+                # handle the state change
+                self.state_change_handler()
 
+                # do the actual work
+                self.process_work()
+        
+                # check for pause/resume commands
+                if self._pause_event.is_set():
+                    for thread in self.threads:
+                        thread.pause()
+                    self._pause_event.clear()
+                    
+                if self._resume_event.is_set():
+                    for thread in self.threads:
+                        thread.resume()
+                    self._resume_event.clear()
+                    
+                self._blocker.wait(0.1) # shorter wait for responsiveness
+            except KeyboardInterrupt as e:
+                print(e)
+                
+        # cleanup section
+        self.stop_threads()
+
+    def stop_threads(self):
         for th in self.threads:
             if hasattr(th, "stop") and callable(getattr(th, "stop")):
+                # resume thread first if it's paused
+                if th.is_paused():
+                    th.resume()
+
                 th.stop()
-                th.join(0.1)
+                th.join(1)
+
                 if th.is_alive():
                     print(
                         "The thread %s cannot normally stop, it's blocked somewhere!"
@@ -93,10 +130,33 @@ class WorkerProcess(Process):
 
             del th
 
-    def stop(self):
-        """This method stops the process by set the event, which has role to block the running of process, while the subthread executes their functionalities.
-        The main process or other process throught this method can stop the running of this process.
-        """
+    def state_change_handler(self):
+        """This method is called to handle the state change of the process. It will be overridden by the child process."""
+        pass
 
+    def process_work(self):
+        """This method is called when the process is running. It will be overridden by the child process."""
+        pass
+
+    def pause_threads(self):
+        """Signal this process to pause its threads (called from main process)."""
+        self._pause_event.set()
+
+    def resume_threads(self):
+        """Signal this process to resume its threads (called from main process)."""
+        self._resume_event.set()
+
+    def are_threads_paused(self):
+        """Check if any threads are currently paused."""
+        for thread in self.threads:
+            if thread.is_paused():
+                return True
+        return False
+
+    def stop(self):
+        """Stop method for the process.
+        This method will set the blocker event and stop all threads."""
+        # resume threads first to ensure they can process stop signals
+        self.resume_threads()
         self._blocker.set()
-        time.sleep(2)
+        self._blocker.wait(1)

@@ -43,7 +43,9 @@ from src.utils.messages.allMessages import (
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
-
+from src.utils.messages.allMessages import StateChange
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.statemachine.systemMode import SystemMode
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
@@ -55,7 +57,7 @@ class threadCamera(ThreadWithStop):
 
     # ================================ INIT ===============================================
     def __init__(self, queuesList, logger, debugger):
-        super(threadCamera, self).__init__()
+        super(threadCamera, self).__init__(pause=0.001)
         self.queuesList = queuesList
         self.logger = logger
         self.debugger = debugger
@@ -70,8 +72,8 @@ class threadCamera(ThreadWithStop):
 
         self.subscribe()
         self._init_camera()
-        self.Queue_Sending()
-        self.Configs()
+        self.queue_sending()
+        self.configs()
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
@@ -79,24 +81,117 @@ class threadCamera(ThreadWithStop):
         self.recordSubscriber = messageHandlerSubscriber(self.queuesList, Record, "lastOnly", True)
         self.brightnessSubscriber = messageHandlerSubscriber(self.queuesList, Brightness, "lastOnly", True)
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
+        self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
-    def Queue_Sending(self):
+    def queue_sending(self):
         """Callback function for recording flag."""
-
+        if self._blocker.is_set():
+            return
         self.recordingSender.send(self.recording)
-        threading.Timer(1, self.Queue_Sending).start()
-        
+        threading.Timer(1, self.queue_sending).start()
+
+    # ================================ RUN ================================================
+    def thread_work(self):
+        """This function will run while the running flag is True. 
+        It captures the image from camera and make the required modifies 
+        and then it send the data to process gateway."""
+        # if camera is not available, skip processing
+        if self.camera is None:
+            time.sleep(0.1)
+            return
+            
+        try:
+            recordRecv = self.recordSubscriber.receive()
+            if recordRecv is not None: 
+                self.recording = bool(recordRecv)
+                if recordRecv == False:
+                    self.video_writer.release() # type: ignore
+                else:
+                    fourcc = cv2.VideoWriter_fourcc( # type: ignore
+                        *"XVID"
+                    )  # You can choose different codecs, e.g., 'MJPG', 'XVID', 'H264', etc.
+                    self.video_writer = cv2.VideoWriter(
+                        "output_video" + str(time.time()) + ".avi",
+                        fourcc,
+                        self.frame_rate,
+                        (2048, 1080),
+                    )
+
+        except Exception as e:
+            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
+
+        try:
+            mainRequest = self.camera.capture_array("main")
+            serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
+
+            if self.recording == True:
+                self.video_writer.write(mainRequest) # type: ignore
+
+            serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
+
+            _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
+            _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore
+
+            mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8") # type: ignore
+            serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8") # type: ignore
+
+            if self._blocker.is_set():
+                return
+
+            self.mainCameraSender.send(mainEncodedImageData)
+            self.serialCameraSender.send(serialEncodedImageData)
+        except Exception as e:
+            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
+
+    # ================================ STATE CHANGE HANDLER ========================================
+    def state_change_handler(self):
+        message = self.stateChangeSubscriber.receive()
+        if message is not None:
+            modeDict = SystemMode[message].value["camera"]["thread"]
+
+            if "resolution" in modeDict:
+                print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - Resolution changed to {modeDict['resolution']}")
+
+    # ================================ INIT CAMERA ========================================
+    def _init_camera(self):
+        """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
+
+        try:
+            # check if camera is available
+            if len(picamera2.Picamera2.global_camera_info()) == 0:
+                print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - No camera detected. Camera functionality will be disabled.")
+                self.camera = None
+                return
+            
+            self.camera = picamera2.Picamera2()
+            config = self.camera.create_preview_configuration(
+                buffer_count=1,
+                queue=False,
+                main={"format": "RGB888", "size": (2048, 1080)},
+                lores={"size": (512, 270)},
+                encode="lores",
+            )
+            self.camera.configure(config) # type: ignore
+            self.camera.start()
+            print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - Camera initialized successfully")
+        except Exception as e:
+            print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - Failed to initialize camera: {e}")
+            self.camera = None
+
     # =============================== STOP ================================================
     def stop(self):
-        if self.recording:
-            self.video_writer.release()
+        if self.recording and self.video_writer:
+            self.video_writer.release() # type: ignore
+        if self.camera is not None:
+            self.camera.stop()
         super(threadCamera, self).stop()
 
     # =============================== CONFIG ==============================================
-    def Configs(self):
+    def configs(self):
         """Callback function for receiving configs on the pipe."""
-
-        if self.brightnessSubscriber.isDataInPipe():
+        if self._blocker.is_set():
+            return
+        if self.brightnessSubscriber.is_data_in_pipe():
             message = self.brightnessSubscriber.receive()
             if self.debugger:
                 self.logger.info(str(message))
@@ -104,10 +199,10 @@ class threadCamera(ThreadWithStop):
                 {
                     "AeEnable": False,
                     "AwbEnable": False,
-                    "Brightness": max(0.0, min(1.0, float(message))),
+                    "Brightness": max(0.0, min(1.0, float(message))), # type: ignore
                 }
             )
-        if self.contrastSubscriber.isDataInPipe():
+        if self.contrastSubscriber.is_data_in_pipe():
             message = self.contrastSubscriber.receive() # de modificat marti uc camera noua 
             if self.debugger:
                 self.logger.info(str(message))
@@ -115,72 +210,7 @@ class threadCamera(ThreadWithStop):
                 {
                     "AeEnable": False,
                     "AwbEnable": False,
-                    "Contrast": max(0.0, min(32.0, float(message))),
+                    "Contrast": max(0.0, min(32.0, float(message))), # type: ignore
                 }
             )
-        threading.Timer(1, self.Configs).start()
-
-    # ================================ RUN ================================================
-    def run(self):
-        """This function will run while the running flag is True. It captures the image from camera and make the required modifies and then it send the data to process gateway."""
-
-        send = True
-        while self._running:
-            try:
-                recordRecv = self.recordSubscriber.receive()
-                if recordRecv is not None: 
-                    self.recording = bool(recordRecv)
-                    if recordRecv == False:
-                        self.video_writer.release()
-                    else:
-                        fourcc = cv2.VideoWriter_fourcc(
-                            *"XVID"
-                        )  # You can choose different codecs, e.g., 'MJPG', 'XVID', 'H264', etc.
-                        self.video_writer = cv2.VideoWriter(
-                            "output_video" + str(time.time()) + ".avi",
-                            fourcc,
-                            self.frame_rate,
-                            (2048, 1080),
-                        )
-
-            except Exception as e:
-                print(e)
-
-            if send:
-                mainRequest = self.camera.capture_array("main")
-                serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
-
-                if self.recording == True:
-                    self.video_writer.write(mainRequest)
-
-                serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420)
-
-                _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)                   
-                _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
-
-                mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
-                serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8")
-
-                self.mainCameraSender.send(mainEncodedImageData)
-                self.serialCameraSender.send(serialEncodedImageData)
-
-            send = not send
-
-    # =============================== START ===============================================
-    def start(self):
-        super(threadCamera, self).start()
-
-    # ================================ INIT CAMERA ========================================
-    def _init_camera(self):
-        """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
-
-        self.camera = picamera2.Picamera2()
-        config = self.camera.create_preview_configuration(
-            buffer_count=1,
-            queue=False,
-            main={"format": "RGB888", "size": (2048, 1080)},
-            lores={"size": (512, 270)},
-            encode="lores",
-        )
-        self.camera.configure(config)
-        self.camera.start()
+        threading.Timer(1, self.configs).start()

@@ -26,7 +26,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { WebSocketService } from '../../webSocket/web-socket.service';
 import { Subscription } from 'rxjs';
@@ -39,43 +39,71 @@ import { ClusterService } from '../cluster.service';
   templateUrl: './kl-switch.component.html',
   styleUrl: './kl-switch.component.css'
 })
-export class KlSwitchComponent {
+export class KlSwitchComponent implements OnInit, OnDestroy {
   public states = ['0', '15', '30'];
   public currentStateIndex = 0;
   
   public isMobile: boolean = false;
 
-  public enableButon : Boolean = false;
+  public enableButton : Boolean = false;
+  public serialConnected: Boolean = true;  // Track serial connection status
   private enableButtonSubscription: Subscription | undefined;
 
-  constructor(private webSocketService: WebSocketService,
+  constructor(
+    private webSocketService: WebSocketService,
     private clusterService: ClusterService
-  ) { }
+  ) {}
 
   ngOnInit()
   {
+    // Send KL 0 to backend when entering the website
+    this.clusterService.updateKL('0');
+    this.webSocketService.sendMessageToFlask(`{"Name": "Klem", "Value": "0"}`);
+    
     this.enableButtonSubscription = this.webSocketService.receiveEnableButton().subscribe(
       (message) => {
-        this.enableButon = message.value
+        this.enableButton = message.value;
       },
       (error) => {
         console.error('Error receiving enablebutton signal:', error);
       }
     );
 
+    this.clusterService.serialConnectionState$.subscribe(serialConnected => {
+      this.serialConnected = serialConnected;
+      if (!serialConnected) {
+        this.currentStateIndex = 0;
+        this.clusterService.updateKL('0');
+      }
+    });
+
     this.clusterService.isMobileDriving$.subscribe(isMobileDriving => {
       this.isMobile = isMobileDriving;
     });
   }
 
+  // Prevent interaction when serial is disconnected without changing visual styles
+  blockIfDisconnected(event: Event) {
+    if (!this.serialConnected) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
   setState(index: number) {
+    // Don't allow KL changes if serial is disconnected
+    if (!this.serialConnected) {
+      console.warn('KL Switch: Cannot change KL state - serial connection is lost');
+      return;
+    }
+
     if (this.currentState == '30' && this.currentState != this.states[index]) {
     }
-    if(this.enableButon)
-      this.currentStateIndex = index; 
+    if(this.enableButton)
+      this.currentStateIndex = index;
 
     this.clusterService.updateKL(this.states[this.currentStateIndex])
-    this.webSocketService.sendMessageToFlask(`{"Name": "Klem", "Value": "${this.states[this.currentStateIndex]}"}`);   
+    this.webSocketService.sendMessageToFlask(`{"Name": "Klem", "Value": "${this.states[this.currentStateIndex]}"}`);
   }
 
   get currentState() {
@@ -106,6 +134,12 @@ export class KlSwitchComponent {
     }
 
     return '#2b8fd1';
+  }
+
+  ngOnDestroy() {
+    if (this.enableButtonSubscription) {
+      this.enableButtonSubscription.unsubscribe();
+    }
   }
 }
 

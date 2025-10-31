@@ -1,0 +1,76 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .axis-label {
+      font-family: sans-serif;
+      font-size: 16px;
+      fill: white;
+      text-anchor: middle;
+    }
+  </style>
+  
+  <!-- Nicer background -->
+  <rect width="100%" height="100%" fill="#2C3E50"/>
+
+  <!-- Y Axis -->
+  <g stroke="white" stroke-width="1.5">
+    <!-- Axis line -->
+    <line x1="168" y1="34" x2="168" y2="164" />
+    <!-- Arrowhead -->
+    <path d="M 168 34 L 163 44" fill="none" />
+    <path d="M 168 34 L 173 44" fill="none" />
+  </g>
+  
+  <!-- Y Axis Label -->
+  <text x="185" y="150" class="axis-label">Y</text>
+
+  <!-- X Axis -->
+  <g stroke="white" stroke-width="1.5">
+    <!-- Axis line -->
+    <line x1="90" y1="59" x2="190" y2="59" />
+    <!-- Arrowhead -->
+    <path d="M 90 59 L 100 64" fill="none" />
+    <path d="M 90 59 L 100 54" fill="none" />
+  </g>
+
+  <!-- X Axis Label -->
+  <text x="94" y="46" class="axis-label">-X</text>
+
+  <!-- 0 Axis Label -->
+  <text x="195" y="48" class="axis-label">(0,0)</text>
+  
+  <!-- Wheel points -->
+  <circle cx="128" cy="59" r="5" fill="red" />
+  <circle cx="162" cy="59" r="5" fill="red" />
+  <circle cx="162" cy="97" r="5" fill="red" />
+
+  <!-- Wheel arrows -->
+  <!-- Top wheel -->
+  <g>
+    <!-- Arrow line -->
+    <path d="M 210 59 L 173 59" stroke="red" stroke-width="2" fill="none" />
+    <!-- Arrowhead -->
+    <path d="M 173 59 L 183 54" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 173 59 L 183 64" stroke="red" stroke-width="2" fill="none" />
+  </g>
+
+  <!-- Bottom wheel -->
+  <g>
+    <!-- Arrow line -->
+    <path d="M 210 97 L 173 97" stroke="red" stroke-width="2" fill="none" />
+    <!-- Arrowhead -->
+    <path d="M 173 97 L 183 102" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 173 97 L 183 92" stroke="red" stroke-width="2" fill="none" />
+  </g>
+
+  <!-- Diagonal arrow for front left tire -->
+  <g>
+    <!-- Arrow line -->
+    <path d="M 92 89 L 116 65" stroke="red" stroke-width="2" fill="none" />
+    <!-- Arrowhead -->
+    <path d="M 116 65 L 106 68" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 116 65 L 113 75" stroke="red" stroke-width="2" fill="none" />
+  </g>
+
+  <!-- Car image from map-cursor, rotated and moved -->
+  <image width="64" height="64" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAD9UlEQVR4nO2ZX2/TVhjGcwnjezC1TeyGsDQtZeQYsat9hu0jcMHN8reloWzqoMA2BqwTJT6+4hIuYdod4rqJnTYtNJRWrfzfTNqoBHonxySx45PENgER5Ff63USK3ud5z3NyfJxIJKywwgorrLA+YtE/CEosUzXGCvxUZBSLzggQy/IQzVb/joy0gVwVJnKVdGSUDYzl14a3Cqn7cJTBxu+IfaUw+BV8WAzfIKy/ZrDxF8LGl0QDCBt/fipimX6weuPbO3tfOMSfY/ePIdY4HCQmvapBYn4TJjOCb8zvnbmr+hCr9+QsVr93GGC4f5DXiSKPJmgbXy0+B1TWA4llSLD6Y6cBbJwnTvyuCtPLL915LOuQWnoBJ4obLrEtzM9PzG3AzI1ds6FLLGI1SC41IL2q+DaAWO3QTI09/7+R8jp786ApZPrqTsDMkgWYg0mUNoHK8jB768CHeK0Nwvo3HQOs/pAkIHV1pz3R1PLuUCJw+g8R6OJ6UzyV5WH6+su+QnvCaRdsEdKfkoQlf9oGOsO3MVfEd167xFN5S3iL5NK2N8FdIFa9bd8DmyQDidIW0Fm+TaJUfy8DiUtWbExi70gsbgU10DkEGayLpIbx+Q3HtOicECivLaicKbrqIH5x3WNkVAeIUwX7HjBIIuxZbeFVLIlu8bFsFei5Wl+hvUCc+sK2Atp/RAMFgWDA/3L3MhDNVSFWFDyLdhjAimL7GdXekqZK5awHLwuraWADnNoU3E0szwc0IB/aIqS+IU6MkNkgeW0R3IDiwmGAYbV/iZuuIAw24GNqTvEViyLfV2gvEJZtEWI1nWSALloG7I2DLHeLiVzFRWxO8CW8bYCT7ZtYFUlTpS+uDyWvrabRQvMW5oBeqAUwIAPipM7PKMMpm6TG8Ut1h4FJ8yALkNcW8cW6y0D8cn2gWBKIkzsHGcLqE5KYxNKzdlbNZjO39zyLJXF6ZR8mClUYz1XanPz5WV+hfQx0HiUQVh6QDCSXG+1JJa81AmW1m9mVfYjO8zCerzSZutHwLd5C6jzMIU75lTTVmVt7QxDvbp6+J8Lk5XUYz6/BqTu7foVbsPI52yaWz5Oam42mrrvFp1kZTl55DtE5wYpC3s1Efg2oBQGmfmkAgyV3BLAEiStbkC6Lg8V2gbDovNAwnIS8TjRdloBaqNnErvVk7B2TP9YhzbpNMB7EkhGdV0rzlm+ebIMiYE6LKtV6Cu1HrFSDr1cPfAqVyCvAyt85DFj7QF4JtpmGNVXJG1jaTt3fOeoycGZ1+wjDyTcRJ8mfjFjOnnvpNcLio7Nl8Xjks3y1+LHq83m5mx3R1+tUhpej2ao+sn9whBVWWGFF7PU/0VDmX1XdcCAAAAAASUVORK5CYII=" transform="translate(112, 109) rotate(-90)"/>
+</svg>

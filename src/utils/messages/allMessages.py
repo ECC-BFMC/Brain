@@ -95,7 +95,7 @@ class Brake(Enum):
     Queue = "General"
     Owner = "Dashboard"
     msgID = 4
-    msgType = "float"
+    msgType = "str"
 
 class Record(Enum):
     Queue = "General"
@@ -175,6 +175,25 @@ class SliderChannelExample(Enum):
     msgID = 17
     msgType = "str"
 
+class ControlCalib(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 18
+    msgType = "dict"
+
+class IsAlive(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 19
+    msgType = "bool"
+
+class RequestSteerLimits(Enum):
+    Queue = "General"
+    Owner = "Dashboard"
+    msgID = 20
+    msgType = "bool"
+
+
 ################################# From Nucleo ##################################
 class BatteryLvl(Enum):
     Queue = "General"
@@ -218,11 +237,36 @@ class ImuAck(Enum):
     msgID = 7
     msgType = "str"
     
-class WarningSignal(Enum):
+class ShutDownSignal(Enum):
     Queue = "General"
     Owner = "threadRead"
-    msgID = 7
+    msgID = 8
     msgType = "str"
+
+class CalibPWMData(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 9
+    msgType = "dict"
+
+class CalibRunDone(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 10
+    msgType = "bool"
+
+class AliveSignal(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 11
+    msgType = "bool"
+
+class SteeringLimits(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 12
+    msgType = "dict"
+
 
 ################################# From Locsys ##################################
 class Location(Enum):
@@ -241,7 +285,20 @@ class EnableButton(Enum):
 class WarningSignal(Enum):
     Queue = "General"
     Owner = "brain"
+    msgID = 2
+    msgType = "str"
+
+class SerialConnectionState(Enum):
+    Queue = "General"
+    Owner = "processSerialHandler"
     msgID = 3
+    msgType = "bool"
+
+################################# From StateMachine ##################################
+class StateChange(Enum):
+    Queue = "Critical"
+    Owner = "stateMachine"
+    msgID = 1
     msgType = "str"
 
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}

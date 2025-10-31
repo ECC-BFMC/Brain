@@ -29,6 +29,7 @@
 import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WebSocketService} from '../../webSocket/web-socket.service'
+import { ClusterService } from '../cluster.service';
 import { IndicatorComponent } from './indicator/indicator.component';
 
 @Component({
@@ -42,24 +43,27 @@ export class HardwareDataComponent {
   private cpuSubscription: Subscription | undefined;
   private memorySubscription: Subscription | undefined;
   private resourceSubscription: Subscription | undefined;
+  private klSubscription: Subscription | undefined;
+  private watchdogInterval: any;
+  private lastCpuUpdateMs: number = 0;
+  private lastMemoryUpdateMs: number = 0;
+  private lastResourceUpdateMs: number = 0;
   public cpuTemp: number = 0;
-  public cpuUsage: number[] = [0, 0, 0, 0];
+  public cpuUsage: number = 0;
   public memoryUsage: number = 0;
   public heap: number = 0;
   public stack: number = 0;
   
-  constructor(private  webSocketService: WebSocketService) { }
+  constructor(private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
 
   ngOnInit()
   {
     // Listen for cpu data
     this.cpuSubscription = this.webSocketService.receiveCpuUsage().subscribe(
       (message) => {
+        this.lastCpuUpdateMs = Date.now();
         this.cpuTemp = message['data']['temp'];
-        this.cpuUsage[0] = parseInt(message['data']['usage'][0]);
-        this.cpuUsage[1] = parseInt(message['data']['usage'][1]);
-        this.cpuUsage[2] = parseInt(message['data']['usage'][2]);
-        this.cpuUsage[3] = parseInt(message['data']['usage'][3]);
+        this.cpuUsage = parseInt(message['data']['usage']);
       },
       (error) => {
         console.error('Error receiving disk usage:', error);
@@ -68,6 +72,7 @@ export class HardwareDataComponent {
     
     this.resourceSubscription = this.webSocketService.receiveResourceMonitor().subscribe(
       (message) =>{
+        this.lastResourceUpdateMs = Date.now();
         this.heap = Math.round(message.value['heap']);
         this.stack = Math.round(message.value['stack']);
       },
@@ -78,6 +83,7 @@ export class HardwareDataComponent {
 
     this.memorySubscription = this.webSocketService.receiveMemoryUsage().subscribe(
       (message) => {
+        this.lastMemoryUpdateMs = Date.now();
         this.memoryUsage = Math.round(message['data']);
         
       },
@@ -85,6 +91,34 @@ export class HardwareDataComponent {
         console.error('Error receiving disk usage:', error);
       }
     );
+
+    // Listen for KL state changes
+    this.klSubscription = this.clusterService.kl$.subscribe(
+      (klState) => {
+        if (klState === '0') {
+          this.resetNucleoData();
+        }
+      },
+      (error) => {
+        console.error('Error receiving KL state:', error);
+      }
+    );
+
+    // Watchdog to reset indicators if no data for > 3 seconds
+    this.watchdogInterval = setInterval(() => {
+      const now = Date.now();
+      if (now - this.lastCpuUpdateMs > 5000) {
+        this.cpuTemp = 0;
+        this.cpuUsage = 0;
+      }
+      if (now - this.lastMemoryUpdateMs > 5000) {
+        this.memoryUsage = 0;
+      }
+      if (now - this.lastResourceUpdateMs > 5000) {
+        this.heap = 0;
+        this.stack = 0;
+      }
+    }, 1000);
   }
 
   ngOnDestroy() {
@@ -97,6 +131,25 @@ export class HardwareDataComponent {
     if (this.resourceSubscription) {
       this.resourceSubscription.unsubscribe();
     }
+    if (this.klSubscription) {
+      this.klSubscription.unsubscribe();
+    }
+    if (this.watchdogInterval) {
+      clearInterval(this.watchdogInterval);
+    }
     this.webSocketService.disconnectSocket();
+  }
+
+  resetHardwareData(): void {
+    this.cpuTemp = 0;
+    this.cpuUsage = 0;
+    this.memoryUsage = 0;
+    this.heap = 0;
+    this.stack = 0;
+  }
+
+  resetNucleoData(): void {
+    this.heap = 0;
+    this.stack = 0;
   }
 }

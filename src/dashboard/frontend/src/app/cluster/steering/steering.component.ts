@@ -40,7 +40,11 @@ import { WebSocketService} from '../../webSocket/web-socket.service'
 })
 export class SteeringComponent {
   public angle: number = 0;
+  public maxSteerUpperLimit: number = 25; // Default max steer limit
+  public maxSteerLowerLimit: number = -25; // Default min steer limit
+
   private steerSubscription: Subscription | undefined;
+  private steerLimitsSubscription: Subscription | undefined;
 
   constructor( private  webSocketService: WebSocketService) { }
 
@@ -55,12 +59,24 @@ export class SteeringComponent {
         console.error('Error receiving disk usage:', error);
       }
     );
+
+    this.steerLimitsSubscription = this.webSocketService.receiveSteerLimits().subscribe(
+      (message) => {
+        this.maxSteerUpperLimit = Number((message.value["upperLimit"] / 10).toFixed(1));
+        this.maxSteerLowerLimit = Number((message.value["lowerLimit"] / 10).toFixed(1));
+      }
+    );
   }
 
   ngOnDestroy() {
     if (this.steerSubscription) {
       this.steerSubscription.unsubscribe();
     }
+
+    if (this.steerLimitsSubscription) {
+      this.steerLimitsSubscription.unsubscribe();
+    }
+
     this.webSocketService.disconnectSocket();
   }
 }

@@ -1,0 +1,18 @@
+[Unit]
+Description=Wi-Fi Fallback Hotspot
+After=NetworkManager.service NetworkManager-wait-online.service
+Wants=NetworkManager-wait-online.service
+ConditionPathExists=/opt/rpi-wifi-fallback/fallback.sh
+
+[Service]
+Type=oneshot
+User=root
+RemainAfterExit=yes
+ExecStartPre=/usr/bin/nm-online -q -t 20 || true
+ExecStartPre=/bin/sleep 3
+ExecStart=/opt/rpi-wifi-fallback/fallback.sh auto
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

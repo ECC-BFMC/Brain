@@ -45,6 +45,8 @@ import { RecordComponent} from './record/record.component';
 import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.component'
 import { SideMarkerComponent } from './side-marker/side-marker.component'
 import { CommonModule } from '@angular/common';
+import { ClusterService } from './cluster.service';
+import { provideProtractorTestingSupport } from '@angular/platform-browser';
 @Component({
   selector: 'app-cluster',
   standalone: true,
@@ -63,6 +65,8 @@ export class ClusterComponent {
   @Input() carRightLaneOn: boolean = false;
 
   @ViewChild(WarningLightComponent) warningLightComponent!: WarningLightComponent;
+  @ViewChild(StateSwitchComponent) stateSwitchComponent!: StateSwitchComponent;
+  @ViewChild(KlSwitchComponent) klSwitchComponent!: KlSwitchComponent;
 
   warningLightType: string = '';
   public battery: number = 0;
@@ -71,10 +75,15 @@ export class ClusterComponent {
   private speedSubscription: Subscription | undefined;
   private warningSubscription: Subscription | undefined;
   public warningSignal: Boolean = false;
-  constructor( private  webSocketService: WebSocketService) { }
+  private klSubscription: Subscription | undefined;
+  private currentSerialConnectionStateSubscription: Subscription | undefined;
+  private serialConnectionStateSubscription: Subscription | undefined;
+  constructor( private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
 
   ngOnInit()
   {
+    this.webSocketService.sendMessageToFlask(`{"Name": "GetCurrentSerialConnectionState"}`);
+
     this.batterySubscription = this.webSocketService.receiveBatteryLevel().subscribe(
       (message) => {
         this.battery = message.value;
@@ -92,12 +101,34 @@ export class ClusterComponent {
         console.error('Error receiving speed:', error);
       }
     );
+
     this.warningSubscription = this.webSocketService.receiveWarningSignal().subscribe(
       (message) => {
         this.warningSignal = true
       },
       (error) => {
         console.error('Error receiving warning signal:', error);
+      }
+    );
+
+    this.serialConnectionStateSubscription = this.webSocketService.receiveSerialConnectionState().subscribe(
+      (message) => {
+        this.clusterService.updateSerialConnectionState(message.value);
+      },
+      (error) => {
+        console.error('Error receiving serial connection state:', error);
+      }
+    );
+
+    this.klSubscription = this.clusterService.kl$.subscribe(
+      (klState) => {
+        if (klState === '0') {
+          this.battery = 0;
+          this.speed = 0;
+        }
+      },
+      (error) => {
+        console.error('Error receiving KL state:', error);
       }
     );
   }
@@ -111,7 +142,24 @@ export class ClusterComponent {
       this.speedSubscription.unsubscribe();
     }
 
+    if (this.warningSubscription) {
+      this.warningSubscription.unsubscribe();
+    }
+
+    if (this.klSubscription) {
+      this.klSubscription.unsubscribe();
+    }
+
+    if (this.currentSerialConnectionStateSubscription) {
+      this.currentSerialConnectionStateSubscription.unsubscribe();
+    }
+
+    if (this.serialConnectionStateSubscription) {
+      this.serialConnectionStateSubscription.unsubscribe();
+    }
+
     this.webSocketService.disconnectSocket();
+    this.clusterService.updateKL('0');
   }
   
   setWarningLightType(type: string): void {
@@ -119,6 +167,18 @@ export class ClusterComponent {
     
     if (this.warningLightComponent) {
       this.warningLightComponent.setWarningLightType(this.warningLightType);
+    }
+  }
+
+  setState(index: number): void {
+    if (this.stateSwitchComponent) {
+      this.stateSwitchComponent.setState(index);
+    }
+  }
+
+  setKL(index: number): void {
+    if (this.klSwitchComponent) {
+      this.klSwitchComponent.setState(index);
     }
   }
 }

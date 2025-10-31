@@ -30,6 +30,8 @@ import time
 import threading
 import re
 import os
+import serial
+from datetime import datetime, timedelta
 
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
@@ -41,7 +43,12 @@ from src.utils.messages.allMessages import (
     ResourceMonitor,
     CurrentSpeed,
     CurrentSteer,
-    WarningSignal
+    ShutDownSignal,
+    SerialConnectionState,
+    CalibPWMData,
+    CalibRunDone,
+    SteeringLimits,
+    AliveSignal
 )
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
@@ -50,24 +57,37 @@ class threadRead(ThreadWithStop):
     """This thread read the data that NUCLEO send to Raspberry PI.\n
 
     Args:
-        f_serialCon (serial.Serial): Serial connection between the two boards.
-        f_logFile (FileHandler): The path to the history file where you can find the logs from the connection.
+        process (processSerialHandler): ProcessSerialHandler object.
+        logFile (FileHandler): The path to the history file where you can find the logs from the connection.
         queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, f_serialCon, f_logFile, queueList, logger, debugger = False):
-        self.serialCon = f_serialCon
-        self.logFile = f_logFile
-        self.buff = ""
-        self.isResponse = False
+    def __init__(self, process, logFile, queueList, logger, debugger = False):
+        super(threadRead, self).__init__(pause=0.01)
+        self.process = process
+        self.logFile = logFile
+        self.buffer = ""
         self.queuesList = queueList
-        self.acumulator = 0
         self.logger = logger
         self.debugger = debugger
-        self.currentSpeed = 0
-        self.currentSteering = 0
+        self.event = threading.Event()
+        self._init_senders()
 
+        self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
+                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25",
+                               "speed": "between -500 and 500", "break": "between -250 and 250"}
+
+        self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
+        self.resourceMonitorPattern = r'Heap \((\d+\.\d+)\);Stack \((\d+\.\d+)\)'
+
+        # error rate limiting
+        self.last_error_time = None
+        self.error_cooldown = timedelta(seconds=3)
+
+        self.queue_sending()
+
+    def _init_senders(self):
         self.enableButtonSender = messageHandlerSender(self.queuesList, EnableButton)
         self.batteryLvlSender = messageHandlerSender(self.queuesList, BatteryLvl)
         self.instantConsumptionSender = messageHandlerSender(self.queuesList, InstantConsumption)
@@ -76,46 +96,53 @@ class threadRead(ThreadWithStop):
         self.resourceMonitorSender = messageHandlerSender(self.queuesList, ResourceMonitor)
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
-        self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
-
-        self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
-                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25", 
-                               "speed": "between -500 and 500", "break": "between -250 and 250"}
-        
-        self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
-        self.resourceMonitorPattern = r'Heap \((\d+\.\d+)\);Stack \((\d+\.\d+)\)'
-
-        self.Queue_Sending()
-        
-        super(threadRead, self).__init__()
+        self.warningSender = messageHandlerSender(self.queuesList, ShutDownSignal)
+        self.serialConnectionStateSender = messageHandlerSender(self.queuesList, SerialConnectionState)
+        self.calibPWMDataSender = messageHandlerSender(self.queuesList, CalibPWMData)
+        self.calibRunDoneSender = messageHandlerSender(self.queuesList, CalibRunDone)
+        self.steeringLimitsSender = messageHandlerSender(self.queuesList, SteeringLimits)
+        self.aliveSignalSender = messageHandlerSender(self.queuesList, AliveSignal)
 
     # ====================================== RUN ==========================================
-    def run(self):
-        buffer = ""  
-        while self._running:
-            if self.serialCon.in_waiting > 0:
-                try:
-                    data = self.serialCon.read(self.serialCon.in_waiting).decode("ascii")
-                    buffer += data  
-                    while ";;" in buffer:
-                        msg, buffer = buffer.split(";;", 1) 
-                        
-                        if msg.strip():
-                            try:
-                                self.sendqueue(msg.strip()) 
-                            except Exception as e:
-                                print(f"Error processing message: {msg.strip()} ({e})")
-                            
-                except Exception as e:
-                    print(f"ThreadRead -> run method: {e}")
+    def thread_work(self):
+        try:
+            with self.process.serialLock:
+                serial_con = self.process.serialCon
+                if serial_con is None or not self.process.serialConnected or not serial_con.is_open:
+                    return
+
+                if serial_con.in_waiting > 0:
+                    try:
+                        data = serial_con.read(serial_con.in_waiting).decode("ascii")
+                        self.buffer += data
+
+                    except Exception as e:
+                        if self._should_send_error():
+                            self.serialConnectionStateSender.send(False)
+                            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Reading from serial ({e})")
+                        return
+
+            while ";;" in self.buffer:
+                msg, self.buffer = self.buffer.split(";;", 1)
+
+                if msg.strip():
+                    try:
+                        self.send_queue(msg.strip())
+                    except Exception as e:
+                        print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Processing message \033[94m{msg.strip()}\033[0m ({e})")
+
+        except Exception as e:
+            if self._should_send_error():
+                self.serialConnectionStateSender.send(False)
+                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Thread run method ({e})")
 
     # ==================================== SENDING =======================================
-    def Queue_Sending(self):
+    def queue_sending(self):
         """Callback function for enable button flag."""
         self.enableButtonSender.send(True)
-        threading.Timer(1, self.Queue_Sending).start()
+        threading.Timer(1, self.queue_sending).start()
 
-    def sendqueue(self, buff):
+    def send_queue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
         if '@' in buff and ':' in buff:
@@ -139,6 +166,10 @@ class threadRead(ThreadWithStop):
                 else:
                     self.imuAckSender.send(splittedValue[0])
 
+            elif action == "brake":
+                self.currentSpeedSender.send(0.0)
+                self.currentSteerSender.send(0.0)
+
             elif action == "speed":
                 speed = value.split(",")[0]
                 if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(speed):
@@ -149,19 +180,38 @@ class threadRead(ThreadWithStop):
                 if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(steer):
                     self.currentSteerSender.send(float(steer))
 
+            elif action == "vcdCalib":
+                splittedValue = value.split(";")
+                speedPWM = splittedValue[0]
+                steerPWM = splittedValue[1]
+                
+                if speedPWM == "0" and steerPWM == "0":
+                    self.calibRunDoneSender.send(True)
+                else:
+                    self.calibPWMDataSender.send({"speedPWM": speedPWM, "steerPWM": steerPWM})
+
+            elif action == "alive":
+                self.aliveSignalSender.send(True)
+
+            elif action == "steerLimits":
+                splittedValue = value.split(";")
+                lowerLimit = splittedValue[0]
+                upperLimit = splittedValue[1]
+                self.steeringLimitsSender.send({"lowerLimit": lowerLimit, "upperLimit": upperLimit})
+                
             elif action == "instant":
-                if self.checkValidValue(action, value):
-                    self.instantConsumptionSender.send(float(value)/1000.0)
+                if self.check_valid_value(action, value):
+                    self.instantConsumptionSender.send(float(value))
 
             elif action == "battery":
-                if self.checkValidValue(action, value):
-                    percentage = (int(value)-7200)/12
+                if self.check_valid_value(action, value):
+                    percentage = (int(value)-7000)/14
                     percentage = max(0, min(100, round(percentage)))
 
                     self.batteryLvlSender.send(percentage)
 
             elif action == "resourceMonitor":
-                if self.checkValidValue(action, value):
+                if self.check_valid_value(action, value):
                     data = re.match(self.resourceMonitorPattern, value)
                     if data:
                         message = {"heap": data.group(1), "stack": data.group(2)}
@@ -170,31 +220,39 @@ class threadRead(ThreadWithStop):
             elif action == "warning":
                 data = re.match(self.warningPattern, value)
                 if data:
-                    print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
-                    self.warningSender.send(action,data)
+                    print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Shutdown in \033[94m{data.group(1)}h {data.group(2)}m {data.group(3)}s\033[0m")
+                    self.warningSender.send(data)
                     
             elif action == "shutdown":
-                print("SHUTTING DOWN!")
-                time.sleep(3)
+                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - \033[94mShutting down now!\033[0m")
+                self.event.wait(3)
                 os.system("sudo shutdown -h now")
             
-    def checkValidValue(self, action, message):
+    def check_valid_value(self, action, message):
         if message == "syntax error":
-            print(f"WARNING! Invalid value for {action.upper()} (expected {self.expectedValues[action]})")
+            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Invalid \033[94m{action.upper()}\033[0m value (expected {self.expectedValues[action]})")
             return False
     
         if message == "kl 15/30 is required!!":
-            print(f"WARNING! KL set to 15 or 30 is required to perform {action.upper()} action")
+            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - KL 15/30 required for \033[94m{action.upper()}\033[0m")
             return False
         
         if message == "ack":
             return False
         return True
     
-    def isFloat(self, string):
-        try: 
+    def is_float(self, string):
+        try:
             float(string)
         except ValueError:
             return False
-        
+
         return True
+
+    def _should_send_error(self):
+        """Check if we should send an error message (rate limiting)."""
+        now = datetime.now()
+        if self.last_error_time is None or (now - self.last_error_time) >= self.error_cooldown:
+            self.last_error_time = now
+            return True
+        return False

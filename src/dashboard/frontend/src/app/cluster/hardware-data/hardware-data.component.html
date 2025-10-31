@@ -34,13 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
         
         <div class="hardware-data-raspberry-indicators">
             <app-indicator class="cpu-temp" [value]="cpuTemp" [minValue]="0" [maxValue]="100" title="temp" [titleOffset]="100" symbol="°"/>
-            <app-indicator class="cpu-usage" [value]="cpuUsage[0]" [minValue]="0" [maxValue]="100" title="core1" [titleOffset]="95" symbol="%"/>
-            <app-indicator class="cpu-usage" [value]="cpuUsage[1]" [minValue]="0" [maxValue]="100" title="core2" [titleOffset]="95" symbol="%"/>
-            <app-indicator class="cpu-usage" [value]="cpuUsage[2]" [minValue]="0" [maxValue]="100" title="core3" [titleOffset]="95" symbol="%"/>
-            <app-indicator class="cpu-usage" [value]="cpuUsage[3]" [minValue]="0" [maxValue]="100" title="core4" [titleOffset]="95" symbol="%"/>
-            <app-indicator class="memory-usage" [value]="memoryUsage" [minValue]="0" [maxValue]="100" title="ram" [titleOffset]="107" symbol="%"/>
+            <app-indicator class="cpu-usage" [value]="cpuUsage" [minValue]="0" [maxValue]="100" title="cpu" [titleOffset]="113" symbol="%"/>
+            <app-indicator class="memory-usage" [value]="memoryUsage" [minValue]="0" [maxValue]="100" title="ram" [titleOffset]="113" symbol="%"/>
         </div>
-    </div>
+    </div>  
 
     <div class="hardware-data-nucleo">
         <div class="hardware-data-nucleo-title">

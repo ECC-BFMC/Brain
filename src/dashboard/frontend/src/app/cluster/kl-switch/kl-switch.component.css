@@ -82,3 +82,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   border-radius: 0.3vw;
   filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.4));
 }
+
+/* Disabled state styling */
+.kl-switch-body label.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.kl-switch-body input:disabled + label {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #666;
+}

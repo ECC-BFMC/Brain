@@ -1,0 +1,160 @@
+<!-- Calibration Step Interface -->
+<div *ngIf="show" class="calibration-modal">
+  <div class="step-header">
+    <h4>
+      Step {{ currentStepIndex + 1 }} of {{ calibrationSteps.length }}: {{ getStepTitle() }}
+    </h4>
+    <div class="step-progress">
+      <div 
+        class="progress-bar" 
+        [style.width.%]="progressPercentage">
+      </div>
+    </div>
+  </div>
+
+  <div class="step-content">
+    <!-- SVG Display (conditional) -->
+    <div *ngIf="currentStep.image.enable" class="step-visual">
+      <img 
+        [src]="currentStep.image.svgPath" 
+        [alt]="currentStep.title"
+        class="calibration-svg"
+        (error)="onImageError($event)">
+      <!-- Fallback placeholder when SVG doesn't load -->
+      <div class="svg-placeholder">
+        <svg width="200" height="150" viewBox="0 0 200 150" fill="none">
+          <rect width="200" height="150" fill="#f0f0f0" stroke="#ccc" stroke-width="2" rx="8"/>
+          <text x="100" y="70" text-anchor="middle" fill="#666" font-size="12">{{ currentStep.title }}</text>
+          <text x="100" y="85" text-anchor="middle" fill="#999" font-size="10">Visual Guide</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Description (conditional) -->
+    <div *ngIf="currentStep.description.enable" class="step-description">
+      <p [innerHTML]="processTextTemplate(currentStep.description.text)"></p>
+    </div>
+
+    <!-- Success Message (conditional) -->
+    <div *ngIf="calibrationSavedSuccessfully && currentStepIndex === 7" class="success-message">
+      <p>Calibration files successfully generated and saved!</p>
+    </div>
+
+    <!-- Step 5: 0 Offset Spline Visualization -->
+    <div *ngIf="currentStepIndex === 4 && zeroOffsetSplineData" class="polynomial-charts">
+      <div class="chart-container" (click)="openChartModal('zeroOffsetSpline')">
+        <canvas id="zeroOffsetSplineChart" width="1000" height="600"></canvas>
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+    </div>
+
+    <!-- Polynomial Visualization Charts (conditional) -->
+    <div *ngIf="currentStepIndex === 6 && polynomialDataAvailable" class="polynomial-charts">
+      <div class="chart-container" (click)="openChartModal('speed')">
+        <canvas id="speedChart" width="1000" height="600"></canvas>
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+      <div class="chart-container" (click)="openChartModal('steer')">
+        <canvas id="steerChart" width="1000" height="600"></canvas>
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+    </div>
+
+    <!-- Chart Zoom Modal -->
+    <div *ngIf="showChartModal" class="chart-modal" (click)="closeChartModal()">
+      <div class="chart-modal-content" (click)="$event.stopPropagation()">
+        <button class="chart-modal-close" (click)="closeChartModal()">&times;</button>
+        <canvas [id]="'zoomed' + zoomedChartType + 'Chart'" width="1400" height="800"></canvas>
+      </div>
+    </div>
+
+
+    <!-- Input Fields (conditional) -->
+    <div *ngIf="currentStep.inputs.enable" class="step-inputs">
+      <div class="inputs-container">
+        <div *ngFor="let input of currentStep.inputs.fields" class="input-group">
+          <label [for]="input.id">{{ input.label }}</label>
+          <input 
+            *ngIf="input.type === 'text'"
+            [id]="input.id"
+            [type]="input.type"
+            [(ngModel)]="input.value"
+            [required]="!!input.required"
+            [disabled]="isCalibrationRunInProgress"
+            class="form-input">
+          <input 
+            *ngIf="input.type === 'number'"
+            [id]="input.id"
+            type="text"
+            inputmode="numeric"
+            [value]="input.value"
+            (input)="onNumberInput($event, input)"
+            [required]="!!input.required"
+            [disabled]="isCalibrationRunInProgress"
+            class="form-input">
+          <select 
+            *ngIf="input.type === 'select'"
+            [id]="input.id"
+            [(ngModel)]="input.value"
+            [disabled]="isCalibrationRunInProgress"
+            class="form-select">
+            <option *ngFor="let option of input.options" [value]="option">{{ option }}</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Submit Button inside inputs section -->
+      <div *ngIf="currentStep.buttons.length > 0" class="input-submit">
+        <ng-container *ngFor="let button of currentStep.buttons">
+          <button 
+            *ngIf="button.enable" 
+            class="btn-submit" 
+            [disabled]="isButtonDisabledDuringRun(button.text) || (button.text === 'Save & Download' && isSaveButtonDisabled()) || (button.text === 'Load Plots' && isVisualizationButtonDisabled()) || (button.navigateTo === 'step4_substep1' && isTestRunButtonDisabled()) || (button.navigateTo === 'step6_substep1' && isBackwardButtonDisabled()) || (button.text === 'Load Plot' && isZeroOffsetSplineButtonDisabled())"
+            (click)="submitStep(button, currentStep.inputs.fields)">
+            {{ processTextTemplate(button.text) }}
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Standalone Submit Button (when inputs are disabled but button is enabled) -->
+    <div *ngIf="!currentStep.inputs.enable && currentStep.buttons.length > 0" class="step-submit">
+      <ng-container *ngFor="let button of currentStep.buttons">
+        <button 
+          *ngIf="button.enable" 
+          class="btn-submit" 
+          [disabled]="isButtonDisabledDuringRun(button.text) || (button.text === 'Save & Download' && isSaveButtonDisabled()) || (button.text === 'Load Plots' && isVisualizationButtonDisabled()) || (button.navigateTo === 'step4_substep1' && isTestRunButtonDisabled()) || (button.navigateTo === 'step6_substep1' && isBackwardButtonDisabled()) || (button.text === 'Load Plot' && isZeroOffsetSplineButtonDisabled())"
+          (click)="submitStep(button, currentStep.inputs.fields)">
+          {{ processTextTemplate(button.text) }}
+        </button>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="step-navigation">
+    <button
+      class="btn-secondary"
+      (click)="previousStep()"
+      [disabled]="isFirstStep || isCalibrationInProgress">
+      Previous
+    </button>
+    <span class="step-counter">{{ currentStepIndex + 1 }} / {{ calibrationSteps.length }}</span>
+    <button
+      *ngIf="!isLastStep"
+      class="btn-primary"
+      (click)="nextStep()"
+      [disabled]="isCalibrationInProgress">
+      Next
+    </button>
+    <button
+      *ngIf="isLastStep"
+      class="btn-success"
+      (click)="completeCalibration()"
+      [disabled]="isCalibrationInProgress">
+      Complete
+    </button>
+  </div>
+
+
+</div>

@@ -28,17 +28,19 @@
 
 import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { CommonModule } from '@angular/common';
 import { WebSocketService} from '../../webSocket/web-socket.service'
+import { ClusterService } from '../cluster.service';
 
 @Component({
   selector: 'app-instant-consumption',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './instant-consumption.component.html',
   styleUrl: './instant-consumption.component.css'
 })
 export class InstantConsumptionComponent {
-  private instant: number | any = 0;
+  private instant: number = 0;
   private needleStartRotation: number = 35;
   private pathStartPoint: number = 57;
   private pathEndPoint: number = 150;
@@ -46,30 +48,69 @@ export class InstantConsumptionComponent {
   private yOffset: number = -27;
   private angleAmplifier: number = 0.5;
   private instantSubscription: Subscription | undefined;
+  private klSubscription: Subscription | undefined;
+  private _currentValueAh: number = 0;
+  private _showWarning: boolean = false;
   
-  constructor( private  webSocketService: WebSocketService) { }
+  get currentValueAh(): number {
+    return this._currentValueAh;
+  }
+  
+  get showWarning(): boolean {
+    return this._showWarning;
+  }
+  
+  constructor( private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
 
   ngOnInit()
   {
     this.updateNeedle();
     
     // Listen for instant
-    this.instantSubscription = this.webSocketService.receiveInstantConsumption().subscribe(
-      (message) => {
-        // 100% - 40000 mAh
-        // 0%   - 0Ah
-        this.instant = message.value * 100 / 40000;
+    this.instantSubscription = this.webSocketService.receiveInstantConsumption().subscribe({
+      next: (message) => {
+        // check if consumption exceeds 5.1 Ah
+        this._currentValueAh = message.value / 1000; // convert mA to Ah
+        this._showWarning = this._currentValueAh >= 5.1;
+        
+        // 100% - 5 Ah
+        // 0%   - 0 Ah
+        this.instant = Math.min(Math.max(this._currentValueAh * 100 / 5, 0), 100);
         this.updateNeedle();
       },
-      (error) => {
-        console.error('Error receiving disk usage:', error);
+      error: () => {
+        this._currentValueAh = 0;
+        this._showWarning = false;
+        this.instant = 0;
+        this.updateNeedle();
       }
-    );
+    });
+
+    // Listen for KL state changes
+    this.klSubscription = this.clusterService.kl$.subscribe({
+      next: (klState) => {
+        if (klState === '0') {
+          this.instant = 0;
+          this._currentValueAh = 0;
+          this._showWarning = false;
+          this.updateNeedle();
+        }
+      },
+      error: () => {
+        this._currentValueAh = 0;
+        this._showWarning = false;
+        this.instant = 0;
+        this.updateNeedle();
+      }
+    });
   }
 
   ngOnDestroy() {
     if (this.instantSubscription) {
       this.instantSubscription.unsubscribe();
+    }
+    if (this.klSubscription) {
+      this.klSubscription.unsubscribe();
     }
     this.webSocketService.disconnectSocket();
   }

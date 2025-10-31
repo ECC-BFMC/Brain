@@ -34,9 +34,14 @@ import { Observable, Subject } from 'rxjs';
 })
 export class WebSocketService {
   private webSocket: Socket;
+  private connectionStatusSubject = new Subject<'connected' | 'disconnected' | 'error'>();
+  connectionStatus$ = this.connectionStatusSubject.asObservable();
 
   private eventSubject = new Subject<{ channel: string, data: any }>();
   private handledEvents = new Set([
+    'heartbeat',
+    'heartbeat_disconnect',
+    'StateChange',
     'memory_channel',
     'cpu_channel',
     'disk_channel',
@@ -60,7 +65,7 @@ export class WebSocketService {
   
  constructor() {
     this.webSocket = new Socket({
-    url: "http://192.168.88.139:5005",
+    url: "http://192.168.0.109:5005",
     options: {},
     });
 
@@ -69,6 +74,29 @@ export class WebSocketService {
       if (!this.handledEvents.has(eventName)) {
         this.eventSubject.next({ channel: eventName, data });
       }
+    });
+
+    this.webSocket.ioSocket.on('connect', () => {
+      this.connectionStatusSubject.next('connected');
+    });
+    
+    this.webSocket.ioSocket.on('disconnect', () => {
+      this.connectionStatusSubject.next('disconnected');
+    });
+
+    this.webSocket.ioSocket.on('connect_error', (error: any) => {
+      this.connectionStatusSubject.next('error');
+    });
+
+    this.webSocket.ioSocket.on('reconnect', () => {
+      this.connectionStatusSubject.next('connected');
+    });
+
+    this.webSocket.ioSocket.on('reconnect_attempt', () => {
+    });
+
+    this.webSocket.ioSocket.on('reconnect_error', (error: any) => {
+      this.connectionStatusSubject.next('error');
     });
   }
 
@@ -85,8 +113,20 @@ export class WebSocketService {
     this.webSocket.emit('load', message);
   }
 
+  receiveHeartbeat(): Observable<any> {
+    return this.webSocket.fromEvent('heartbeat');
+  }
+
+  receiveHeartbeatDisconnect(): Observable<any> {
+    return this.webSocket.fromEvent('heartbeat_disconnect');
+  }
+
   receiveSessionAccess(): Observable<any> {
     return this.webSocket.fromEvent('session_access');
+  }
+
+  receiveCurrentSerialConnectionState(): Observable<any> {
+    return this.webSocket.fromEvent('current_serial_connection_state');
   }
 
   // Method to receive memory usage updates
@@ -160,10 +200,48 @@ export class WebSocketService {
     return this.webSocket.fromEvent('CurrentSteer');
   }
 
+  // Method to receive current speed state updates
+  receiveSerialConnectionState(): Observable<any> {
+    return this.webSocket.fromEvent('SerialConnectionState');
+  }
+
+  receiveCalibrationData(): Observable<any> {
+    return this.webSocket.fromEvent('Calibration');
+  }
+
+  receiveSteerLimits(): Observable<any> {
+    return this.webSocket.fromEvent('SteeringLimits');
+  }
+
+  receiveNucleoAlive(): Observable<any> {
+    return this.webSocket.fromEvent('AliveSignal');
+  }
+
   // Method to receive the initial connection confirmation
   onConnect(): Observable<any> {
-    console.log("connected ")
     return this.webSocket.fromEvent('after connect');
+  }
+
+  isConnected(): boolean {
+    return this.webSocket.ioSocket.connected;
+  }
+
+  getConnectionStatus(): 'connected' | 'disconnected' | 'error' {
+    if (this.webSocket.ioSocket.connected) {
+      return 'connected';
+    } else if (this.webSocket.ioSocket.disconnected) {
+      return 'disconnected';
+    } else {
+      return 'error';
+    }
+  }
+
+  reconnect(): void {
+    this.webSocket.ioSocket.connect();
+  }
+
+  isReconnecting(): boolean {
+    return this.webSocket.ioSocket.connecting;
   }
 
   // Method to end the WebSocket connection

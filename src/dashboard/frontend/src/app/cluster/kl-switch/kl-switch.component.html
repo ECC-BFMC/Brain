@@ -30,13 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   <label *ngIf="!isMobile" class="kl-switch-text">Battery status (KL)</label>
   <div *ngIf="!isMobile" class="kl-switch-body">
     <ng-container *ngFor="let state of states; let i = index">
-      <input type="radio" 
-             id="kl-switch-{{i}}" 
-             name="state" 
-             [value]="i" 
+      <input type="radio"
+             id="kl-switch-{{i}}"
+             name="state"
+             [value]="i"
              [checked]="currentStateIndex === i"
+             (click)="blockIfDisconnected($event)"
              (change)="setState(i)">
-      <label for="kl-switch-{{i}}">{{ state }}</label>
+      <label for="kl-switch-{{i}}"
+             (click)="blockIfDisconnected($event)">{{ state }}</label>
     </ng-container>
   
     <a *ngIf="!isMobile" class="slide" aria-hidden="true" 

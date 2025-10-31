@@ -42,16 +42,10 @@ class processGateway(WorkerProcess):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logger, debugging=False):
+    def __init__(self, queueList, logger, ready_event=None, debugging=False):
         self.logger = logger
         self.debugging = debugging
-        super(processGateway, self).__init__(queueList)
-
-    # ===================================== RUN ===========================================
-    def run(self):
-        """Apply the initializing methods and start the threads."""
-
-        super(processGateway, self).run()
+        super(processGateway, self).__init__(queueList, ready_event)
 
     # ===================================== INIT TH ==========================================
     def _init_threads(self):

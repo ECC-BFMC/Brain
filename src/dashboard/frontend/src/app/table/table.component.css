@@ -55,24 +55,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 }
 
 .cell.value {
-  font-size: clamp(0.6vw, 1vw - 0.1vw * (var(--content-length, 10) / 10), 1vw);
+  font-size: 1vw !important;
 }
 
-.cell.value:hover::after {
-  content: attr(data-tooltip); 
-  position: absolute;
-  background-color: #333;
-  color: #fff;
-  padding: 0.5vw;
-  font-size: 0.8vw;
-  border-radius: 5px;
-  white-space: normal; 
-  z-index: 10;
-  top: 100%; 
-  left: 50%;
-  transform: translateX(-50%);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
+
 
 .button-group {
   display: flex;
@@ -114,15 +100,105 @@ input[type="range"] {
   margin: 0 1vw;
 }
 
+/* Mobile Card Layout */
+.mobile-cards {
+  display: none;
+}
+
+.card {
+  border-left: 0.1vw solid gray;
+  border-right: 0.1vw solid gray;
+  border-bottom: 0.1vw solid gray;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.card.config-hidden {
+  display: none;
+}
+
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8vw;
+  min-height: auto;
+}
+
+.card-label {
+  font-weight: bold;
+  flex: 0 0 40%;
+  text-align: left;
+  font-size: 1vw;
+}
+
+.card-value {
+  flex: 1;
+  text-align: right;
+  font-size: 1vw;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.card-value.value {
+  font-size: 1vw !important;
+}
+
+.card-value.value {
+  position: relative;
+}
+
+
+
+.mobile-slider {
+  flex-direction: column;
+  width: 100%;
+}
+
+.mobile-slider .layer-front,
+.mobile-slider .layer-back {
+  margin: 0.25rem 0;
+  text-align: center;
+}
+
+.mobile-slider input[type="range"] {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.card-value select {
+  width: 100%;
+  max-width: 150px;
+  padding: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.card-value input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
 /* Media Queries for Responsiveness */
 @media (max-width: 768px) {
+  .desktop-table {
+    display: none;
+  }
+  
+  .mobile-cards {
+    display: block;
+  }
+  
   .header, .cell {
-    font-size: 0.8rem; /* Smaller text for smaller screens */
+    font-size: 0.8rem;
     padding: 0.5rem;
+  }
+  
+  .cell.value {
+    font-size: 0.8rem !important;
   }
 
   .slider-wrapper {
-    flex-direction: column; /* Stack slider components */
+    flex-direction: column;
     align-items: stretch;
   }
 
@@ -136,12 +212,25 @@ input[type="range"] {
   }
 
   .button-group {
-    flex-direction: column; /* Stack buttons vertically */
+    flex-direction: column;
   }
 
   .full-width-button {
-    margin: 0.5rem 0; /* Add space between buttons */
+    margin: 0.5rem 0;
     font-size: 0.9rem;
+    padding: 0.8rem;
+  }
+
+  .card-label {
+    font-size: 0.8rem;
+  }
+  
+  .card-value {
+    font-size: 0.8rem;
+  }
+  
+  .card-value.value {
+    font-size: 0.8rem !important;
   }
 }
 
@@ -150,9 +239,79 @@ input[type="range"] {
     font-size: 0.7rem;
     padding: 0.4rem;
   }
+  
+  .cell.value {
+    font-size: 0.7rem !important;
+  }
 
   .full-width-button {
     font-size: 0.8rem;
     padding: 0.7rem;
+  }
+  
+  .card {
+    padding: 0;
+    margin-bottom: 0;
+  }
+  
+  .card-label {
+    font-size: 0.8rem;
+    flex: 0 0 45%;
+  }
+  
+  .card-value {
+    font-size: 0.8rem;
+  }
+  
+  .card-value.value {
+    font-size: 0.8rem !important;
+  }
+  
+  .card-row {
+    padding: 0.4rem;
+  }
+}
+
+/* Additional responsive improvements */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .header, .cell {
+    font-size: 0.9rem;
+    padding: 0.6rem;
+  }
+  
+  .cell.value {
+    font-size: 0.9rem !important;
+  }
+  
+  .full-width-button {
+    font-size: 0.95rem;
+  }
+}
+
+/* Ensure table doesn't overflow on medium screens */
+@media (max-width: 1200px) and (min-width: 769px) {
+  .my-table {
+    font-size: 0.85rem;
+  }
+  
+  .cell {
+    max-width: 120px;
+  }
+}
+
+/* Ultra-wide screen adjustments */
+@media (min-width: 1920px) {
+  .header, .cell {
+    font-size: 0.8vw;
+    padding: 0.6vw;
+  }
+  
+  .cell.value {
+    font-size: 0.8vw !important;
+  }
+  
+  .full-width-button {
+    font-size: 0.8vw;
+    padding: 0.8vw;
   }
 }

@@ -26,9 +26,10 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { WebSocketService } from './../../webSocket/web-socket.service';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-time-speed-steer',
@@ -37,14 +38,34 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './time-speed-steer.component.html',
   styleUrl: './time-speed-steer.component.css'
 })
-export class TimeSpeedSteerComponent {
+export class TimeSpeedSteerComponent implements OnInit, OnDestroy {
   time: number = 0;
   speed: number = 0;
   steer: number = 0;
+  private subscriptions = new Subscription();
+  maxSteerUpperLimit: number = 25; // Default max steer limit
+  maxSteerLowerLimit: number = -25; // Default min steer limit
 
-  constructor( private webSocketService: WebSocketService) { }
+  constructor(private webSocketService: WebSocketService) { }
+
+  ngOnInit() {
+    this.subscriptions.add(
+      this.webSocketService.receiveSteerLimits().subscribe((event: { value: { upperLimit: number; lowerLimit: number } }) => {
+        if (event && event.value) {
+          this.maxSteerUpperLimit = Number((event.value["upperLimit"] / 10).toFixed(1));
+          this.maxSteerLowerLimit = Number((event.value["lowerLimit"] / 10).toFixed(1));
+        }
+      })
+    );
+  }
 
   activateFunction() {
-    this.webSocketService.sendMessageToFlask(`{"Name": "Control", "Value": {"Time":"${this.time*10}","Speed":"${this.speed*10}","Steer":"${this.steer*10}"}}`)
+    // Ensure steer value is within limits
+    const limitedSteer = Math.min(Math.max(this.steer, -this.maxSteerLowerLimit), this.maxSteerUpperLimit);
+    this.webSocketService.sendMessageToFlask(`{"Name": "Control", "Value": {"Time":"${this.time*10}","Speed":"${this.speed*10}","Steer":"${limitedSteer*10}"}}`);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
   }
 }

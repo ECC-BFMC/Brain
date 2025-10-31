@@ -26,9 +26,15 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
-<!-- Password Modal -->
-<div *ngIf="!isAuthenticated" class="modal">
-  <div class="modal-content">
+<!-- Custom Container for Notification and Modal -->
+<div *ngIf="!isAuthenticated" class="custom-modal-container">
+  <!-- Backend Connection Popup Notification -->
+  <div *ngIf="!backendConnected" class="backend-popup-notification">
+    <h2>Backend Connection Lost</h2>
+    <p>Backend is not connected. Please check the server connection.</p>
+  </div>
+  <!-- Password Modal Content -->
+  <div class="custom-modal-content">
     <h2>Please enter the password</h2>
     <input type="password" [(ngModel)]="enteredPassword" placeholder="Enter password">
     <button (click)="submitPassword()">Submit</button>
@@ -37,6 +43,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
 <!-- The actual content that will be shown only after correct password -->
 <div class="main-container" *ngIf="isAuthenticated">
+  <!-- Alert Modal -->
+  <div *ngIf="showAlert" class="alert-modal">
+    <div class="alert-modal-content">
+      <h2>Security Setup Required</h2>
+      <p>Please set a password to secure your dashboard. The password must be set in the processDashboard.py file.</p>
+      <button (click)="dismissAlert()" class="close-btn">Close</button>
+    </div>
+  </div>
+  <!-- Cluster -->
   <div class="cluster-container">
     <app-cluster class="cluster"
       [cursorRotation]="cursorRotationSliderValue"
@@ -44,6 +59,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
       [carLeftLaneOn]="carLeftLaneOn"
       [carRightLaneOn]="carRightLaneOn"
     ></app-cluster>
+
+    <!-- Settings gear button overlayed in top-right of cluster (offline unicode icon ⚙) -->
+    <button class="settings-gear" (click)="openSettings()" aria-label="Open settings">⚙</button>
+
+    <!-- Settings modal overlay -->
+    <app-settings [open]="showSettingsModal" (close)="closeSettings()"></app-settings>
   </div>
 
   <app-table class="table" />

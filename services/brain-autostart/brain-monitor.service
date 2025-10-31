@@ -1,0 +1,21 @@
+[Unit]
+Description=BFMC Brain Monitor
+After=network.target
+Wants=network-online.target
+ConditionPathExists=/opt/brain-autostart/monitor-dashboard.sh
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/Documents/Brain
+Environment=HOME=/home/pi
+EnvironmentFile=/opt/brain-autostart/config.env
+ExecStart=/opt/brain-autostart/monitor-dashboard.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/brain-monitor.log
+StandardError=append:/var/log/brain-monitor.log
+
+[Install]
+WantedBy=multi-user.target

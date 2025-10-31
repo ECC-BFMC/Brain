@@ -1,0 +1,58 @@
+<div *ngIf="open" class="settings-overlay" (click)="handleClose()">
+  <div class="settings-dialog" role="dialog" aria-modal="true" aria-label="Settings" (click)="$event.stopPropagation()">
+    <div class="settings-header">
+      <h2>Settings</h2>
+      <button class="header-close" (click)="handleClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-layout">
+        <!-- Left Half - Calibration Section -->
+        <div class="calibration-section" [class.calibration-active]="showCalibration">
+          <div class="section-header">
+            <h3>Speed and Steer Calibration</h3>
+            <button 
+              *ngIf="!showCalibration" 
+              class="btn-primary" 
+              (click)="startCalibration()">
+              Start Calibration
+            </button>
+            <button 
+              *ngIf="showCalibration" 
+              class="btn-secondary" 
+              (click)="onCalibrationClose()">
+              Exit Calibration
+            </button>
+          </div>
+
+          <!-- Calibration Component -->
+          <app-calibration
+            [show]="showCalibration"
+            [shouldExit]="requestCalibrationExit"
+            (close)="onCalibrationClose()"
+            (complete)="onCalibrationComplete()"
+            (exited)="onCalibrationExited()">
+          </app-calibration>
+
+          <!-- Calibration Status when not active -->
+          <div *ngIf="!showCalibration" class="calibration-info">
+            <p>Speed and steer calibration helps ensure accurate vehicle control and movement precision.</p>
+            <ul>
+              <li>Step-by-step guided process</li>
+              <li>Visual instructions with diagrams</li>
+              <li>Configurable parameters</li>
+              <li>Validation and testing</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Right Half - Available for future content -->
+        <div class="right-section">
+          <!-- Space available for additional settings -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+

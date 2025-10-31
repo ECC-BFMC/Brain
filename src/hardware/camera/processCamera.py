@@ -30,10 +30,13 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
+from cv2 import meanShift
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.camera.threads.threadCamera import threadCamera
-
-from multiprocessing import Pipe
+from src.statemachine.stateMachine import StateMachine
+from src.statemachine.systemMode import SystemMode
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.allMessages import StateChange
 
 
 class processCamera(WorkerProcess):
@@ -45,16 +48,24 @@ class processCamera(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, debugging=False):
+    def __init__(self, queueList, logging, ready_event=None, debugging=False):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        super(processCamera, self).__init__(self.queuesList)
+        self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
-    # ===================================== RUN ==========================================
-    def run(self):
-        """Apply the initializing methods and start the threads."""
-        super(processCamera, self).run()
+        super(processCamera, self).__init__(self.queuesList, ready_event)
+
+    # ================================ STATE CHANGE HANDLER ========================================
+    def state_change_handler(self):
+        message = self.stateChangeSubscriber.receive()
+        if message is not None:
+            modeDict = SystemMode[message].value["camera"]["process"]
+
+            if modeDict["enabled"] == True:
+                self.resume_threads()
+            elif modeDict["enabled"] == False:
+                self.pause_threads()
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
@@ -98,9 +109,14 @@ if __name__ == "__main__":
     if debugg:
         logger.warning("getting")
     img = {"msgValue": 1}
-    while type(img["msgValue"]) != type(":text"):
+    while not isinstance(img["msgValue"], str):
         img = queueList["General"].get()
-    image_data = base64.b64decode(img["msgValue"])
+    
+    msg_value = img["msgValue"]
+    if isinstance(msg_value, str):
+        image_data = base64.b64decode(msg_value)
+    else:
+        raise ValueError("Expected string for base64 decoding")
     img = np.frombuffer(image_data, dtype=np.uint8)
     image = cv2.imdecode(img, cv2.IMREAD_COLOR)
     if debugg:

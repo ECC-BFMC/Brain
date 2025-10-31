@@ -1,6 +1,5 @@
-[
-    {
-        "channel": "ToggleInstant",
+{
+    "ToggleInstant": {
         "value": "True",
         "initialValue": "True",
         "interval": 0,
@@ -13,8 +12,7 @@
         "checked": true,
         "hasChanged": false
     },
-    {
-        "channel": "ToggleBatteryLvl",
+    "ToggleBatteryLvl": {
         "value": "True",
         "initialValue": "True",
         "interval": 0,
@@ -27,8 +25,7 @@
         "checked": true,
         "hasChanged": false
     },
-    {
-        "channel": "ToggleImuData",
+    "ToggleImuData": {
         "value": "True",
         "initialValue": "True",
         "interval": 0,
@@ -41,8 +38,7 @@
         "checked": true,
         "hasChanged": false
     },
-    {
-        "channel": "ToggleResourceMonitor",
+    "ToggleResourceMonitor": {
         "value": "True",
         "initialValue": "True",
         "interval": 0,
@@ -55,8 +51,7 @@
         "checked": true,
         "hasChanged": false
     },
-    {
-        "channel": "Brightness",
+    "Brightness": {
         "value": 50,
         "initialValue": 50,
         "interval": 0,
@@ -68,8 +63,7 @@
         "checked": false,
         "hasChanged": false
     },
-    {
-        "channel": "Contrast",
+    "Contrast": {
         "value": 0,
         "initialValue": 0,
         "interval": 0,
@@ -81,12 +75,11 @@
         "checked": false,
         "hasChanged": false
     },
-    {
-        "channel": "init",
+    "init": {
         "type": "Config",
         "batteryCapacity": {
-            "capacity": 9000
+            "capacity": 6000
         },
         "hasChanged": false
     }
-]
+}

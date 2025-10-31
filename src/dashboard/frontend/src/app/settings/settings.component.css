@@ -1,0 +1,287 @@
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+.settings-dialog {
+  background: rgb(45, 54, 58);
+  color: white;
+  width: min(1500px, 92vw);
+  height: min(1100px, 95vh);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  padding: clamp(16px, 2vw, 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: clamp(20px, 2.5vw, 28px);
+}
+
+.settings-body {
+  font-size: clamp(14px, 2vw, 16px);
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  position: relative;
+}
+
+.header-close {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.5);
+  color: #fff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+/* Layout Styles */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-layout::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.2);
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+@media (max-width: 1024px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .settings-layout::before {
+    display: none;
+  }
+}
+
+/* Section Styles */
+.calibration-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  padding-right: 1rem;
+}
+
+.right-section {
+  /* Empty section ready for future content */
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: clamp(16px, 2vw, 20px);
+  color: #fff;
+}
+
+/* Button Styles */
+.btn-primary,
+.btn-secondary,
+.btn-success {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.btn-secondary:disabled {
+  background: #495057;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #1e7e34;
+}
+
+
+
+/* Calibration Info Styles */
+.calibration-info {
+  padding: 1.5rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  align-self: flex-start;
+}
+
+.calibration-info p {
+  margin: 0 0 1rem 0;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.5;
+}
+
+.calibration-info ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: rgba(255,255,255,0.8);
+}
+
+.calibration-info li {
+  margin-bottom: 0.5rem;
+}
+
+/* Ensure calibration component can properly position within settings */
+app-calibration {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+}
+
+/* Only apply flex behavior when calibration is active */
+.calibration-section.calibration-active app-calibration {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* When calibration is active, ensure proper container behavior */
+.calibration-section:has(app-calibration[show="true"]) {
+  position: relative;
+  z-index: 5;
+}
+
+/* Alternative approach for older browsers that don't support :has() */
+.calibration-section.calibration-active {
+  position: relative;
+  z-index: 5;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for calibration section */
+.calibration-section.calibration-active::-webkit-scrollbar {
+  width: 24px;
+}
+
+.calibration-section.calibration-active::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.calibration-section.calibration-active::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00acc1, #26a69a);
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  box-shadow:
+    0 2px 8px rgba(0,172,193,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+
+.calibration-section.calibration-active::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #26c6da, #4db6ac);
+  box-shadow:
+    0 3px 10px rgba(38,198,218,0.4),
+    inset 0 1px 3px rgba(255,255,255,0.3),
+    0 0 8px rgba(38,198,218,0.2);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.calibration-section.calibration-active::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #0097a7, #00695c);
+  box-shadow:
+    0 1px 4px rgba(0,151,167,0.6),
+    inset 0 2px 4px rgba(0,0,0,0.2),
+    inset 0 1px 1px rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+/* For Firefox */
+.calibration-section.calibration-active {
+  scrollbar-width: auto;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-color: #00acc1 rgba(255,255,255,0.1);
+}
+
+/* Make scrollbar thicker on small widths */
+@media (max-width: 768px) {
+  .calibration-section.calibration-active {
+    scrollbar-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .step-inputs {
+    gap: 0.75rem;
+  }
+}
+
+

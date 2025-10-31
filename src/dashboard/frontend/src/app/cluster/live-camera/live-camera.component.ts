@@ -43,6 +43,7 @@ export class LiveCameraComponent {
   public loading: boolean = true;
   private canvasSize: number[] = [512, 270];
   private cameraSubscription: Subscription | undefined;
+  private loadingTimeout: any;
 
   constructor( private  webSocketService: WebSocketService) { }
 
@@ -54,6 +55,14 @@ export class LiveCameraComponent {
       (message) => {
         this.image = `data:image/png;base64,${message.value}`;
         this.loading = false;
+        // Reset the loading timeout on each new image
+        if (this.loadingTimeout) {
+          clearTimeout(this.loadingTimeout);
+        }
+        this.loadingTimeout = setTimeout(() => {
+          this.loading = true;
+          this.image = this.createBlackImage();
+        }, 2000);
       },
       (error) => {
         this.image = this.createBlackImage();
@@ -66,6 +75,9 @@ export class LiveCameraComponent {
   ngOnDestroy() {
     if (this.cameraSubscription) {
       this.cameraSubscription.unsubscribe();
+    }
+    if (this.loadingTimeout) {
+      clearTimeout(this.loadingTimeout);
     }
     this.webSocketService.disconnectSocket();
   }
