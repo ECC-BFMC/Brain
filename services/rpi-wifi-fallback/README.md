@@ -45,18 +45,7 @@ rpi-wifi-fallback/
 ```bash
 sudo ./add-wifi.sh "MyHomeWiFi" "pass1234" yes
 ```
-5. Reboot your raspberry
-```bash
-sudo reboot
-```
-6. Reconnect your PC to Home Wi-Fi
-7. ssh into the pi again
-```bash
-   ssh pi@192.168.50.1
-   # or
-   ssh pi@raspberrypi.local
-   ```
----
+5. Reconnect your PC to Home Wi-Fi
 
 ## Customize hotspot credentials:
 
