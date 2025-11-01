@@ -28,16 +28,13 @@
 #
 # To start the project: 
 #
-#       sudo apt update
-#       sudo apt upgrade
-#       xargs sudo apt install -y < "requirements.txt" 
-#       cd src/dashboard/frontend/
-#       curl -fsSL https://fnm.vercel.app/install | bash
-#       source ~/.bashrc
-#       fnm install --lts
-#       npm install -g @angular/cli@17
-#       npm install
-#       if needed: npm audit fix
+#       chmod +x setup.sh
+#       ./setup.sh
+#       cd src/dashboard/frontend
+#       npm start
+#       answer "y" to the popup
+#       close the frontend (CTRL + C)
+#       cd ../..
 #
 # ===================================== GENERAL IMPORTS ==================================
 

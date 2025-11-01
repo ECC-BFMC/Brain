@@ -28,4 +28,6 @@ sudo chmod 0644 "$LOG_FILE"
 sudo cp wifi-fallback.service "$SERVICE_PATH"
 sudo systemctl daemon-reload
 
+sudo systemctl enable --now wifi-fallback.service
+
 echo "[+] RPi Wifi Fallback service installed successfully!"

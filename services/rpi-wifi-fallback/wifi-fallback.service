@@ -1,15 +1,17 @@
 [Unit]
 Description=Wi-Fi Fallback Hotspot
-After=NetworkManager.service NetworkManager-wait-online.service
-Wants=NetworkManager-wait-online.service
-ConditionPathExists=/opt/rpi-wifi-fallback/fallback.sh
+After=NetworkManager.service network.target
+# (remove) Wants=NetworkManager-wait-online.service
 
 [Service]
 Type=oneshot
 User=root
 RemainAfterExit=yes
-ExecStartPre=/usr/bin/nm-online -q -t 20 || true
-ExecStartPre=/bin/sleep 3
+# (remove) ExecStartPre=/usr/bin/nm-online -q -t 20 || true
+# (remove) ExecStartPre=/bin/sleep 3
+Environment=CONFIG_FILE=/opt/rpi-wifi-fallback/config.env
+Environment=LOG=/var/log/rpi-wifi-fallback.log
+Environment=DEBUG=1
 ExecStart=/opt/rpi-wifi-fallback/fallback.sh auto
 StandardOutput=journal
 StandardError=journal
