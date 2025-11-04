@@ -112,6 +112,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   cursor: pointer;
   transition: background-color 0.3s ease;
   padding: 0;
+  /* Prevent text selection/copy on mobile */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .control-arrow { 
@@ -128,6 +134,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   vertical-align: middle;
   margin: 0;
   padding: 0;
+  /* Prevent selection/copy and long-press callout on mobile */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .up-arrow, .down-arrow {
@@ -160,6 +172,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   cursor: pointer;
   text-align: center;
   transition: background-color 0.3s ease;
+  /* Prevent text selection/copy on mobile */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .full-width-button:hover {

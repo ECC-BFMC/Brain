@@ -48,16 +48,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   
   <div *ngIf="isMobile" class="button-container">
     <button *ngIf="isMobile" class="control-button" (click)="increaseSpeed()">
-      <span class="control-arrow up-arrow">▲</span>
+      <span class="control-arrow up-arrow" aria-hidden="true" unselectable="on">▲</span>
     </button>
     <button *ngIf="isMobile" class="control-button" (click)="decreaseSpeed()">
-      <span class="control-arrow down-arrow">▼</span>
+      <span class="control-arrow down-arrow" aria-hidden="true" unselectable="on">▼</span>
     </button>
     <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
-      <span class="control-arrow left-arrow">◀</span>
+      <span class="control-arrow left-arrow" aria-hidden="true" unselectable="on">◀</span>
     </button>
     <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
-      <span class="control-arrow right-arrow">▶</span>
+      <span class="control-arrow right-arrow" aria-hidden="true" unselectable="on">▶</span>
     </button>
   </div>
 

@@ -270,6 +270,12 @@
   box-shadow: 0 2px 8px rgba(0,172,193,0.3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  /* Prevent text selection/copy on mobile */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .btn-submit:hover {

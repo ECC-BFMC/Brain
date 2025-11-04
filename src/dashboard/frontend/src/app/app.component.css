@@ -285,6 +285,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   color: white;
   border: none;
   cursor: pointer;
+  /* Prevent text selection/copy on mobile */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .custom-modal-content button:hover {
