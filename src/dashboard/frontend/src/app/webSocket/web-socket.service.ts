@@ -30,7 +30,7 @@ import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import { Observable, Subject } from 'rxjs';
 @Injectable({
- providedIn: 'root',
+  providedIn: 'root',
 })
 export class WebSocketService {
   private webSocket: Socket;
@@ -60,10 +60,15 @@ export class WebSocketService {
     'Recording',
     'CurrentSpeed',
     'CurrentSteer',
-    'EnableButton'
+    'EnableButton',
+    'SteeringLimits',
+    'Calibration',
+    'CalibPWMData',
+    'CalibRunDone',
+    'ImuAck'
   ]);
-  
- constructor() {
+
+  constructor() {
     this.webSocket = new Socket({
     url: "http://192.168.88.48:5005",
     options: {},
@@ -79,7 +84,7 @@ export class WebSocketService {
     this.webSocket.ioSocket.on('connect', () => {
       this.connectionStatusSubject.next('connected');
     });
-    
+
     this.webSocket.ioSocket.on('disconnect', () => {
       this.connectionStatusSubject.next('disconnected');
     });
@@ -138,7 +143,7 @@ export class WebSocketService {
     return this.webSocket.fromEvent('ImuData');
   }
 
-  receiveResourceMonitor(): Observable<any>{
+  receiveResourceMonitor(): Observable<any> {
     return this.webSocket.fromEvent('ResourceMonitor');
   }
 

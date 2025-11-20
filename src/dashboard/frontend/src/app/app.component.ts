@@ -35,7 +35,7 @@ import { TableComponent } from './table/table.component';
 import { StateSwitchComponent } from './cluster/state-switch/state-switch.component';
 import { SettingsComponent } from './settings/settings.component';
 import { CommonModule } from '@angular/common'
-import * as CryptoJS from 'crypto-js'; 
+import * as CryptoJS from 'crypto-js';
 import { ClusterService } from './cluster/cluster.service';
 
 @Component({
@@ -84,15 +84,15 @@ export class AppComponent implements OnDestroy {
   @ViewChild(TableComponent) tableComponent!: TableComponent;
   @ViewChild('stateSwitch') stateSwitchComponent!: StateSwitchComponent;
 
-  constructor( private webSocketService: WebSocketService, private clusterService: ClusterService ) { }
+  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService) { }
 
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:
     //this.startNUCLEOFunctions()
-    
+
     this.sessionAccessSubscription = this.webSocketService.receiveSessionAccess().subscribe(
       (message) => {
-        if (message.data == true) { 
+        if (message.data == true) {
           this.isAuthenticated = true;
 
           // Request current states from backend upon successful login
@@ -116,7 +116,7 @@ export class AppComponent implements OnDestroy {
     this.heartbeatSubscription = this.webSocketService.receiveHeartbeat().subscribe(
       (message) => {
         if (this.isAuthenticated) {
-          this.webSocketService.sendMessageToFlask(`{"Name": "Heartbeat"}`);   
+          this.webSocketService.sendMessageToFlask(`{"Name": "Heartbeat"}`);
         }
       }
     );
@@ -139,7 +139,7 @@ export class AppComponent implements OnDestroy {
       } else if (status === 'connected') {
         this.backendConnected = true;
         this.stopAutoReconnect();
-        
+
         // if (!this.webSocketService.isConnected()) {
         //   this.webSocketService.reconnect();
         // }
@@ -190,7 +190,7 @@ export class AppComponent implements OnDestroy {
     }
 
     this.alertInterval = setInterval(() => {
-        this.showAlert = true;
+      this.showAlert = true;
     }, 900000);
   }
 
@@ -261,28 +261,27 @@ export class AppComponent implements OnDestroy {
     let steer = 0;
     let speedDirection = 1;  // 1 means increasing, -1 means decreasing
     let steerDirection = 1;
-  
+
     this.intervalId = setInterval(() => {
       // Update speed value
       speed += speedDirection * 10; // Change speed in steps of 10
       if (speed >= 50 || speed <= -50) {
         speedDirection *= -1; // Reverse the direction of change
       }
-  
+
       // Update steer value
       steer += steerDirection * 5; // Change steer in steps of 5
       if (steer >= 20 || steer <= -20) {
         steerDirection *= -1; // Reverse the direction of change
       }
-  
+
       // Send the updated messages
       this.sendMessage(`{"Name": "SpeedMotor", "Value": "${speed.toFixed(1)}"}`);
       this.sendMessage(`{"Name": "SteerMotor", "Value": "${steer.toFixed(1)}"}`);
     }, 1000); // 1000ms = 1 second
   }
-  
-  startNUCLEOFunctions()
-  {
+
+  startNUCLEOFunctions() {
     this.sendMessage("{\"Name\": \"ToggleInstant\", \"Value\": 1}")
     this.sendMessage("{\"Name\": \"ToggleBatteryLvl\", \"Value\": 1}")
     this.sendMessage("{\"Name\": \"ToggleImuData\", \"Value\": 1}")

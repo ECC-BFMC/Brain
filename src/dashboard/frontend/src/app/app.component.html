@@ -47,18 +47,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   <div *ngIf="showAlert" class="alert-modal">
     <div class="alert-modal-content">
       <h2>Security Setup Required</h2>
-      <p>Please set a password to secure your dashboard. The password must be set in the processDashboard.py file.</p>
+      <p>Please set a password to secure your dashboard. The password must be set in the app.component.ts file.</p>
       <button (click)="dismissAlert()" class="close-btn">Close</button>
     </div>
   </div>
   <!-- Cluster -->
   <div class="cluster-container">
-    <app-cluster class="cluster"
-      [cursorRotation]="cursorRotationSliderValue"
-      [carPosition]="carPositionSliderValue"
-      [carLeftLaneOn]="carLeftLaneOn"
-      [carRightLaneOn]="carRightLaneOn"
-    ></app-cluster>
+    <app-cluster class="cluster" [cursorRotation]="cursorRotationSliderValue" [carPosition]="carPositionSliderValue"
+      [carLeftLaneOn]="carLeftLaneOn" [carRightLaneOn]="carRightLaneOn"></app-cluster>
 
     <!-- Settings gear button overlayed in top-right of cluster (offline unicode icon ⚙) -->
     <button class="settings-gear" (click)="openSettings()" aria-label="Open settings">⚙</button>

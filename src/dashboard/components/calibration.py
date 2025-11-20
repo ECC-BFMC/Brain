@@ -773,7 +773,11 @@ class Calibration():
                 )
                 print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mSet calib_inf_limit to {adjusted_inf_limit} (original: {inf_limit}, offset: {offset_scaled})")
 
-        with open(f"calibration/source/drivers/{target_file}", "w") as f:
+        output_dir = "calibration/source/drivers"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        with open(f"{output_dir}/{target_file}", "w") as f:
             f.write(new_content)
 
 
