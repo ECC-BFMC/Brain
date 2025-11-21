@@ -28,14 +28,15 @@ def main():
         file.write(f'        logging (logging object): Made for debugging.\n')
         file.write(f'        debugging (bool, optional): A flag for debugging. Defaults to False.\n')
         file.write(f'    """\n\n')
-        file.write(f'    def __init__(self, queueList, logging, debugging=False):\n')
+        file.write(f'    def __init__(self, queueList, logging, ready_event=None, debugging=False):\n')
         file.write(f'        self.queuesList = queueList\n')
         file.write(f'        self.logging = logging\n')
         file.write(f'        self.debugging = debugging\n')
-        file.write(f'        super(process{package_name}, self).__init__(self.queuesList)\n\n')
-        file.write(f'    def run(self):\n')
-        file.write(f'        """Apply the initializing methods and start the threads."""\n')
-        file.write(f'        super(process{package_name}, self).run()\n\n')
+        file.write(f'        super(process{package_name}, self).__init__(self.queuesList, ready_event)\n\n')
+        file.write(f'    def state_change_handler(self):\n')
+        file.write(f'        pass\n\n')
+        file.write(f'    def process_work(self):\n')
+        file.write(f'        pass\n\n')
         file.write(f'    def _init_threads(self):\n')
         file.write(f'        """Create the {package_name} Publisher thread and add to the list of threads."""\n')
         file.write(f'        {package_name}Th = thread{package_name}(\n')
@@ -49,7 +50,7 @@ def main():
         file.write(f'from src.templates.threadwithstop import ThreadWithStop\n')
         file.write(f'from src.utils.messages.allMessages import (mainCamera)\n')
         file.write(f'from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber\n')
-        file.write(f'from src.utils.messages.messageHandlerSender import messageHandlerSender\n')
+        file.write(f'from src.utils.messages.messageHandlerSender import messageHandlerSender\n\n')
         file.write(f'class thread{package_name}(ThreadWithStop):\n')
         file.write(f'    """This thread handles {package_name}.\n')
         file.write(f'    Args:\n')
@@ -63,12 +64,13 @@ def main():
         file.write(f'        self.debugging = debugging\n')
         file.write(f'        self.subscribe()\n')
         file.write(f'        super(thread{package_name}, self).__init__()\n\n')
-        file.write(f'    def run(self):\n')
-        file.write(f'        while self._running:\n')
-        file.write(f'            pass\n\n')
         file.write(f'    def subscribe(self):\n')
         file.write(f'        """Subscribes to the messages you are interested in"""\n')
-        file.write(f'        pass\n')
+        file.write(f'        pass\n\n')
+        file.write(f'    def state_change_handler(self):\n')
+        file.write(f'        pass\n\n')
+        file.write(f'    def thread_work(self):\n')
+        file.write(f'        pass\n\n')
 
     # Read the main.py file
     main_py_path = "main.py"
@@ -81,25 +83,26 @@ def main():
 
     # Add import to the lines
     import_line = f"from src.{category}.{package_name}.process{package_name} import process{package_name}\n"
-    flag_line = f"flag{package_name} = False\n"
-    run_line = f"if flag{package_name}:\n    process{package_name} = process{package_name}(queueList, logging, debugging = False)\n    allProcesses.append(process{package_name})\n"
+    run_line = f"{package_name}_ready = Event()\nprocess{package_name} = process{package_name}(queueList, logging, {package_name}_ready, debugging = False)\nallProcesses.insert(0, process{package_name})\n"
 
-    import_index = flag_index = run_index = None
+    import_index = run_index = None
     for i, line in enumerate(lines):
-        if line.strip() == "# ------ New component imports ends here ------":
+        stripped = line.strip()
+        if stripped == "# ------ New component imports ends here ------#" or stripped == "# ------ New component imports ends here ------ #":
             import_index = i
-        if line.strip() == "# ------ New component flags ends here ------":
-            flag_index = i
-        if line.strip() == "# ------ New component runs ends here ------":
+        if stripped == "# ------ New component initialize ends here ------#" or stripped == "# ------ New component initialize ends here ------ #":
             run_index = i
 
     # Insert in reverse order
     if run_index is not None:
         lines.insert(run_index, run_line)
-    if flag_index is not None:
-        lines.insert(flag_index, flag_line)
+        lines.insert(run_index+1, "\n")
     if import_index is not None:
-        lines.insert(import_index, import_line)
+        if lines[import_index-1].strip() == "":
+            lines.insert(import_index-1, import_line)
+        else:
+            lines.insert(import_index, import_line)
+            lines.insert(import_index+1, "\n")
 
     # Write back to main.py
     with open(main_py_path, 'w') as file:

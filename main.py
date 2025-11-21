@@ -69,6 +69,7 @@ from src.statemachine.systemMode import SystemMode
 
 # ------ New component imports starts here ------#
 
+
 # ------ New component imports ends here ------#
 
 # ===================================== SHUTDOWN PROCESS ====================================
@@ -115,10 +116,6 @@ queueList = {
 }
 logging = logging.getLogger()
 
-# ------ New component flags starts here ------#
- 
-# ------ New component flags ends here ------#
-
 # ===================================== INITIALIZE ==================================
 
 stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
@@ -155,7 +152,7 @@ allProcesses.extend([processCamera, processSemaphore, processTrafficCom, process
 allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
 
 # ------ New component initialize starts here ------#
- 
+
 # ------ New component initialize ends here ------#
 
 # ===================================== START PROCESSES ==================================
