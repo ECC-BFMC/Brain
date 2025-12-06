@@ -69,6 +69,7 @@ from src.statemachine.systemMode import SystemMode
 
 # ------ New component imports starts here ------#
 
+from src.utils.helloWorld.processhelloWorld import processhelloWorld
 
 # ------ New component imports ends here ------#
 
@@ -152,6 +153,10 @@ allProcesses.extend([processCamera, processSemaphore, processTrafficCom, process
 allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
 
 # ------ New component initialize starts here ------#
+
+helloWorld_ready = Event()
+processhelloWorld = processhelloWorld(queueList, logging, helloWorld_ready, debugging = False)
+allProcesses.insert(0, processhelloWorld)
 
 # ------ New component initialize ends here ------#
 
