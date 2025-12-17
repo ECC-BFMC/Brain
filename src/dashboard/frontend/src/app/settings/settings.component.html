@@ -2,7 +2,12 @@
   <div class="settings-dialog" role="dialog" aria-modal="true" aria-label="Settings" (click)="$event.stopPropagation()">
     <div class="settings-header">
       <h2>Settings</h2>
-      <button class="header-close" (click)="handleClose()" aria-label="Close">&#x2715;</button>
+      <button class="header-close" (click)="handleClose()" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z" />
+        </svg>
+      </button>
     </div>
     <div class="settings-body">
       <div class="settings-layout">
@@ -10,27 +15,17 @@
         <div class="calibration-section" [class.calibration-active]="showCalibration">
           <div class="section-header">
             <h3>Speed and Steer Calibration</h3>
-            <button 
-              *ngIf="!showCalibration" 
-              class="btn-primary" 
-              (click)="startCalibration()">
+            <button *ngIf="!showCalibration" class="btn-primary" (click)="startCalibration()">
               Start Calibration
             </button>
-            <button 
-              *ngIf="showCalibration" 
-              class="btn-secondary" 
-              (click)="onCalibrationClose()">
+            <button *ngIf="showCalibration" class="btn-secondary" (click)="onCalibrationClose()">
               Exit Calibration
             </button>
           </div>
 
           <!-- Calibration Component -->
-          <app-calibration
-            [show]="showCalibration"
-            [shouldExit]="requestCalibrationExit"
-            (close)="onCalibrationClose()"
-            (complete)="onCalibrationComplete()"
-            (exited)="onCalibrationExited()">
+          <app-calibration [show]="showCalibration" [shouldExit]="requestCalibrationExit" (close)="onCalibrationClose()"
+            (complete)="onCalibrationComplete()" (exited)="onCalibrationExited()">
           </app-calibration>
 
           <!-- Calibration Status when not active -->
@@ -52,7 +47,5 @@
       </div>
     </div>
   </div>
-  
+
 </div>
-
-

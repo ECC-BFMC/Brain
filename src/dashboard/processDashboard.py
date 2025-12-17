@@ -30,6 +30,7 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
+import queue
 import psutil
 import json
 import inspect
@@ -149,6 +150,28 @@ class processDashboard(WorkerProcess):
         eventlet.spawn(self.send_continuous_messages)
         eventlet.spawn(self.send_hardware_data_to_frontend)
         eventlet.spawn(self.send_heartbeat)
+        eventlet.spawn(self.stream_console_logs)
+
+    def stream_console_logs(self):
+        """Monitor the Log queue and emit messages to frontend."""
+        log_queue = self.queueList.get("Log")
+        if not log_queue:
+            return
+
+        while self.running:
+            try:
+                while not log_queue.empty():
+                    msg = log_queue.get_nowait()
+                    self.socketio.emit('console_log', {'data': msg})
+                    eventlet.sleep(0)
+                
+                eventlet.sleep(0.1)
+            except queue.Empty:
+                eventlet.sleep(0.1)
+            except Exception as e:
+                if self.debugging:
+                    self.logger.error(f"Error streaming logs: {e}")
+                eventlet.sleep(1)
 
 
     # ===================================== STOP ==========================================

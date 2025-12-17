@@ -50,7 +50,9 @@ psutil.Process(os.getpid()).cpu_affinity(available_cores)
 sys.path.append(".")
 from multiprocessing import Queue, Event
 from src.utils.bigPrintMessages import BigPrint
+from src.utils.outputWriters import QueueWriter, MultiWriter
 import logging
+import logging.handlers
 
 logging.basicConfig(level=logging.INFO)
 
@@ -113,8 +115,16 @@ queueList = {
     "Warning": Queue(),
     "General": Queue(),
     "Config": Queue(),
+    "Log": Queue(),
 }
 logging = logging.getLogger()
+
+original_stdout = sys.stdout
+original_stderr = sys.stderr
+
+queue_writer = QueueWriter(queueList["Log"])
+sys.stdout = MultiWriter(original_stdout, queue_writer)
+sys.stderr = MultiWriter(original_stderr, queue_writer)
 
 # ===================================== INITIALIZE ==================================
 

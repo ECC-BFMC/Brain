@@ -26,12 +26,12 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-.main-container { 
+.main-container {
   width: 100%;
   height: 100%;
 }
 
-.cluster-container { 
+.cluster-container {
   width: var(--cluster-width);
   height: calc(var(--cluster-width) / var(--aspect-ratio));
   display: flex;
@@ -46,7 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.8);
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -58,7 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   color: white;
   padding: 30px;
   border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   text-align: center;
   max-width: 90vw;
   width: 500px;
@@ -95,9 +95,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 }
 
 @keyframes modalPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Responsive design for different screen sizes */
@@ -106,11 +114,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     padding: 25px 20px;
     margin: 15px;
   }
-  
+
   .alert-modal-content h2 {
     margin: 0 0 12px 0;
   }
-  
+
   .alert-modal-content p {
     margin: 0 0 18px 0;
   }
@@ -122,15 +130,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     margin: 10px;
     border-radius: 8px;
   }
-  
+
   .alert-modal-content h2 {
     margin: 0 0 10px 0;
   }
-  
+
   .alert-modal-content p {
     margin: 0 0 15px 0;
   }
-  
+
   .close-btn {
     width: 100%;
     max-width: 200px;
@@ -144,13 +152,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   }
 }
 
-.cluster { 
+.cluster {
   width: 100%;
   height: 100%;
   background-color: rgb(45, 54, 58);
 }
 
-.table { 
+.table {
   width: 100%;
   height: 100%;
 }
@@ -158,29 +166,64 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 /* Settings gear overlay anchored to cluster top-right */
 .settings-gear {
   position: absolute;
-  top: clamp(6px, 1vw, 12px);
-  right: clamp(6px, 1vw, 12px);
-  background: rgba(45,54,58,0.85);
-  color: #ffffff;
+  top: 10px;
+  right: 10px;
+  background: none;
   border: none;
+  color: white;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  width: clamp(28px, calc(var(--cluster-width) * 0.045), 56px);
-  height: clamp(28px, calc(var(--cluster-width) * 0.045), 56px);
+  cursor: pointer;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-  font-size: clamp(14px, calc(var(--cluster-width) * 0.02), 24px);
-  z-index: 5;
+  transition: all 0.2s ease;
 }
 
 .settings-gear:hover {
-  background: rgba(45,54,58,1);
+  background: none;
+  transform: rotate(45deg) scale(1.1);
+}
+
+.settings-gear svg {
+  fill: currentColor;
+  width: 24px;
+  height: 24px;
+}
+
+.console-toggle {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: none;
+  border: none;
+  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.console-toggle:hover {
+  background: none;
+  transform: scale(1.1);
+}
+
+.console-toggle svg {
+  /* fill: currentColor; Reverted to stroke for this specific icon */
+  width: 24px;
+  height: 24px;
 }
 
 /* Settings modal removed; handled by SettingsComponent */
-  
+
 .modal {
   display: flex;
   justify-content: center;
@@ -244,7 +287,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   background-color: #ff4444;
   color: white;
   border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   text-align: center;
   padding: 20px;
   margin-bottom: 20px;

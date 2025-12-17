@@ -37,11 +37,12 @@ import { SettingsComponent } from './settings/settings.component';
 import { CommonModule } from '@angular/common'
 import * as CryptoJS from 'crypto-js';
 import { ClusterService } from './cluster/cluster.service';
+import { ConsoleComponent } from './console/console.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [TableComponent, ClusterComponent, StateSwitchComponent, SettingsComponent, FormsModule, CommonModule],
+  imports: [CommonModule, ClusterComponent, TableComponent, StateSwitchComponent, SettingsComponent, ConsoleComponent, FormsModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -286,5 +287,19 @@ export class AppComponent implements OnDestroy {
     this.sendMessage("{\"Name\": \"ToggleBatteryLvl\", \"Value\": 1}")
     this.sendMessage("{\"Name\": \"ToggleImuData\", \"Value\": 1}")
     this.sendMessage("{\"Name\": \"ToggleResourceMonitor\", \"Value\": 1}")
+  }
+
+  showConsoleModal: boolean = false;
+
+  openConsole() {
+    this.showConsoleModal = true;
+  }
+
+  closeConsole() {
+    this.showConsoleModal = false;
+  }
+
+  toggleConsole() {
+    this.showConsoleModal = !this.showConsoleModal;
   }
 }
