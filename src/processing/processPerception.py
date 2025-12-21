@@ -8,6 +8,7 @@ from src.utils.messages.allMessages import (
     SteerMotor,
     WarningSignal,
     LaneKeeping,
+    Brake
 )
 
 import base64
@@ -66,6 +67,7 @@ class ObstacleWorker(BasePerceptionWorker):
         super(ObstacleWorker, self).__init__(frame_queue, queuesList, logger, pause)
         self.speed_sender = messageHandlerSender(queuesList, SpeedMotor)
         self.warn_sender = messageHandlerSender(queuesList, WarningSignal)
+        self.brake_sender = messageHandlerSender(self.queuesList, Brake)   # optional
         self._last_stop_time = 0
 
     def thread_work(self):
@@ -94,6 +96,7 @@ class ObstacleWorker(BasePerceptionWorker):
                     self._last_stop_time = now
                     try:
                         self.speed_sender.send("0")
+                        self.brake_sender.send("0")
                     except Exception:
                         pass
                     try:
