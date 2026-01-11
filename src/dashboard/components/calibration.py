@@ -909,7 +909,8 @@ class Calibration():
         try:
             zip_buffer = BytesIO()
             
-            source_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'source')
+            # source_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'source')
+            source_path = os. path.join(os.path. dirname(__file__), '..', '..', '..', 'calibration', 'source')
             source_path = os.path.abspath(source_path)
             
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
