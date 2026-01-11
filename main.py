@@ -52,7 +52,6 @@ from multiprocessing import Queue, Event
 from src.utils.bigPrintMessages import BigPrint
 from src.utils.outputWriters import QueueWriter, MultiWriter
 import logging
-import logging.handlers
 
 logging.basicConfig(level=logging.INFO)
 
@@ -68,6 +67,7 @@ from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.allMessages import StateChange
 from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
+from src.processing.processPerception import processPerception
 
 # ------ New component imports starts here ------#
 
@@ -145,6 +145,10 @@ processDashboard = processDashboard(queueList, logging, dashboard_ready, debuggi
 camera_ready = Event()
 processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
 
+# Initializing perception processor
+perception_ready = Event()
+processPerception = processPerception(queueList, logging, perception_ready, debugging = False)
+
 # Initializing semaphores
 semaphore_ready = Event()
 processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
@@ -158,8 +162,8 @@ serial_handler_ready = Event()
 processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
 
 # Adding all processes to the list
-allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
-allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
+allProcesses.extend([processCamera, processPerception, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
+allEvents.extend([camera_ready, perception_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
 
 # ------ New component initialize starts here ------#
 
