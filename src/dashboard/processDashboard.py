@@ -140,6 +140,7 @@ class processDashboard(WorkerProcess):
         self.socketio.on_event('message', self.handle_message)
         self.socketio.on_event('save', self.handle_save_table_state)
         self.socketio.on_event('load', self.handle_load_table_state)
+        self.socketio.on_event('get_brain_monitor_log', self.handle_get_brain_monitor_log)
     
     
     def _start_background_tasks(self):
@@ -397,3 +398,19 @@ class processDashboard(WorkerProcess):
         })
 
         eventlet.spawn_after(1.0, self.send_hardware_data_to_frontend)
+        
+    def handle_get_brain_monitor_log(self, data):
+        try: 
+            logFilePath = '/var/log/brain-monitor.log'
+            with open(logFilePath, 'r') as logFile:
+                logContents = logFile.read()
+            
+            log_to_send = logContents[-500:] if len(logContents) > 500 else logContents
+            self.socketio.emit('brain_monitor_logs', {'data': log_to_send})
+        except FileNotFoundError:
+            self.socketio.emit('brain_monitor_logs', {'error': 'Log file not found'})
+        except PermissionError:
+            self.socketio.emit('brain_monitor_logs', {'error': 'Permission denied reading log file'})
+        except Exception as e:
+            self.logger.error(f"Failed to read brain-monitor.log: {e}")
+            self.socketio.emit('brain_monitor_logs', {'error': f'Failed to read log file: {str(e)}'})

@@ -66,7 +66,8 @@ export class WebSocketService {
     'CalibPWMData',
     'CalibRunDone',
     'ImuAck',
-    'console_log'
+    'console_log',
+    'brain_monitor_log'
   ]);
 
   constructor() {
@@ -262,5 +263,15 @@ export class WebSocketService {
   // Method to receive any unhandled event
   receiveUnhandledEvents(): Observable<{ channel: string, data: any }> {
     return this.eventSubject.asObservable();
+  }
+
+  // Request to get brain monitor log
+  requestBrainMonitorLog() : void {
+    this.webSocket.emit('get_brain_monitor_log', {});
+  }
+
+  // Receive brain monitor log
+  receiveBrainMonitorLog() : Observable<any> {
+    return this.webSocket.fromEvent('brain_monitor_logs');
   }
 }

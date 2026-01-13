@@ -88,7 +88,7 @@ class ObstacleWorker(BasePerceptionWorker):
             edge_density = float(edges.mean() / 255.0)
             if self.logger:
                 self.logger.info("Perception obstacle edge_density=%.4f", edge_density)
-
+            
             # threshold and simple rate-limit
             if edge_density > 0.06:
                 now = time.time()
