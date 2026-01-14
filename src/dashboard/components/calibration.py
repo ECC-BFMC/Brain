@@ -42,6 +42,7 @@ from string import Template
 from src.utils.messages.allMessages import ControlCalib, CalibPWMData, CalibRunDone
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.statemachine.stateMachine import StateMachine
 
 
 class Calibration():
@@ -887,6 +888,10 @@ class Calibration():
         self.valid_angles = []
         self.steering_offset = 0
         self.zero_offset_spline_data_for_frontend = None
+        
+        # Set the car to STOP mode when starting calibration
+        stateMachine = StateMachine.get_instance()
+        stateMachine.request_mode("dashboard_stop_button")
 
 
     def stop_calibration_process(self):

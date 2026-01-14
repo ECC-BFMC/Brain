@@ -71,7 +71,7 @@ export class WebSocketService {
 
   constructor() {
     this.webSocket = new Socket({
-      url: "http://192.168.0.110:5005",
+      url: "http://192.168.0.106:5005",
       options: {},
     });
 
@@ -209,6 +209,11 @@ export class WebSocketService {
   // Method to receive current speed state updates
   receiveSerialConnectionState(): Observable<any> {
     return this.webSocket.fromEvent('SerialConnectionState');
+  }
+
+  // Method to receive state change updates from backend
+  receiveStateChange(): Observable<any> {
+    return this.webSocket.fromEvent('StateChange');
   }
 
   receiveCalibrationData(): Observable<any> {
