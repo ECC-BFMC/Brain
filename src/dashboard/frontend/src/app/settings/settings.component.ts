@@ -1,11 +1,13 @@
 import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CalibrationComponent, CalibrationStep } from './calibration/calibration.component';
+import { WifiSettingsComponent } from './wifi-settings/wifi-settings.component';
+import { UpdateSettingsComponent } from './update-settings/update-settings.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, CalibrationComponent],
+  imports: [CommonModule, CalibrationComponent, WifiSettingsComponent, UpdateSettingsComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css']
 })
@@ -18,6 +20,12 @@ export class SettingsComponent implements OnChanges, OnDestroy {
   showCalibration: boolean = false;
   requestCalibrationExit: boolean = false;
 
+  // WiFi settings state
+  showWifiSettings: boolean = false;
+
+  // Update settings state
+  showUpdateSettings: boolean = false;
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']) {
       if (this.open) {
@@ -26,8 +34,19 @@ export class SettingsComponent implements OnChanges, OnDestroy {
       } else {
         // Re-enable page scroll when modal closes
         document.body.style.overflow = '';
+        // Reset internal state when modal closes
+        this.resetState();
       }
     }
+  }
+
+  private resetState(): void {
+    // Close any open tabs/sections
+    this.showCalibration = false;
+    this.showWifiSettings = false;
+    this.showUpdateSettings = false;
+    this.requestCalibrationExit = false;
+    this.pendingClose = false;
   }
 
   ngOnDestroy(): void {
@@ -51,7 +70,7 @@ export class SettingsComponent implements OnChanges, OnDestroy {
     setTimeout(() => {
       this.requestCalibrationExit = false;
       this.showCalibration = false;
-      
+
       // If we were waiting to close the settings modal, do it now
       if (this.pendingClose) {
         this.pendingClose = false;

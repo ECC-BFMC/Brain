@@ -26,9 +26,10 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common'; // Import CommonModule
-import { WebSocketService } from '../webSocket/web-socket.service';
+import { WebSocketService } from '../services/web-socket.service';
+import { ApiService } from '../services/api.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { Subscription } from 'rxjs';
 @Component({
@@ -39,39 +40,23 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./table.component.css']
 })
 export class TableComponent implements OnInit {
-  items: { 
-    channel: string, 
-    value: any, 
+  items: {
+    channel: string,
+    value: any,
     initialValue: any,
-    interval: number, 
-    type: any, 
-    values: any[], 
-    checked: any ,
+    interval: number,
+    type: any,
+    values: any[],
+    checked: any,
     hasChanged: boolean
   }[] = [];
   private loadsSubscription: Subscription | undefined;
   private lastReceivedTimestamp: { [key: string]: number } = {}; // Track last received timestamp
   private loadedMap: any = {};
 
-  constructor(private webSocketService: WebSocketService) { }
+  constructor(private webSocketService: WebSocketService, private apiService: ApiService) { }
 
   ngOnInit() {
-    this.loadsSubscription = this.webSocketService.receiveLoadTable().subscribe((message) => {
-      // New keyed-by-channel format: keep original map and derive UI items
-      this.loadedMap = message.data || {};
-      const entries = Object.entries(this.loadedMap) as [string, any][];
-      this.items = entries.map(([channel, item]) => ({
-        channel,
-        value: item?.value !== null && item?.value !== undefined ? String(item.value) : '',
-        initialValue: item?.initialValue !== null && item?.initialValue !== undefined ? String(item.initialValue) : '',
-        hasChanged: item?.hasChanged || false,
-        checked: item?.checked || false,
-        values: item?.values || [],
-        type: item?.type || 'default',
-        interval: item?.interval ?? 0,
-      }));
-    });
-
     this.webSocketService.receiveUnhandledEvents().subscribe(event => {
       this.updateTable(event.channel, event.data.value);
     });
@@ -95,15 +80,15 @@ export class TableComponent implements OnInit {
       existingItem.hasChanged = existingItem.value !== existingItem.initialValue;
     } else {
       const stringValue = value !== null && value !== undefined ? String(value) : '';
-      this.items.push({ 
-        channel, 
-        value: stringValue, 
-        initialValue: stringValue, 
-        interval, 
-        type: 'default', 
-        values: [], 
+      this.items.push({
+        channel,
+        value: stringValue,
+        initialValue: stringValue,
+        interval,
+        type: 'default',
+        values: [],
         checked: false,
-        hasChanged: false 
+        hasChanged: false
       });
     }
   }
@@ -118,12 +103,36 @@ export class TableComponent implements OnInit {
       // Preserve other fields as-is (type, values, checked, command, etc.)
       this.loadedMap[item.channel] = entry;
     });
-    const valueToSend = JSON.stringify(this.loadedMap, null, 2);
-    this.webSocketService.SaveTable(valueToSend)
+    this.apiService.saveTableState(this.loadedMap).subscribe({
+      next: (response) => {
+        if (!response.success) {
+          console.error('Failed to save table state:', response.error);
+        }
+      },
+      error: (err) => console.error('Failed to save table state:', err)
+    });
   }
 
   reset() {
-    this.webSocketService.LoadTable("Give me the table please :)")
+    this.apiService.loadTableState().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.loadedMap = response.data;
+          const entries = Object.entries(this.loadedMap) as [string, any][];
+          this.items = entries.map(([channel, item]) => ({
+            channel,
+            value: item?.value !== null && item?.value !== undefined ? String(item.value) : '',
+            initialValue: item?.initialValue !== null && item?.initialValue !== undefined ? String(item.initialValue) : '',
+            hasChanged: item?.hasChanged || false,
+            checked: item?.checked || false,
+            values: item?.values || [],
+            type: item?.type || 'default',
+            interval: item?.interval ?? 0,
+          }));
+        }
+      },
+      error: (err) => console.error('Failed to load table state:', err)
+    });
   }
 
   load() {
@@ -131,7 +140,7 @@ export class TableComponent implements OnInit {
     SliderItems.forEach(item => {
       let value = item.value
       let channel = item.channel
-      this.webSocketService.sendMessageToFlask(`{"Name": "${channel}", "Value": "${value/100}"}`);
+      this.webSocketService.sendMessageToFlask(`{"Name": "${channel}", "Value": "${value / 100}"}`);
     });
     const nonDefaultItems = this.items.filter(item => item.type == 'dropdown' && item.checked == true);
     nonDefaultItems.forEach(item => {
@@ -147,10 +156,10 @@ export class TableComponent implements OnInit {
     if (!value || value === null || value === undefined) {
       return '1vw'; // Return default size for undefined/null values
     }
-    const baseSize = 1; 
-    const maxLength = 15; 
+    const baseSize = 1;
+    const maxLength = 15;
     return `${Math.max(baseSize - (value.length / maxLength) * 0.5, 0.5)}vw`;
   }
-  
+
 }
 

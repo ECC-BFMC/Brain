@@ -37,6 +37,7 @@ import inspect
 import eventlet
 import os
 import time
+import subprocess
 
 from flask import Flask, request
 from flask_socketio import SocketIO
@@ -49,7 +50,6 @@ from src.templates.workerprocess import WorkerProcess
 from src.utils.messages.allMessages import Semaphores
 from src.statemachine.stateMachine import StateMachine
 from src.dashboard.components.calibration import Calibration
-from src.dashboard.components.ip_manger import IpManager
 
 import src.utils.messages.allMessages as allMessages
 
@@ -69,9 +69,6 @@ class processDashboard(WorkerProcess):
         self.queueList = queueList
         self.logger = logging
         self.debugging = debugging
-        
-        # ip replacement
-        IpManager.replace_ip_in_file()
 
         # state machine
         self.stateMachine = StateMachine.get_instance()
@@ -116,6 +113,7 @@ class processDashboard(WorkerProcess):
         # initialize message handling
         self._initialize_messages()
         self._setup_websocket_handlers()
+        self._setup_rest_routes()
         self._start_background_tasks()
 
         super(processDashboard, self).__init__(self.queueList, ready_event)
@@ -140,6 +138,280 @@ class processDashboard(WorkerProcess):
         self.socketio.on_event('message', self.handle_message)
         self.socketio.on_event('save', self.handle_save_table_state)
         self.socketio.on_event('load', self.handle_load_table_state)
+
+
+    def _setup_rest_routes(self):
+        """Setup REST API routes for request/response operations."""
+        from flask import request as flask_request, jsonify
+        
+        # WiFi Management
+        @self.app.route('/api/wifi', methods=['GET'])
+        def api_get_wifi_list():
+            """Get list of saved WiFi networks."""
+            return self._handle_wifi_list()
+        
+        @self.app.route('/api/wifi', methods=['POST'])
+        def api_add_wifi():
+            """Add a new WiFi network."""
+            data = flask_request.get_json()
+            return self._handle_wifi_add(data)
+        
+        @self.app.route('/api/wifi/<name>', methods=['DELETE'])
+        def api_remove_wifi(name):
+            """Remove a WiFi network."""
+            return self._handle_wifi_remove(name)
+        
+        # Table State Management
+        @self.app.route('/api/table', methods=['GET'])
+        def api_load_table():
+            """Load table state from file."""
+            try:
+                with open(self.table_state_file, 'r') as json_file:
+                    data = json.load(json_file)
+                return jsonify({'success': True, 'data': data})
+            except FileNotFoundError:
+                return jsonify({'success': False, 'error': 'No saved table state found'}), 404
+            except json.JSONDecodeError:
+                return jsonify({'success': False, 'error': 'Invalid JSON in saved file'}), 500
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/api/table', methods=['POST'])
+        def api_save_table():
+            """Save table state to file."""
+            try:
+                data = flask_request.get_json()
+                os.makedirs(os.path.dirname(self.table_state_file), exist_ok=True)
+                with open(self.table_state_file, 'w') as json_file:
+                    json.dump(data, json_file, indent=4)
+                return jsonify({'success': True, 'message': 'Table state saved'})
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # Serial Connection Status
+        @self.app.route('/api/serial/status', methods=['GET'])
+        def api_serial_status():
+            """Get current serial connection state."""
+            return jsonify({'success': True, 'connected': self.serialConnected})
+        
+        # Codebase Update Management
+        @self.app.route('/api/update/check', methods=['GET'])
+        def api_check_updates():
+            """Check if there are updates available on the remote repository."""
+            return self._handle_check_updates()
+        
+        @self.app.route('/api/update/pull', methods=['POST'])
+        def api_pull_updates():
+            """Pull the latest updates from the remote repository."""
+            return self._handle_pull_updates()
+
+
+    def _handle_wifi_list(self):
+        """Get list of saved WiFi networks."""
+        from flask import jsonify
+        
+        # Protected connections that shouldn't be shown or deleted
+        # Add any preconfigured connection names here
+        protected_connections = {'rpi-hotspot', 'preconfigured'}  # TODO: Update 'preconfigured' with actual name
+        
+        try:
+            result = subprocess.run(
+                ['nmcli', '-t', '-f', 'NAME,TYPE', 'con', 'show'],
+                capture_output=True, text=True, timeout=10
+            )
+            networks = []
+            for line in result.stdout.strip().split('\n'):
+                if line and ':802-11-wireless' in line:
+                    name = line.split(':')[0]
+                    # Skip protected connections
+                    if name not in protected_connections:
+                        networks.append({'name': name})
+            return jsonify({'success': True, 'networks': networks})
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'error': 'Command timed out'}), 500
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+
+    def _handle_wifi_add(self, data):
+        """Add a new WiFi network using the add-wifi.sh script."""
+        from flask import jsonify
+        try:
+            ssid = data.get('ssid', '').strip()
+            password = data.get('password', '').strip()
+            
+            if not ssid or not password:
+                return jsonify({'success': False, 'error': 'SSID and password are required'}), 400
+            
+            # Get the path to the add-wifi.sh script
+            script_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                'services', 'rpi-wifi-fallback', 'add-wifi.sh'
+            )
+            
+            if not os.path.exists(script_path):
+                return jsonify({'success': False, 'error': 'WiFi script not found'}), 500
+            
+            # Run the script asynchronously (it detaches itself)
+            # The script handles the connection attempt and fallback
+            subprocess.Popen(
+                ['sudo', script_path, ssid, password, 'yes'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': f'WiFi network "{ssid}" is being added. The car will attempt to connect. If the network is unavailable, it will fall back to the previous connection.'
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+
+    def _handle_wifi_remove(self, name):
+        """Remove a saved WiFi network."""
+        from flask import jsonify
+        
+        # Protected connections that shouldn't be deleted
+        protected_connections = {'rpi-hotspot', 'preconfigured'}  # TODO: Update 'preconfigured' with actual name
+        
+        try:
+            if not name:
+                return jsonify({'success': False, 'error': 'Network name is required'}), 400
+            
+            # Don't allow removing protected connections
+            if name in protected_connections:
+                return jsonify({'success': False, 'error': 'Cannot remove this connection'}), 400
+            
+            result = subprocess.run(
+                ['sudo', 'nmcli', 'connection', 'delete', name],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if result.returncode == 0:
+                # After successful deletion, use fallback.sh to activate the hotspot
+                fallback_script = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                    'services', 'rpi-wifi-fallback', 'fallback.sh'
+                )
+                if os.path.exists(fallback_script):
+                    subprocess.Popen(
+                        ['sudo', fallback_script, 'up'],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        start_new_session=True
+                    )
+                return jsonify({'success': True, 'message': f'Network "{name}" removed. Hotspot activated.'})
+            else:
+                return jsonify({'success': False, 'error': result.stderr or 'Failed to remove network'}), 500
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'error': 'Command timed out'}), 500
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+
+    def _handle_check_updates(self):
+        """Check if there are updates available on the remote repository."""
+        from flask import jsonify
+        try:
+            # Get the repository root directory
+            repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            
+            # Fetch the latest from remote
+            fetch_result = subprocess.run(
+                ['git', 'fetch'],
+                cwd=repo_path,
+                capture_output=True, text=True, timeout=30
+            )
+            
+            if fetch_result.returncode != 0:
+                return jsonify({'success': False, 'error': 'Failed to fetch from remote'}), 500
+            
+            # Get current commit hash
+            current_result = subprocess.run(
+                ['git', 'rev-parse', 'HEAD'],
+                cwd=repo_path,
+                capture_output=True, text=True, timeout=10
+            )
+            current_commit = current_result.stdout.strip()
+            current_commit_short = current_commit[:7] if current_commit else ''
+            
+            # Get remote commit hash (origin/master or origin/main)
+            # First try master, then main
+            remote_result = subprocess.run(
+                ['git', 'rev-parse', 'origin/master'],
+                cwd=repo_path,
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if remote_result.returncode != 0:
+                remote_result = subprocess.run(
+                    ['git', 'rev-parse', 'origin/main'],
+                    cwd=repo_path,
+                    capture_output=True, text=True, timeout=10
+                )
+            
+            remote_commit = remote_result.stdout.strip()
+            remote_commit_short = remote_commit[:7] if remote_commit else ''
+            
+            update_available = current_commit != remote_commit and remote_commit != ''
+            
+            return jsonify({
+                'success': True,
+                'current_commit': current_commit,
+                'current_commit_short': current_commit_short,
+                'remote_commit': remote_commit,
+                'remote_commit_short': remote_commit_short,
+                'update_available': update_available
+            })
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'error': 'Command timed out'}), 500
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+
+    def _handle_pull_updates(self):
+        """Pull the latest updates from the remote repository."""
+        from flask import jsonify
+        try:
+            # Get the repository root directory
+            repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            
+            # Stash any local changes
+            subprocess.run(
+                ['git', 'stash'],
+                cwd=repo_path,
+                capture_output=True, text=True, timeout=10
+            )
+            
+            # Pull the latest changes
+            pull_result = subprocess.run(
+                ['git', 'pull', '--rebase'],
+                cwd=repo_path,
+                capture_output=True, text=True, timeout=60
+            )
+            
+            if pull_result.returncode != 0:
+                # Try to restore stashed changes on failure
+                subprocess.run(
+                    ['git', 'stash', 'pop'],
+                    cwd=repo_path,
+                    capture_output=True, text=True, timeout=10
+                )
+                return jsonify({
+                    'success': False,
+                    'error': f'Failed to pull updates: {pull_result.stderr}'
+                }), 500
+            
+            return jsonify({
+                'success': True,
+                'message': 'Update successful! Please restart the application for changes to take effect.'
+            })
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'error': 'Update timed out'}), 500
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
     
     
     def _start_background_tasks(self):

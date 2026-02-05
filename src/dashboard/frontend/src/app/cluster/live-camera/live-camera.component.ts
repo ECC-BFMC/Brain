@@ -29,7 +29,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { WebSocketService} from '../../webSocket/web-socket.service'
+import { WebSocketService} from '../../services/web-socket.service'
 
 @Component({
   selector: 'app-live-camera',

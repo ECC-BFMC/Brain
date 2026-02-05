@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, SimpleChanges, OnChanges, SecurityContext } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WebSocketService } from '../webSocket/web-socket.service';
+import { WebSocketService } from '../services/web-socket.service';
 import { Subscription } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 

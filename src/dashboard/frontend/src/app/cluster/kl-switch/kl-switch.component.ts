@@ -28,7 +28,7 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { WebSocketService } from '../../webSocket/web-socket.service';
+import { WebSocketService } from '../../services/web-socket.service';
 import { Subscription } from 'rxjs';
 import { ClusterService } from '../cluster.service';
 

@@ -27,7 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { WebSocketService } from './../../webSocket/web-socket.service';
+import { WebSocketService } from './../../services/web-socket.service';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 

@@ -16,10 +16,10 @@
           <div class="section-header">
             <h3>Speed and Steer Calibration</h3>
             <button *ngIf="!showCalibration" class="btn-primary" (click)="startCalibration()">
-              Start Calibration
+              Open
             </button>
             <button *ngIf="showCalibration" class="btn-secondary" (click)="onCalibrationClose()">
-              Exit Calibration
+              Close
             </button>
           </div>
 
@@ -30,19 +30,49 @@
 
           <!-- Calibration Status when not active -->
           <div *ngIf="!showCalibration" class="calibration-info">
-            <p>Speed and steer calibration helps ensure accurate vehicle control and movement precision.</p>
-            <ul>
-              <li>Step-by-step guided process</li>
-              <li>Visual instructions with diagrams</li>
-              <li>Configurable parameters</li>
-              <li>Validation and testing</li>
-            </ul>
+            <p>Tune steering and speed motor accuracy.</p>
           </div>
         </div>
 
-        <!-- Right Half - Available for future content -->
+        <!-- Right Half - WiFi and Update Management -->
         <div class="right-section">
-          <!-- Space available for additional settings -->
+          <!-- WiFi Management -->
+          <div class="subsection">
+            <div class="section-header">
+              <h3>WiFi Management</h3>
+              <button *ngIf="!showWifiSettings" class="btn-primary" (click)="showWifiSettings = true">
+                Open
+              </button>
+              <button *ngIf="showWifiSettings" class="btn-secondary" (click)="showWifiSettings = false">
+                Close
+              </button>
+            </div>
+            <app-wifi-settings *ngIf="showWifiSettings"></app-wifi-settings>
+
+            <!-- Info when closed -->
+            <div *ngIf="!showWifiSettings" class="calibration-info">
+              <p>Add or remove saved WiFi networks.</p>
+            </div>
+          </div>
+
+          <!-- Codebase Update -->
+          <div class="subsection">
+            <div class="section-header">
+              <h3>Codebase Update</h3>
+              <button *ngIf="!showUpdateSettings" class="btn-primary" (click)="showUpdateSettings = true">
+                Open
+              </button>
+              <button *ngIf="showUpdateSettings" class="btn-secondary" (click)="showUpdateSettings = false">
+                Close
+              </button>
+            </div>
+            <app-update-settings *ngIf="showUpdateSettings"></app-update-settings>
+
+            <!-- Info when closed -->
+            <div *ngIf="!showUpdateSettings" class="calibration-info">
+              <p>Check and install updates from GitHub.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, OnChanges, S
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CALIBRATION_STEPS, registerFunction } from './calibration-steps.data';
-import { WebSocketService } from '../../webSocket/web-socket.service';
+import { WebSocketService } from '../../services/web-socket.service';
 import { ClusterService } from '../../cluster/cluster.service';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
