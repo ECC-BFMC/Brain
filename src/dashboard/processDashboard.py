@@ -37,13 +37,8 @@ import inspect
 import eventlet
 import os
 import time
-import subprocess
-import urllib.request
-import hashlib
-import shutil
-import glob
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
 from enum import Enum
@@ -54,6 +49,9 @@ from src.templates.workerprocess import WorkerProcess
 from src.utils.messages.allMessages import Semaphores
 from src.statemachine.stateMachine import StateMachine
 from src.dashboard.components.calibration import Calibration
+from src.dashboard.components.wifi import WifiManager
+from src.dashboard.components.updates import UpdateManager
+from src.dashboard.components.firmware import FirmwareManager
 
 import src.utils.messages.allMessages as allMessages
 
@@ -87,13 +85,12 @@ class processDashboard(WorkerProcess):
         self.cpuCoreUsage = 0
         self.cpuTemperature = 0
 
-
         # heartbeat
         self.heartbeat_last_sent = time.time()
         self.heartbeat_retries = 0
         self.heartbeat_max_retries = 3
-        self.heartbeat_time_between_heartbeats = 20 # seconds
-        self.heartbeat_time_between_retries = 5 # seconds # put a higher value if the connection is not stable (e.g. 5 seconds)
+        self.heartbeat_time_between_heartbeats = 20
+        self.heartbeat_time_between_retries = 5
         self.heartbeat_received = False
 
         # session management
@@ -105,14 +102,18 @@ class processDashboard(WorkerProcess):
 
         # configuration
         self.table_state_file = self._get_table_state_path()
+        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
         # setup flask and socketio
         self.app = Flask(__name__)
         self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
         CORS(self.app, supports_credentials=True)
 
-        # calibration
+        # components
         self.calibration = Calibration(self.queueList, self.socketio)
+        self.wifi = WifiManager(repo_path)
+        self.updates = UpdateManager(repo_path)
+        self.firmware = FirmwareManager(repo_path)
 
         # initialize message handling
         self._initialize_messages()
@@ -146,29 +147,24 @@ class processDashboard(WorkerProcess):
 
     def _setup_rest_routes(self):
         """Setup REST API routes for request/response operations."""
-        from flask import request as flask_request, jsonify
-        
+        from flask import request as flask_request
+
         # WiFi Management
         @self.app.route('/api/wifi', methods=['GET'])
         def api_get_wifi_list():
-            """Get list of saved WiFi networks."""
-            return self._handle_wifi_list()
+            return self.wifi.handle_list()
         
         @self.app.route('/api/wifi', methods=['POST'])
         def api_add_wifi():
-            """Add a new WiFi network."""
-            data = flask_request.get_json()
-            return self._handle_wifi_add(data)
+            return self.wifi.handle_add(flask_request.get_json())
         
         @self.app.route('/api/wifi/<name>', methods=['DELETE'])
         def api_remove_wifi(name):
-            """Remove a WiFi network."""
-            return self._handle_wifi_remove(name)
+            return self.wifi.handle_remove(name)
         
         # Table State Management
         @self.app.route('/api/table', methods=['GET'])
         def api_load_table():
-            """Load table state from file."""
             try:
                 with open(self.table_state_file, 'r') as json_file:
                     data = json.load(json_file)
@@ -182,7 +178,6 @@ class processDashboard(WorkerProcess):
         
         @self.app.route('/api/table', methods=['POST'])
         def api_save_table():
-            """Save table state to file."""
             try:
                 data = flask_request.get_json()
                 os.makedirs(os.path.dirname(self.table_state_file), exist_ok=True)
@@ -195,556 +190,34 @@ class processDashboard(WorkerProcess):
         # Serial Connection Status
         @self.app.route('/api/serial/status', methods=['GET'])
         def api_serial_status():
-            """Get current serial connection state."""
             return jsonify({'success': True, 'connected': self.serialConnected})
         
         # Codebase Update Management
         @self.app.route('/api/update/check', methods=['GET'])
         def api_check_updates():
-            """Check if there are updates available on the remote repository."""
-            return self._handle_check_updates()
+            return self.updates.handle_check()
         
         @self.app.route('/api/update/pull', methods=['POST'])
         def api_pull_updates():
-            """Pull the latest updates from the remote repository."""
-            return self._handle_pull_updates()
+            return self.updates.handle_pull()
         
         # Firmware Update Management
         @self.app.route('/api/firmware/check', methods=['GET'])
         def api_check_firmware():
-            """Check if a new firmware binary is available."""
-            return self._handle_check_firmware()
+            return self.firmware.handle_check()
         
         @self.app.route('/api/firmware/download', methods=['POST'])
         def api_download_firmware():
-            """Download the latest firmware binary."""
-            return self._handle_download_firmware()
+            return self.firmware.handle_download()
         
         @self.app.route('/api/firmware/flash', methods=['POST'])
         def api_flash_firmware():
-            """Flash the firmware binary to the Nucleo board."""
-            return self._handle_flash_firmware()
-
-
-    def _handle_wifi_list(self):
-        """Get list of saved WiFi networks."""
-        from flask import jsonify
-        
-        # Protected connections that shouldn't be shown or deleted
-        # Add any preconfigured connection names here
-        protected_connections = {'rpi-hotspot', 'preconfigured'}  # TODO: Update 'preconfigured' with actual name
-        
-        try:
-            result = subprocess.run(
-                ['nmcli', '-t', '-f', 'NAME,TYPE', 'con', 'show'],
-                capture_output=True, text=True, timeout=10
-            )
-            networks = []
-            for line in result.stdout.strip().split('\n'):
-                if line and ':802-11-wireless' in line:
-                    name = line.split(':')[0]
-                    # Skip protected connections
-                    if name not in protected_connections:
-                        networks.append({'name': name})
-            return jsonify({'success': True, 'networks': networks})
-        except subprocess.TimeoutExpired:
-            return jsonify({'success': False, 'error': 'Command timed out'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-
-    def _handle_wifi_add(self, data):
-        """Add a new WiFi network using the add-wifi.sh script."""
-        from flask import jsonify
-        try:
-            ssid = data.get('ssid', '').strip()
-            password = data.get('password', '').strip()
-            
-            if not ssid or not password:
-                return jsonify({'success': False, 'error': 'SSID and password are required'}), 400
-            
-            # Get the path to the add-wifi.sh script
-            script_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                'services', 'rpi-wifi-fallback', 'add-wifi.sh'
-            )
-            
-            if not os.path.exists(script_path):
-                return jsonify({'success': False, 'error': 'WiFi script not found'}), 500
-            
-            # Run the script asynchronously (it detaches itself)
-            # The script handles the connection attempt and fallback
-            subprocess.Popen(
-                ['sudo', script_path, ssid, password, 'yes'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True
-            )
-            
-            return jsonify({
-                'success': True,
-                'message': f'WiFi network "{ssid}" is being added. The car will attempt to connect. If the network is unavailable, it will fall back to the previous connection.'
-            })
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-
-    def _handle_wifi_remove(self, name):
-        """Remove a saved WiFi network."""
-        from flask import jsonify
-        
-        # Protected connections that shouldn't be deleted
-        protected_connections = {'rpi-hotspot', 'preconfigured'}  # TODO: Update 'preconfigured' with actual name
-        
-        try:
-            if not name:
-                return jsonify({'success': False, 'error': 'Network name is required'}), 400
-            
-            # Don't allow removing protected connections
-            if name in protected_connections:
-                return jsonify({'success': False, 'error': 'Cannot remove this connection'}), 400
-            
-            result = subprocess.run(
-                ['sudo', 'nmcli', 'connection', 'delete', name],
-                capture_output=True, text=True, timeout=10
-            )
-            
-            if result.returncode == 0:
-                # After successful deletion, use fallback.sh to activate the hotspot
-                fallback_script = os.path.join(
-                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                    'services', 'rpi-wifi-fallback', 'fallback.sh'
-                )
-                if os.path.exists(fallback_script):
-                    subprocess.Popen(
-                        ['sudo', fallback_script, 'up'],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        start_new_session=True
-                    )
-                return jsonify({'success': True, 'message': f'Network "{name}" removed. Hotspot activated.'})
-            else:
-                return jsonify({'success': False, 'error': result.stderr or 'Failed to remove network'}), 500
-        except subprocess.TimeoutExpired:
-            return jsonify({'success': False, 'error': 'Command timed out'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-
-    # Official BFMC Brain repository - all updates come from here
-    OFFICIAL_REPO_URL = 'https://github.com/ECC-BFMC/Brain.git'
-    OFFICIAL_REMOTE_NAME = 'bfmc-official'
-
-    # Embedded Platform firmware
-    FIRMWARE_REPO = 'ECC-BFMC/Embedded_Platform'
-    FIRMWARE_FILE_PATH = 'cmake_build/NUCLEO_F401RE/develop/GCC_ARM/robot_car.bin'
-    FIRMWARE_API_URL = f'https://api.github.com/repos/{FIRMWARE_REPO}/commits'
-    FIRMWARE_RAW_URL = f'https://raw.githubusercontent.com/{FIRMWARE_REPO}/master/{FIRMWARE_FILE_PATH}'
-
-    def _validate_repo(self, repo_path):
-        """Validate that this is an official clone and on master branch.
-        
-        Returns (is_valid, error_message, details_dict).
-        """
-        details = {'is_official_clone': False, 'valid_branch': False, 'branch': ''}
-
-        # Check if origin remote points to the official ECC-BFMC/Brain repo
-        result = subprocess.run(
-            ['git', 'remote', 'get-url', 'origin'],
-            cwd=repo_path,
-            capture_output=True, text=True, timeout=10
-        )
-        if result.returncode != 0:
-            return False, 'No origin remote found. Only clones from the official ECC-BFMC/Brain repository can be updated from here.', details
-
-        origin_url = result.stdout.strip().lower()
-        official_patterns = ['ecc-bfmc/brain.git', 'ecc-bfmc/brain']
-        if not any(pat in origin_url for pat in official_patterns):
-            return False, 'This repository was not cloned from the official ECC-BFMC/Brain repository. Only official clones can be updated from here.', details
-
-        details['is_official_clone'] = True
-
-        # Check current branch is master
-        branch_result = subprocess.run(
-            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-            cwd=repo_path,
-            capture_output=True, text=True, timeout=10
-        )
-        current_branch = branch_result.stdout.strip()
-        details['branch'] = current_branch
-
-        if current_branch not in ('main', 'master'):
-            return False, f'Updates are only available on the master branch. You are currently on "{current_branch}".', details
-
-        details['valid_branch'] = True
-        return True, '', details
-
-    def _ensure_official_remote(self, repo_path):
-        """Ensure the official BFMC remote is configured for updates."""
-        result = subprocess.run(
-            ['git', 'remote', 'get-url', self.OFFICIAL_REMOTE_NAME],
-            cwd=repo_path,
-            capture_output=True, text=True, timeout=10
-        )
-        
-        if result.returncode != 0:
-            subprocess.run(
-                ['git', 'remote', 'add', self.OFFICIAL_REMOTE_NAME, self.OFFICIAL_REPO_URL],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=10
-            )
-        else:
-            current_url = result.stdout.strip()
-            if current_url != self.OFFICIAL_REPO_URL:
-                subprocess.run(
-                    ['git', 'remote', 'set-url', self.OFFICIAL_REMOTE_NAME, self.OFFICIAL_REPO_URL],
-                    cwd=repo_path,
-                    capture_output=True, text=True, timeout=10
-                )
-        
-        return self.OFFICIAL_REMOTE_NAME
-
-    def _handle_check_updates(self):
-        """Check if there are updates available from the official BFMC repository."""
-        from flask import jsonify
-        try:
-            repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            
-            is_valid, validation_msg, details = self._validate_repo(repo_path)
-            if not is_valid:
-                return jsonify({
-                    'success': True,
-                    'update_available': False,
-                    'is_official_clone': details['is_official_clone'],
-                    'valid_branch': details['valid_branch'],
-                    'branch': details.get('branch', ''),
-                    'validation_error': validation_msg
-                })
-            
-            update_remote = self._ensure_official_remote(repo_path)
-            
-            fetch_result = subprocess.run(
-                ['git', 'fetch', update_remote],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=30
-            )
-            
-            if fetch_result.returncode != 0:
-                return jsonify({'success': False, 'error': 'Failed to fetch from official repository'}), 500
-            
-            current_branch = details['branch']
-            
-            current_result = subprocess.run(
-                ['git', 'rev-parse', 'HEAD'],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=10
-            )
-            current_commit = current_result.stdout.strip()
-            current_commit_short = current_commit[:7] if current_commit else ''
-            
-            remote_branch = f'{update_remote}/master'
-            check_result = subprocess.run(
-                ['git', 'rev-parse', remote_branch],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=10
-            )
-            
-            if check_result.returncode != 0:
-                return jsonify({
-                    'success': True,
-                    'current_commit': current_commit,
-                    'current_commit_short': current_commit_short,
-                    'remote_commit': '',
-                    'remote_commit_short': '',
-                    'update_available': False,
-                    'is_official_clone': True,
-                    'valid_branch': True,
-                    'branch': current_branch,
-                    'remote': 'ECC-BFMC/Brain',
-                    'message': 'Could not reach official repository'
-                })
-            
-            remote_commit = check_result.stdout.strip()
-            remote_commit_short = remote_commit[:7] if remote_commit else ''
-            
-            merge_base_result = subprocess.run(
-                ['git', 'merge-base', 'HEAD', remote_branch],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=10
-            )
-            merge_base = merge_base_result.stdout.strip()
-            
-            update_available = merge_base == current_commit and remote_commit != current_commit
-            
-            return jsonify({
-                'success': True,
-                'current_commit': current_commit,
-                'current_commit_short': current_commit_short,
-                'remote_commit': remote_commit,
-                'remote_commit_short': remote_commit_short,
-                'update_available': update_available,
-                'is_official_clone': True,
-                'valid_branch': True,
-                'branch': current_branch,
-                'remote': 'ECC-BFMC/Brain',
-                'remote_branch': 'master'
-            })
-        except subprocess.TimeoutExpired:
-            return jsonify({'success': False, 'error': 'Command timed out'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-
-    def _handle_pull_updates(self):
-        """Pull the latest updates from the official BFMC repository."""
-        from flask import jsonify
-        try:
-            repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            
-            is_valid, validation_msg, details = self._validate_repo(repo_path)
-            if not is_valid:
-                return jsonify({'success': False, 'error': validation_msg}), 403
-            
-            update_remote = self._ensure_official_remote(repo_path)
-            remote_branch = 'master'
-            
-            # Stash any local changes
-            stash_result = subprocess.run(
-                ['git', 'stash'],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=10
-            )
-            had_stash = 'No local changes' not in stash_result.stdout
-            
-            # Fetch latest from official repository
-            fetch_result = subprocess.run(
-                ['git', 'fetch', update_remote],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=30
-            )
-            
-            if fetch_result.returncode != 0:
-                if had_stash:
-                    subprocess.run(
-                        ['git', 'stash', 'pop'],
-                        cwd=repo_path,
-                        capture_output=True, text=True, timeout=10
-                    )
-                return jsonify({
-                    'success': False,
-                    'error': 'Failed to fetch from official repository'
-                }), 500
-            
-            # Merge the updates from the official BFMC master branch
-            merge_result = subprocess.run(
-                ['git', 'merge', f'{update_remote}/{remote_branch}', '--no-edit'],
-                cwd=repo_path,
-                capture_output=True, text=True, timeout=60
-            )
-            
-            if merge_result.returncode != 0:
-                # Abort the merge and restore state
-                subprocess.run(
-                    ['git', 'merge', '--abort'],
-                    cwd=repo_path,
-                    capture_output=True, text=True, timeout=10
-                )
-                if had_stash:
-                    subprocess.run(
-                        ['git', 'stash', 'pop'],
-                        cwd=repo_path,
-                        capture_output=True, text=True, timeout=10
-                    )
-                return jsonify({
-                    'success': False,
-                    'error': 'Merge conflict detected. Please resolve manually or contact support.'
-                }), 500
-            
-            # Restore stashed changes if there were any
-            if had_stash:
-                pop_result = subprocess.run(
-                    ['git', 'stash', 'pop'],
-                    cwd=repo_path,
-                    capture_output=True, text=True, timeout=10
-                )
-                if pop_result.returncode != 0:
-                    return jsonify({
-                        'success': True,
-                        'message': 'Update from ECC-BFMC/Brain successful! Note: Could not restore local changes automatically. Run "git stash pop" manually if needed. Please restart the application.'
-                    })
-            
-            return jsonify({
-                'success': True,
-                'message': 'Update from ECC-BFMC/Brain successful! Please restart the application for changes to take effect.'
-            })
-        except subprocess.TimeoutExpired:
-            return jsonify({'success': False, 'error': 'Update timed out'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-
-    def _get_firmware_dir(self):
-        """Get the local firmware storage directory."""
-        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        return os.path.join(repo_path, 'src', 'hardware', 'firmware')
-
-    def _get_local_firmware_info(self):
-        """Read locally stored firmware version metadata."""
-        info_path = os.path.join(self._get_firmware_dir(), 'firmware_version.json')
-        if os.path.exists(info_path):
-            with open(info_path, 'r') as f:
-                return json.load(f)
-        return None
-
-    def _save_local_firmware_info(self, info):
-        """Save firmware version metadata to disk."""
-        fw_dir = self._get_firmware_dir()
-        os.makedirs(fw_dir, exist_ok=True)
-        with open(os.path.join(fw_dir, 'firmware_version.json'), 'w') as f:
-            json.dump(info, f, indent=2)
-
-    def _handle_check_firmware(self):
-        """Check if a newer firmware binary is available on the Embedded_Platform repo."""
-        from flask import jsonify
-        try:
-            url = f'{self.FIRMWARE_API_URL}?path={self.FIRMWARE_FILE_PATH}&per_page=1'
-            req = urllib.request.Request(url, headers={'User-Agent': 'BFMC-Brain'})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                commits = json.loads(resp.read().decode())
-
-            if not commits:
-                return jsonify({'success': False, 'error': 'No commits found for firmware file'}), 500
-
-            remote_sha = commits[0]['sha']
-            remote_date = commits[0]['commit']['committer']['date']
-            remote_message = commits[0]['commit']['message'].split('\n')[0]
-
-            local_info = self._get_local_firmware_info()
-            local_sha = local_info.get('commit_sha', '') if local_info else ''
-
-            fw_path = os.path.join(self._get_firmware_dir(), 'robot_car.bin')
-            has_local_file = os.path.exists(fw_path)
-
-            update_available = (local_sha != remote_sha) or not has_local_file
-
-            return jsonify({
-                'success': True,
-                'update_available': update_available,
-                'has_local_file': has_local_file,
-                'remote_sha': remote_sha[:7],
-                'remote_date': remote_date,
-                'remote_message': remote_message,
-                'local_sha': local_sha[:7] if local_sha else '',
-                'local_date': local_info.get('downloaded_at', '') if local_info else ''
-            })
-        except urllib.error.URLError as e:
-            return jsonify({'success': False, 'error': f'Failed to reach GitHub: {e.reason}'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-    def _handle_download_firmware(self):
-        """Download the latest robot_car.bin from the Embedded_Platform repo."""
-        from flask import jsonify
-        try:
-            # Get the latest commit SHA first
-            url = f'{self.FIRMWARE_API_URL}?path={self.FIRMWARE_FILE_PATH}&per_page=1'
-            req = urllib.request.Request(url, headers={'User-Agent': 'BFMC-Brain'})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                commits = json.loads(resp.read().decode())
-
-            if not commits:
-                return jsonify({'success': False, 'error': 'No commits found for firmware file'}), 500
-
-            remote_sha = commits[0]['sha']
-
-            # Download the binary
-            dl_req = urllib.request.Request(self.FIRMWARE_RAW_URL, headers={'User-Agent': 'BFMC-Brain'})
-            with urllib.request.urlopen(dl_req, timeout=30) as resp:
-                firmware_data = resp.read()
-
-            fw_dir = self._get_firmware_dir()
-            os.makedirs(fw_dir, exist_ok=True)
-            fw_path = os.path.join(fw_dir, 'robot_car.bin')
-
-            with open(fw_path, 'wb') as f:
-                f.write(firmware_data)
-
-            self._save_local_firmware_info({
-                'commit_sha': remote_sha,
-                'downloaded_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                'file_size': len(firmware_data)
-            })
-
-            return jsonify({
-                'success': True,
-                'message': f'Firmware downloaded successfully ({len(firmware_data)} bytes). File saved to src/hardware/firmware/robot_car.bin'
-            })
-        except urllib.error.URLError as e:
-            return jsonify({'success': False, 'error': f'Failed to download firmware: {e.reason}'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-    NUCLEO_MOUNT_PATTERN = '/media/pi/NOD_F401RE*'
-
-    def _find_nucleo_mount(self):
-        """Find the Nucleo board's mass storage mount point."""
-        matches = glob.glob(self.NUCLEO_MOUNT_PATTERN)
-        for path in matches:
-            if os.path.ismount(path):
-                return path
-        return None
-
-    def _handle_flash_firmware(self):
-        """Flash robot_car.bin to the Nucleo board via its USB mass storage."""
-        from flask import jsonify
-        try:
-            fw_path = os.path.join(self._get_firmware_dir(), 'robot_car.bin')
-            if not os.path.exists(fw_path):
-                return jsonify({
-                    'success': False,
-                    'error': 'Firmware file not found. Download it first.'
-                }), 400
-
-            fw_size = os.path.getsize(fw_path)
-            if fw_size == 0:
-                return jsonify({
-                    'success': False,
-                    'error': 'Firmware file is empty. Try downloading again.'
-                }), 400
-
-            nucleo_mount = self._find_nucleo_mount()
-            if not nucleo_mount:
-                return jsonify({
-                    'success': False,
-                    'error': 'Nucleo board not detected. Make sure it is connected via USB and mounted.'
-                }), 404
-
-            if not os.access(nucleo_mount, os.W_OK):
-                return jsonify({
-                    'success': False,
-                    'error': f'Cannot write to Nucleo mount point ({nucleo_mount}). Check permissions.'
-                }), 403
-
-            dest_path = os.path.join(nucleo_mount, 'robot_car.bin')
-            shutil.copy2(fw_path, dest_path)
-
-            subprocess.run(['sync'], timeout=10)
-
-            return jsonify({
-                'success': True,
-                'message': f'Firmware flashed successfully to {nucleo_mount}. The Nucleo will reset automatically.'
-            })
-        except PermissionError:
-            return jsonify({'success': False, 'error': 'Permission denied writing to Nucleo. Try running with sudo.'}), 403
-        except OSError as e:
-            return jsonify({'success': False, 'error': f'Failed to flash firmware: {e}'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return self.firmware.handle_flash()
 
 
     def _start_background_tasks(self):
         """Start background monitoring tasks."""
-        psutil.cpu_percent(interval=1, percpu=False) # warm up
+        psutil.cpu_percent(interval=1, percpu=False)
 
         eventlet.spawn(self.update_hardware_data)
         eventlet.spawn(self.send_continuous_messages)
