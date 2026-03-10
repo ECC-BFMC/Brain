@@ -38,9 +38,6 @@
 #
 # ===================================== GENERAL IMPORTS ==================================
 
-# testing to see if update works :)
-# test 2
-
 import sys
 import time
 import os
