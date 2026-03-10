@@ -148,6 +148,13 @@
 .subsection {
   display: flex;
   flex-direction: column;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.subsection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 @media (max-width: 1024px) {
@@ -159,6 +166,18 @@
     min-height: auto;
     overflow: visible;
     scrollbar-gutter: auto;
+  }
+
+  .right-section {
+    gap: 1.5rem;
+  }
+
+  .subsection {
+    padding-bottom: 1.5rem;
+  }
+
+  .subsection:last-child {
+    padding-bottom: 0;
   }
 }
 

@@ -1,65 +1,152 @@
-<div class="update-settings">
-  <!-- Status Message -->
-  <div *ngIf="statusMessage" class="status-message" [class.success]="statusType === 'success'"
-    [class.error]="statusType === 'error'" [class.info]="statusType === 'info'">
-    {{ statusMessage }}
-  </div>
+<div class="update-manager">
 
-  <!-- Check for Updates Button -->
-  <div class="action-section">
-    <button class="btn-primary check-btn" (click)="checkForUpdates()" [disabled]="isChecking || isUpdating">
-      <svg *ngIf="!isChecking" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-        <path
-          d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-      </svg>
-      <svg *ngIf="isChecking" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="spinning">
-        <path
-          d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-      </svg>
-      <span *ngIf="!isChecking">Check for Updates</span>
-      <span *ngIf="isChecking">Checking...</span>
-    </button>
-    <span *ngIf="lastChecked" class="last-checked">Last checked: {{ lastChecked }}</span>
-  </div>
-
-  <!-- Version Info -->
-  <div *ngIf="currentCommitShort" class="version-info">
-    <div class="version-row">
-      <span class="version-label">Current version:</span>
-      <span class="version-value" [title]="currentCommit">{{ currentCommitShort }}</span>
+  <!-- ==================== BRAIN SOFTWARE ==================== -->
+  <div class="update-card">
+    <div class="card-header">
+      <span class="card-title">Brain Software</span>
+      <span class="card-source">ECC-BFMC/Brain</span>
     </div>
-    <div *ngIf="remoteCommitShort && updateAvailable" class="version-row">
-      <span class="version-label">Latest version:</span>
-      <span class="version-value new-version" [title]="remoteCommit">{{ remoteCommitShort }}</span>
+
+    <!-- Validation Warning -->
+    <div *ngIf="validationError" class="card-alert warning">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+      </svg>
+      <div class="alert-content">
+        <span class="alert-title">Updates Unavailable</span>
+        <span class="alert-text">{{ validationError }}</span>
+      </div>
     </div>
+
+    <!-- Brain Status Message -->
+    <div *ngIf="statusMessage" class="card-alert" [class.success]="statusType === 'success'"
+      [class.error]="statusType === 'error'" [class.info]="statusType === 'info'">
+      {{ statusMessage }}
+    </div>
+
+    <!-- Brain Actions Row -->
+    <div class="card-actions">
+      <button class="btn btn-check" (click)="checkForUpdates()" [disabled]="isChecking || isUpdating">
+        <svg *ngIf="!isChecking" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <svg *ngIf="isChecking" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spinning">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <span>{{ isChecking ? 'Checking...' : 'Check' }}</span>
+      </button>
+
+      <button *ngIf="updateAvailable && !validationError" class="btn btn-update"
+        (click)="performUpdate()" [disabled]="isUpdating || isChecking">
+        <svg *ngIf="!isUpdating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+        <svg *ngIf="isUpdating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spinning">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <span>{{ isUpdating ? 'Updating...' : 'Pull Update' }}</span>
+      </button>
+
+      <span *ngIf="lastChecked" class="meta-text">{{ lastChecked }}</span>
+    </div>
+
+    <!-- Brain Version Details -->
+    <div *ngIf="currentCommitShort && !validationError" class="card-details">
+      <div *ngIf="currentBranch" class="detail-row">
+        <span class="detail-label">Branch</span>
+        <span class="detail-value tag tag-blue">{{ currentBranch }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Local</span>
+        <span class="detail-value tag" [title]="currentCommit">{{ currentCommitShort }}</span>
+      </div>
+      <div *ngIf="remoteCommitShort && updateAvailable" class="detail-row">
+        <span class="detail-label">Latest</span>
+        <span class="detail-value tag tag-green" [title]="remoteCommit">{{ remoteCommitShort }}</span>
+      </div>
+    </div>
+
+    <!-- Wrong branch info -->
+    <div *ngIf="validationError && isOfficialClone && !isValidBranch && currentBranch" class="card-details">
+      <div class="detail-row">
+        <span class="detail-label">Current</span>
+        <span class="detail-value tag tag-warn">{{ currentBranch }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Required</span>
+        <span class="detail-value tag tag-blue">master</span>
+      </div>
+    </div>
+
+    <div class="card-footer">Official clones only, on master branch.</div>
   </div>
 
-  <!-- Update Button -->
-  <div *ngIf="updateAvailable" class="update-section">
-    <div class="update-notice">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-      </svg>
-      <span>A new version is available!</span>
+  <!-- ==================== NUCLEO FIRMWARE ==================== -->
+  <div class="update-card">
+    <div class="card-header">
+      <span class="card-title">Nucleo Firmware</span>
+      <span class="card-source">ECC-BFMC/Embedded_Platform</span>
     </div>
-    <button class="btn-success update-btn" (click)="performUpdate()" [disabled]="isUpdating || isChecking">
-      <svg *ngIf="!isUpdating" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-      </svg>
-      <svg *ngIf="isUpdating" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="spinning">
-        <path
-          d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-      </svg>
-      <span *ngIf="!isUpdating">Update Now</span>
-      <span *ngIf="isUpdating">Updating...</span>
-    </button>
+
+    <!-- Firmware Status Message -->
+    <div *ngIf="fwStatusMessage" class="card-alert" [class.success]="fwStatusType === 'success'"
+      [class.error]="fwStatusType === 'error'" [class.info]="fwStatusType === 'info'">
+      {{ fwStatusMessage }}
+    </div>
+
+    <!-- Firmware Actions Row -->
+    <div class="card-actions">
+      <button class="btn btn-check" (click)="checkFirmware()"
+        [disabled]="fwIsChecking || fwIsDownloading || fwIsFlashing">
+        <svg *ngIf="!fwIsChecking" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <svg *ngIf="fwIsChecking" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spinning">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <span>{{ fwIsChecking ? 'Checking...' : 'Check' }}</span>
+      </button>
+
+      <button *ngIf="fwHasLocalFile" class="btn btn-flash"
+        (click)="flashFirmware()" [disabled]="fwIsFlashing || fwIsDownloading || fwIsChecking">
+        <svg *ngIf="!fwIsFlashing" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
+        </svg>
+        <svg *ngIf="fwIsFlashing" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spinning">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <span>{{ fwIsFlashing ? 'Flashing...' : 'Flash to Nucleo' }}</span>
+      </button>
+
+      <button *ngIf="fwUpdateAvailable" class="btn btn-download"
+        (click)="downloadFirmware()" [disabled]="fwIsDownloading || fwIsChecking || fwIsFlashing">
+        <svg *ngIf="!fwIsDownloading" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+        <svg *ngIf="fwIsDownloading" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="spinning">
+          <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        <span>{{ fwIsDownloading ? 'Downloading...' : (fwHasLocalFile ? 'Download Update' : 'Download') }}</span>
+      </button>
+    </div>
+
+    <!-- Firmware Version Details -->
+    <div *ngIf="fwHasChecked && fwRemoteSha" class="card-details">
+      <div class="detail-row">
+        <span class="detail-label">Latest</span>
+        <span class="detail-value tag" [class.tag-green]="fwUpdateAvailable">{{ fwRemoteSha }}</span>
+      </div>
+      <div *ngIf="fwRemoteDate" class="detail-row">
+        <span class="detail-label">Released</span>
+        <span class="detail-value">{{ formatDate(fwRemoteDate) }}</span>
+      </div>
+      <div *ngIf="fwLocalSha" class="detail-row">
+        <span class="detail-label">Local</span>
+        <span class="detail-value tag">{{ fwLocalSha }}</span>
+      </div>
+    </div>
+
+    <div class="card-footer">robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.</div>
   </div>
 
-  <!-- Info Note -->
-  <div class="info-note">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-    </svg>
-    <span>After updating, restart the application for changes to take effect.</span>
-  </div>
 </div>

@@ -37,10 +37,35 @@ export interface UpdateStatusResponse {
     remote_commit?: string;
     remote_commit_short?: string;
     update_available?: boolean;
+    branch?: string;
+    remote?: string;
+    remote_branch?: string;
+    is_official_clone?: boolean;
+    valid_branch?: boolean;
+    validation_error?: string;
+    message?: string;
     error?: string;
 }
 
 export interface UpdateActionResponse {
+    success: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareCheckResponse {
+    success: boolean;
+    update_available?: boolean;
+    has_local_file?: boolean;
+    remote_sha?: string;
+    remote_date?: string;
+    remote_message?: string;
+    local_sha?: string;
+    local_date?: string;
+    error?: string;
+}
+
+export interface FirmwareActionResponse {
     success: boolean;
     message?: string;
     error?: string;
@@ -88,5 +113,18 @@ export class ApiService {
 
     performUpdate(): Observable<UpdateActionResponse> {
         return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/pull`, {});
+    }
+
+    // Firmware Update Management
+    checkFirmware(): Observable<FirmwareCheckResponse> {
+        return this.http.get<FirmwareCheckResponse>(`${this.baseUrl}/api/firmware/check`);
+    }
+
+    downloadFirmware(): Observable<FirmwareActionResponse> {
+        return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/download`, {});
+    }
+
+    flashFirmware(): Observable<FirmwareActionResponse> {
+        return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/flash`, {});
     }
 }

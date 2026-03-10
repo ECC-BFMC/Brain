@@ -26,7 +26,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Injectable } from '@angular/core';
+import { Injectable, ApplicationRef, inject } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import { Observable, Subject } from 'rxjs';
 @Injectable({
@@ -69,11 +69,13 @@ export class WebSocketService {
     'console_log'
   ]);
 
+  private appRef = inject(ApplicationRef);
+
   constructor() {
     this.webSocket = new Socket({
       url: `http://${window.location.hostname}:5005`,
       options: {},
-    });
+    }, this.appRef);
 
     // Listen for all messages from the WebSocket server
     this.webSocket.onAny((eventName: string, data: any) => {
@@ -256,7 +258,7 @@ export class WebSocketService {
   }
 
   isReconnecting(): boolean {
-    return this.webSocket.ioSocket.connecting;
+    return this.webSocket.ioSocket.active && !this.webSocket.ioSocket.connected;
   }
 
   // Method to end the WebSocket connection
