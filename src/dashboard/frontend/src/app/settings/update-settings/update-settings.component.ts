@@ -27,6 +27,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     isOfficialClone: boolean = true;
     isValidBranch: boolean = true;
     hasChecked: boolean = false;
+    needsRestart: boolean = false;
 
     // Firmware state
     fwUpdateAvailable: boolean = false;
@@ -61,7 +62,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         this.isChecking = true;
         this.statusMessage = '';
         this.validationError = '';
-        
+
         this.apiService.checkForUpdates().subscribe({
             next: (response) => {
                 this.hasChecked = true;
@@ -113,9 +114,9 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         this.apiService.performUpdate().subscribe({
             next: (response) => {
                 if (response.success) {
-                    this.showStatus(response.message || 'Update successful! Please restart the application.', 'success', 10000);
+                    this.showStatus(response.message || 'Update successful!', 'success', 10000);
                     this.updateAvailable = false;
-                    // Refresh commit info
+                    this.needsRestart = true;
                     this.checkForUpdates();
                 } else {
                     this.showStatus(response.error || 'Update failed', 'error');

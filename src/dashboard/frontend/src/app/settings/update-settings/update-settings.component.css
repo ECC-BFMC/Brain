@@ -76,6 +76,19 @@
   margin-top: 1px;
 }
 
+.card-alert.restart {
+  display: flex;
+  gap: 0.6rem;
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  color: #ffd54f;
+}
+
+.card-alert.restart svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 .alert-content {
   display: flex;
   flex-direction: column;

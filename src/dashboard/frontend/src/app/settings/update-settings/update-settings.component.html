@@ -24,6 +24,14 @@
       {{ statusMessage }}
     </div>
 
+    <!-- Restart Required Banner -->
+    <div *ngIf="needsRestart" class="card-alert restart">
+      <div class="alert-content">
+        <span class="alert-title">Restart Required</span>
+        <span class="alert-text">The car must be restarted for the update to take effect.</span>
+      </div>
+    </div>
+
     <!-- Brain Actions Row -->
     <div class="card-actions">
       <button class="btn btn-check" (click)="checkForUpdates()" [disabled]="isChecking || isUpdating">
