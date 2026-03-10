@@ -27,7 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, HostListener, OnInit } from '@angular/core';
-import { WebSocketService } from '../../webSocket/web-socket.service';
+import { WebSocketService } from '../../services/web-socket.service';
 import { NgFor, NgIf } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ClusterService } from '../cluster.service';

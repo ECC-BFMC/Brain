@@ -28,6 +28,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 1rem;
 }
 
 .settings-header h2 {
@@ -80,6 +81,7 @@
   overflow: hidden;
 }
 
+/* Divider line between sections */
 .settings-layout::before {
   content: '';
   position: absolute;
@@ -96,6 +98,7 @@
   .settings-layout {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    overflow-y: auto;
   }
 
   .settings-layout::before {
@@ -103,19 +106,79 @@
   }
 }
 
-/* Section Styles */
+/* Section Styles - Shared base for both sections */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  scrollbar-gutter: stable;
+}
+
 .calibration-section {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  padding-left: 0.5rem;
   padding-right: 1rem;
+  scrollbar-gutter: stable;
 }
 
 .right-section {
-  /* Empty section ready for future content */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  padding-left: 1rem;
+  padding-right: 0.5rem;
+  scrollbar-gutter: stable;
+  gap: 1.5rem;
+}
+
+.subsection {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.subsection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+  .calibration-section,
+  .right-section {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+
+  .right-section {
+    gap: 1.5rem;
+  }
+
+  .subsection {
+    padding-bottom: 1.5rem;
+  }
+
+  .subsection:last-child {
+    padding-bottom: 0;
+  }
 }
 
 .section-header {
@@ -183,15 +246,14 @@
 
 /* Calibration Info Styles */
 .calibration-info {
-  padding: 1.5rem;
+  padding: 0.75rem 1.5rem;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  align-self: flex-start;
 }
 
 .calibration-info p {
-  margin: 0 0 1rem 0;
+  margin: 0;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.5;
 }
@@ -203,6 +265,30 @@
 }
 
 .calibration-info li {
+  margin-bottom: 0.5rem;
+}
+
+/* Section info box - shared by both sections */
+.section-info {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-info p {
+  margin: 0 0 1rem 0;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+}
+
+.section-info ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.section-info li {
   margin-bottom: 0.5rem;
 }
 
@@ -230,62 +316,43 @@ app-calibration {
 .calibration-section.calibration-active {
   position: relative;
   z-index: 5;
-  overflow-y: auto;
 }
 
-/* Custom scrollbar for calibration section */
-.calibration-section.calibration-active::-webkit-scrollbar {
-  width: 24px;
+/* Custom scrollbar for both sections */
+.calibration-section::-webkit-scrollbar,
+.right-section::-webkit-scrollbar {
+  width: 8px;
 }
 
-.calibration-section.calibration-active::-webkit-scrollbar-track {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: 4px;
-  margin-bottom: 4px;
+.calibration-section::-webkit-scrollbar-track,
+.right-section::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.calibration-section.calibration-active::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #00acc1, #26a69a);
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 2px 8px rgba(0, 172, 193, 0.3),
-    inset 0 1px 2px rgba(255, 255, 255, 0.2);
+.calibration-section::-webkit-scrollbar-thumb,
+.right-section::-webkit-scrollbar-thumb {
+  background: rgba(0, 172, 193, 0.5);
+  border-radius: 4px;
   transition: all 0.3s ease;
 }
 
-.calibration-section.calibration-active::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #26c6da, #4db6ac);
-  box-shadow:
-    0 3px 10px rgba(38, 198, 218, 0.4),
-    inset 0 1px 3px rgba(255, 255, 255, 0.3),
-    0 0 8px rgba(38, 198, 218, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.calibration-section.calibration-active::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, #0097a7, #00695c);
-  box-shadow:
-    0 1px 4px rgba(0, 151, 167, 0.6),
-    inset 0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+.calibration-section::-webkit-scrollbar-thumb:hover,
+.right-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 172, 193, 0.8);
 }
 
 /* For Firefox */
-.calibration-section.calibration-active {
-  scrollbar-width: auto;
-  scrollbar-gutter: stable both-edges;
-  scrollbar-color: #00acc1 rgba(255, 255, 255, 0.1);
+.calibration-section,
+.right-section {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 172, 193, 0.5) transparent;
 }
 
-/* Make scrollbar thicker on small widths */
+/* Mobile adjustments */
 @media (max-width: 768px) {
-  .calibration-section.calibration-active {
-    scrollbar-width: auto;
+  .calibration-section::-webkit-scrollbar,
+  .right-section::-webkit-scrollbar {
+    width: 6px;
   }
 }
 

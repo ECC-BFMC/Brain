@@ -28,7 +28,8 @@
 
 import { Component, Input, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { WebSocketService} from '../webSocket/web-socket.service'
+import { WebSocketService } from '../services/web-socket.service'
+import { ApiService } from '../services/api.service';
 
 import { SpeedometerComponent } from './speedometer/speedometer.component';
 import { BatteryLevelComponent } from './battery-level/battery-level.component';
@@ -40,9 +41,9 @@ import { KlSwitchComponent } from './kl-switch/kl-switch.component';
 import { SteeringComponent } from './steering/steering.component';
 import { LiveCameraComponent } from './live-camera/live-camera.component';
 import { WarningLightComponent } from './warning-light/warning-light.component';
-import { HardwareDataComponent} from './hardware-data/hardware-data.component';
-import { RecordComponent} from './record/record.component';
-import { TimeSpeedSteerComponent} from './time-speed-steer/time-speed-steer.component'
+import { HardwareDataComponent } from './hardware-data/hardware-data.component';
+import { RecordComponent } from './record/record.component';
+import { TimeSpeedSteerComponent } from './time-speed-steer/time-speed-steer.component'
 import { SideMarkerComponent } from './side-marker/side-marker.component'
 import { CommonModule } from '@angular/common';
 import { ClusterService } from './cluster.service';
@@ -50,11 +51,11 @@ import { provideProtractorTestingSupport } from '@angular/platform-browser';
 @Component({
   selector: 'app-cluster',
   standalone: true,
-  imports: [SpeedometerComponent, BatteryLevelComponent, MapComponent, 
-            CarComponent, InstantConsumptionComponent, StateSwitchComponent,
-            KlSwitchComponent, SteeringComponent, LiveCameraComponent,
-            WarningLightComponent, HardwareDataComponent, RecordComponent,
-            TimeSpeedSteerComponent, SideMarkerComponent, CommonModule],
+  imports: [SpeedometerComponent, BatteryLevelComponent, MapComponent,
+    CarComponent, InstantConsumptionComponent, StateSwitchComponent,
+    KlSwitchComponent, SteeringComponent, LiveCameraComponent,
+    WarningLightComponent, HardwareDataComponent, RecordComponent,
+    TimeSpeedSteerComponent, SideMarkerComponent, CommonModule],
   templateUrl: './cluster.component.html',
   styleUrl: './cluster.component.css'
 })
@@ -78,11 +79,17 @@ export class ClusterComponent {
   private klSubscription: Subscription | undefined;
   private currentSerialConnectionStateSubscription: Subscription | undefined;
   private serialConnectionStateSubscription: Subscription | undefined;
-  constructor( private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
+  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService, private apiService: ApiService) { }
 
-  ngOnInit()
-  {
-    this.webSocketService.sendMessageToFlask(`{"Name": "GetCurrentSerialConnectionState"}`);
+  ngOnInit() {
+    this.apiService.getSerialStatus().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.clusterService.updateSerialConnectionState(response.connected);
+        }
+      },
+      error: (err) => console.error('Failed to get serial status:', err)
+    });
 
     this.batterySubscription = this.webSocketService.receiveBatteryLevel().subscribe(
       (message) => {
@@ -95,7 +102,7 @@ export class ClusterComponent {
 
     this.speedSubscription = this.webSocketService.receiveCurrentSpeed().subscribe(
       (message) => {
-        this.speed = Math.abs(parseInt(message.value)/10);
+        this.speed = Math.abs(parseInt(message.value) / 10);
       },
       (error) => {
         console.error('Error receiving speed:', error);
@@ -161,10 +168,10 @@ export class ClusterComponent {
     this.webSocketService.disconnectSocket();
     this.clusterService.updateKL('0');
   }
-  
+
   setWarningLightType(type: string): void {
     this.warningLightType = type;
-    
+
     if (this.warningLightComponent) {
       this.warningLightComponent.setWarningLightType(this.warningLightType);
     }

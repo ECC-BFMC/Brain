@@ -30,7 +30,8 @@ import { Component, HostListener, ViewChild, OnDestroy } from '@angular/core';
 import { ClusterComponent } from './cluster/cluster.component';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { WebSocketService } from './webSocket/web-socket.service';
+import { WebSocketService } from './services/web-socket.service';
+import { ApiService } from './services/api.service';
 import { TableComponent } from './table/table.component';
 import { StateSwitchComponent } from './cluster/state-switch/state-switch.component';
 import { SettingsComponent } from './settings/settings.component';
@@ -85,7 +86,7 @@ export class AppComponent implements OnDestroy {
   @ViewChild(TableComponent) tableComponent!: TableComponent;
   @ViewChild('stateSwitch') stateSwitchComponent!: StateSwitchComponent;
 
-  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService) { }
+  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService, private apiService: ApiService) { }
 
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:
@@ -97,7 +98,14 @@ export class AppComponent implements OnDestroy {
           this.isAuthenticated = true;
 
           // Request current states from backend upon successful login
-          this.webSocketService.sendMessageToFlask(`{"Name": "GetCurrentSerialConnectionState"}`);
+          this.apiService.getSerialStatus().subscribe({
+            next: (response) => {
+              if (response.success) {
+                this.clusterService.updateSerialConnectionState(response.connected);
+              }
+            },
+            error: (err) => console.error('Failed to get serial status:', err)
+          });
         }
       },
       (error) => {
@@ -197,6 +205,9 @@ export class AppComponent implements OnDestroy {
 
   openSettings() {
     this.showSettingsModal = true;
+    if (this.clusterComponent) {
+      this.clusterComponent.setState(0); // Set to 'stop' when opening settings
+    }
   }
 
   closeSettings() {

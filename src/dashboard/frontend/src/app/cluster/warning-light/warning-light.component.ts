@@ -30,7 +30,7 @@ import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { trigger, state, style, transition, animate } from '@angular/animations';
-import { WebSocketService } from '../../webSocket/web-socket.service'
+import { WebSocketService } from '../../services/web-socket.service'
 import { warningLightDictionary } from './warningLightDictionary';
 
 @Component({

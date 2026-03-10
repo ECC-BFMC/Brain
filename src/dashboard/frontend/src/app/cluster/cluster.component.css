@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     width: 100%;
     height: 100%;
     border: 0.1vw solid gray;
+    position: relative;
 }
 
 .cluster-instruments { 

@@ -38,7 +38,7 @@ import eventlet
 import os
 import time
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
 from enum import Enum
@@ -49,7 +49,9 @@ from src.templates.workerprocess import WorkerProcess
 from src.utils.messages.allMessages import Semaphores
 from src.statemachine.stateMachine import StateMachine
 from src.dashboard.components.calibration import Calibration
-from src.dashboard.components.ip_manger import IpManager
+from src.dashboard.components.wifi import WifiManager
+from src.dashboard.components.updates import UpdateManager
+from src.dashboard.components.firmware import FirmwareManager
 
 import src.utils.messages.allMessages as allMessages
 
@@ -69,9 +71,6 @@ class processDashboard(WorkerProcess):
         self.queueList = queueList
         self.logger = logging
         self.debugging = debugging
-        
-        # ip replacement
-        IpManager.replace_ip_in_file()
 
         # state machine
         self.stateMachine = StateMachine.get_instance()
@@ -86,13 +85,12 @@ class processDashboard(WorkerProcess):
         self.cpuCoreUsage = 0
         self.cpuTemperature = 0
 
-
         # heartbeat
         self.heartbeat_last_sent = time.time()
         self.heartbeat_retries = 0
         self.heartbeat_max_retries = 3
-        self.heartbeat_time_between_heartbeats = 20 # seconds
-        self.heartbeat_time_between_retries = 5 # seconds # put a higher value if the connection is not stable (e.g. 5 seconds)
+        self.heartbeat_time_between_heartbeats = 20
+        self.heartbeat_time_between_retries = 5
         self.heartbeat_received = False
 
         # session management
@@ -104,18 +102,23 @@ class processDashboard(WorkerProcess):
 
         # configuration
         self.table_state_file = self._get_table_state_path()
+        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
         # setup flask and socketio
         self.app = Flask(__name__)
         self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
         CORS(self.app, supports_credentials=True)
 
-        # calibration
+        # components
         self.calibration = Calibration(self.queueList, self.socketio)
+        self.wifi = WifiManager(repo_path)
+        self.updates = UpdateManager(repo_path)
+        self.firmware = FirmwareManager(repo_path)
 
         # initialize message handling
         self._initialize_messages()
         self._setup_websocket_handlers()
+        self._setup_rest_routes()
         self._start_background_tasks()
 
         super(processDashboard, self).__init__(self.queueList, ready_event)
@@ -140,11 +143,81 @@ class processDashboard(WorkerProcess):
         self.socketio.on_event('message', self.handle_message)
         self.socketio.on_event('save', self.handle_save_table_state)
         self.socketio.on_event('load', self.handle_load_table_state)
-    
-    
+
+
+    def _setup_rest_routes(self):
+        """Setup REST API routes for request/response operations."""
+        from flask import request as flask_request
+
+        # WiFi Management
+        @self.app.route('/api/wifi', methods=['GET'])
+        def api_get_wifi_list():
+            return self.wifi.handle_list()
+        
+        @self.app.route('/api/wifi', methods=['POST'])
+        def api_add_wifi():
+            return self.wifi.handle_add(flask_request.get_json())
+        
+        @self.app.route('/api/wifi/<name>', methods=['DELETE'])
+        def api_remove_wifi(name):
+            return self.wifi.handle_remove(name)
+        
+        # Table State Management
+        @self.app.route('/api/table', methods=['GET'])
+        def api_load_table():
+            try:
+                with open(self.table_state_file, 'r') as json_file:
+                    data = json.load(json_file)
+                return jsonify({'success': True, 'data': data})
+            except FileNotFoundError:
+                return jsonify({'success': False, 'error': 'No saved table state found'}), 404
+            except json.JSONDecodeError:
+                return jsonify({'success': False, 'error': 'Invalid JSON in saved file'}), 500
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/api/table', methods=['POST'])
+        def api_save_table():
+            try:
+                data = flask_request.get_json()
+                os.makedirs(os.path.dirname(self.table_state_file), exist_ok=True)
+                with open(self.table_state_file, 'w') as json_file:
+                    json.dump(data, json_file, indent=4)
+                return jsonify({'success': True, 'message': 'Table state saved'})
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # Serial Connection Status
+        @self.app.route('/api/serial/status', methods=['GET'])
+        def api_serial_status():
+            return jsonify({'success': True, 'connected': self.serialConnected})
+        
+        # Codebase Update Management
+        @self.app.route('/api/update/check', methods=['GET'])
+        def api_check_updates():
+            return self.updates.handle_check()
+        
+        @self.app.route('/api/update/pull', methods=['POST'])
+        def api_pull_updates():
+            return self.updates.handle_pull()
+        
+        # Firmware Update Management
+        @self.app.route('/api/firmware/check', methods=['GET'])
+        def api_check_firmware():
+            return self.firmware.handle_check()
+        
+        @self.app.route('/api/firmware/download', methods=['POST'])
+        def api_download_firmware():
+            return self.firmware.handle_download()
+        
+        @self.app.route('/api/firmware/flash', methods=['POST'])
+        def api_flash_firmware():
+            return self.firmware.handle_flash()
+
+
     def _start_background_tasks(self):
         """Start background monitoring tasks."""
-        psutil.cpu_percent(interval=1, percpu=False) # warm up
+        psutil.cpu_percent(interval=1, percpu=False)
 
         eventlet.spawn(self.update_hardware_data)
         eventlet.spawn(self.send_continuous_messages)
