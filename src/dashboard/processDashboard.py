@@ -102,24 +102,19 @@ class processDashboard(WorkerProcess):
 
         # configuration
         self.table_state_file = self._get_table_state_path()
-        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-        # setup flask and socketio
-        self.app = Flask(__name__)
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
-        CORS(self.app, supports_credentials=True)
+        # setup flask and socketio (deferred to run)
+        self.app = None
+        self.socketio = None
 
         # components
-        self.calibration = Calibration(self.queueList, self.socketio)
-        self.wifi = WifiManager(repo_path)
-        self.updates = UpdateManager(repo_path)
-        self.firmware = FirmwareManager(repo_path)
+        self.calibration = None
+        self.wifi = None
+        self.updates = None
+        self.firmware = None
 
         # initialize message handling
         self._initialize_messages()
-        self._setup_websocket_handlers()
-        self._setup_rest_routes()
-        self._start_background_tasks()
 
         super(processDashboard, self).__init__(self.queueList, ready_event)
     
@@ -257,6 +252,23 @@ class processDashboard(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing method."""
+        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        # setup flask and socketio
+        self.app = Flask(__name__)
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
+        CORS(self.app, supports_credentials=True)
+
+        # components
+        self.calibration = Calibration(self.queueList, self.socketio)
+        self.wifi = WifiManager(repo_path)
+        self.updates = UpdateManager(repo_path)
+        self.firmware = FirmwareManager(repo_path)
+
+        self._setup_websocket_handlers()
+        self._setup_rest_routes()
+        self._start_background_tasks()
+
         if self.ready_event:
             self.ready_event.set()
 
@@ -409,9 +421,21 @@ class processDashboard(WorkerProcess):
 
     def update_hardware_data(self):
         """Monitor and update hardware metrics periodically."""
-        self.cpuCoreUsage = psutil.cpu_percent(interval=None, percpu=False)
-        self.memoryUsage = psutil.virtual_memory().percent
-        self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        try:
+            self.cpuCoreUsage = psutil.cpu_percent(interval=None, percpu=False)
+        except Exception:
+            self.cpuCoreUsage = 0
+
+        try:
+            self.memoryUsage = psutil.virtual_memory().percent
+        except Exception:
+            self.memoryUsage = 0
+            
+        try:
+            temps = psutil.sensors_temperatures()
+            self.cpuTemperature = round(temps["cpu_thermal"][0].current) if temps.get("cpu_thermal") else 0
+        except Exception:
+            self.cpuTemperature = 0
 
         eventlet.spawn_after(1, self.update_hardware_data)
 

@@ -121,6 +121,22 @@ class StateMachine:
             self.stateChangeSender =  messageHandlerSender(StateMachine._queueList, StateChange)
             setattr(self, '_instance_initialized', True)
 
+    def __getstate__(self):
+        """Pack class-level multiprocessing proxies so they travel across processes on Windows."""
+        state = self.__dict__.copy()
+        state['_shared_state'] = StateMachine._shared_state
+        state['_process_lock'] = StateMachine._process_lock
+        state['_queueList'] = StateMachine._queueList
+        return state
+
+    def __setstate__(self, state):
+        """Restore the class-level proxies in the child process."""
+        self.__dict__.update(state)
+        StateMachine._shared_state = state.get('_shared_state')
+        StateMachine._process_lock = state.get('_process_lock')
+        StateMachine._queueList = state.get('_queueList')
+        StateMachine._initialized = True
+
     def request_mode(self, action: str) -> bool:
         """Request a mode change if the transition is valid."""
         if self._process_lock is None or self._shared_state is None:

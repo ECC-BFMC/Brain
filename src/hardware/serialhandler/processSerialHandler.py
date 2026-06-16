@@ -69,14 +69,15 @@ class processSerialHandler(WorkerProcess):
         self.serialCon = None
         self.serialConnected = False
         self.serialDevice = None
-        self.serialLock = Lock()
+        self.serialLock = None
         self.reconnecting = False
 
         self._init_subscribers()
         self._init_senders()
 
         # log file init
-        self.historyFile = FileHandler(logFile)
+        self.logFile = logFile
+        self.historyFile = None
 
         super(processSerialHandler, self).__init__(self.queuesList, ready_event)
 
@@ -176,6 +177,9 @@ class processSerialHandler(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
+        self.serialLock = Lock()
+        if self.historyFile is None:
+            self.historyFile = FileHandler(self.logFile)
         self._try_serial_connection()
 
         if not self.serialConnected:
@@ -189,7 +193,8 @@ class processSerialHandler(WorkerProcess):
                 threading.Thread(target=self._wait_for_dashboard_and_notify, daemon=True).start()
 
         super(processSerialHandler, self).run()
-        self.historyFile.close()
+        if self.historyFile is not None:
+            self.historyFile.close()
 
     # ===================================== PROCESS WORK ==========================================
     def process_work(self):
@@ -215,7 +220,14 @@ class processSerialHandler(WorkerProcess):
     def stop(self):
         """Close the history file and stop the process."""
         # close serial connection
-        with self.serialLock:
+        if self.serialLock is not None:
+            with self.serialLock:
+                if self.serialCon:
+                    try:
+                        self.serialCon.close()
+                    except Exception as e:
+                        print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Error closing serial port: {e}")
+        else:
             if self.serialCon:
                 try:
                     self.serialCon.close()

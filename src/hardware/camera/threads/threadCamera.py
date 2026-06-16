@@ -29,7 +29,11 @@
 import cv2
 import threading
 import base64
-import picamera2
+try:
+    import picamera2
+    HAS_PICAMERA2 = True
+except ImportError:
+    HAS_PICAMERA2 = False
 import time
 
 from src.utils.messages.allMessages import (
@@ -95,9 +99,14 @@ class threadCamera(ThreadWithStop):
         """This function will run while the running flag is True. 
         It captures the image from camera and make the required modifies 
         and then it send the data to process gateway."""
-        # if camera is not available, skip processing
+        # If no real camera, send pre-built offline frames at 1 fps
         if self.camera is None:
-            time.sleep(0.1)
+            if hasattr(self, '_offline_frame_index'):
+                idx = self._offline_frame_index
+                self.mainCameraSender.send(self._offline_main_b64_list[idx])
+                self.serialCameraSender.send(self._offline_serial_b64_list[idx])
+                self._offline_frame_index = (idx + 1) % 3
+            time.sleep(1)
             return
             
         try:
@@ -156,6 +165,53 @@ class threadCamera(ThreadWithStop):
     def _init_camera(self):
         """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
 
+        if not HAS_PICAMERA2:
+            import numpy as np
+            
+            self._offline_main_b64_list = []
+            self._offline_serial_b64_list = []
+            
+            text = "OFFLINE"
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            scale = 4.0
+            thickness = 8
+            (tw, th), _ = cv2.getTextSize(text, font, scale, thickness)
+            
+            scale_s = 1.5
+            thick_s = 3
+            (tw2, th2), _ = cv2.getTextSize(text, font, scale_s, thick_s)
+            
+            # Position 1: Top Left (with small padding)
+            pos_main_1 = (20, th + 20)
+            pos_serial_1 = (10, th2 + 10)
+            
+            # Position 2: Center
+            pos_main_2 = ((2048 - tw) // 2, (1080 + th) // 2)
+            pos_serial_2 = ((512 - tw2) // 2, (270 + th2) // 2)
+            
+            # Position 3: Bottom Right (with small padding)
+            pos_main_3 = (2048 - tw - 20, 1080 - 20)
+            pos_serial_3 = (512 - tw2 - 10, 270 - 10)
+            
+            positions_main = [pos_main_1, pos_main_2, pos_main_3]
+            positions_serial = [pos_serial_1, pos_serial_2, pos_serial_3]
+            
+            for p_main, p_serial in zip(positions_main, positions_serial):
+                main_img = np.zeros((1080, 2048, 3), dtype=np.uint8)
+                cv2.putText(main_img, text, p_main, font, scale, (255, 255, 255), thickness)
+                _, main_enc = cv2.imencode(".jpg", main_img)
+                self._offline_main_b64_list.append(base64.b64encode(main_enc).decode("utf-8"))
+                
+                serial_img = np.zeros((270, 512, 3), dtype=np.uint8)
+                cv2.putText(serial_img, text, p_serial, font, scale_s, (255, 255, 255), thick_s)
+                _, serial_enc = cv2.imencode(".jpg", serial_img)
+                self._offline_serial_b64_list.append(base64.b64encode(serial_enc).decode("utf-8"))
+            
+            self._offline_frame_index = 0
+            self.camera = None
+            print("\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - No picamera2 available. Using OFFLINE placeholder sequence.")
+            return
+
         try:
             # check if camera is available
             if len(picamera2.Picamera2.global_camera_info()) == 0:
@@ -191,7 +247,7 @@ class threadCamera(ThreadWithStop):
         """Callback function for receiving configs on the pipe."""
         if self._blocker.is_set():
             return
-        if self.brightnessSubscriber.is_data_in_pipe():
+        if self.camera is not None and self.brightnessSubscriber.is_data_in_pipe():
             message = self.brightnessSubscriber.receive()
             if self.debugger:
                 self.logger.info(str(message))
@@ -202,7 +258,7 @@ class threadCamera(ThreadWithStop):
                     "Brightness": max(0.0, min(1.0, float(message))), # type: ignore
                 }
             )
-        if self.contrastSubscriber.is_data_in_pipe():
+        if self.camera is not None and self.contrastSubscriber.is_data_in_pipe():
             message = self.contrastSubscriber.receive() # de modificat marti uc camera noua 
             if self.debugger:
                 self.logger.info(str(message))

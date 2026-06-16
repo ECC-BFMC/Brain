@@ -106,105 +106,109 @@ def manage_process_life(process_class, process_instance, process_args, enabled, 
 
 # ======================================== SETTING UP ====================================
 
-print(BigPrint.PLEASE_WAIT.value)
-allProcesses = list()
-allEvents = list()
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+    freeze_support()
 
-queueList = {
-    "Critical": Queue(),
-    "Warning": Queue(),
-    "General": Queue(),
-    "Config": Queue(),
-    "Log": Queue(),
-}
-logging = logging.getLogger()
+    print(BigPrint.PLEASE_WAIT.value)
+    allProcesses = list()
+    allEvents = list()
 
-original_stdout = sys.stdout
-original_stderr = sys.stderr
+    queueList = {
+        "Critical": Queue(),
+        "Warning": Queue(),
+        "General": Queue(),
+        "Config": Queue(),
+        "Log": Queue(),
+    }
+    logging = logging.getLogger()
 
-queue_writer = QueueWriter(queueList["Log"])
-sys.stdout = MultiWriter(original_stdout, queue_writer)
-sys.stderr = MultiWriter(original_stderr, queue_writer)
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
 
-# ===================================== INITIALIZE ==================================
+    queue_writer = QueueWriter(queueList["Log"])
+    sys.stdout = MultiWriter(original_stdout, queue_writer)
+    sys.stderr = MultiWriter(original_stderr, queue_writer)
 
-stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
-StateMachine.initialize_shared_state(queueList)
+    # ===================================== INITIALIZE ==================================
 
-# Initializing gateway
-processGateway = processGateway(queueList, logging)
-processGateway.start()
+    stateChangeSubscriber = messageHandlerSubscriber(queueList, StateChange, "lastOnly", True)
+    StateMachine.initialize_shared_state(queueList)
 
-# ===================================== INITIALIZE PROCESSES ==================================
+    # Initializing gateway
+    processGateway = processGateway(queueList, logging)
+    processGateway.start()
 
-# Initializing dashboard
-dashboard_ready = Event()
-processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
+    # ===================================== INITIALIZE PROCESSES ==================================
 
-# Initializing camera
-camera_ready = Event()
-processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
+    # Initializing dashboard
+    dashboard_ready = Event()
+    processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
 
-# Initializing semaphores
-semaphore_ready = Event()
-processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
+    # Initializing camera
+    camera_ready = Event()
+    processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
 
-# Initializing GPS
-traffic_com_ready = Event()
-processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
+    # Initializing semaphores
+    semaphore_ready = Event()
+    processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
 
-# Initializing serial connection NUCLEO - > PI
-serial_handler_ready = Event()
-processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
+    # Initializing GPS
+    traffic_com_ready = Event()
+    processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
 
-# Adding all processes to the list
-allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
-allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
+    # Initializing serial connection NUCLEO - > PI
+    serial_handler_ready = Event()
+    processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
 
-# ------ New component initialize starts here ------#
+    # Adding all processes to the list
+    allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
+    allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
 
-# ------ New component initialize ends here ------#
+    # ------ New component initialize starts here ------#
 
-# ===================================== START PROCESSES ==================================
+    # ------ New component initialize ends here ------#
 
-for process in allProcesses:
-    process.daemon = True
-    process.start()
+    # ===================================== START PROCESSES ==================================
 
-# ===================================== STAYING ALIVE ====================================
+    for process in allProcesses:
+        process.daemon = True
+        process.start()
 
-blocker = Event()
-try:
-    # wait for all events to be set
-    for event in allEvents:
-        event.wait()
+    # ===================================== STAYING ALIVE ====================================
 
-    # apply starting mode
-    StateMachine.initialize_starting_mode()
+    blocker = Event()
+    try:
+        # wait for all events to be set
+        for event in allEvents:
+            event.wait()
 
-    time.sleep(10)
-    print(BigPrint.C4_BOMB.value)
-    print(BigPrint.PRESS_CTRL_C.value)
+        # apply starting mode
+        StateMachine.initialize_starting_mode()
 
-    while True:
-        message = stateChangeSubscriber.receive()
-        if message is not None:
-            modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
-            modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
+        time.sleep(10)
+        print(BigPrint.C4_BOMB.value)
+        print(BigPrint.PRESS_CTRL_C.value)
 
-            processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logging, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
-            processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logging, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
+        while True:
+            message = stateChangeSubscriber.receive()
+            if message is not None:
+                modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
+                modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
 
-        blocker.wait(0.1)
+                processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logging, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
+                processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logging, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
 
-except KeyboardInterrupt:
-    print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
+            blocker.wait(0.1)
 
-    for proc in reversed(allProcesses):
-        proc.stop()
-    processGateway.stop()
+    except KeyboardInterrupt:
+        print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
 
-    # wait for all processes to finish before exiting
-    for proc in reversed(allProcesses):
-        shutdown_process(proc)
-    shutdown_process(processGateway)
+        for proc in reversed(allProcesses):
+            proc.stop()
+        processGateway.stop()
+
+        # wait for all processes to finish before exiting
+        for proc in reversed(allProcesses):
+            shutdown_process(proc)
+        shutdown_process(processGateway)
