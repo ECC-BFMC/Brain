@@ -68,12 +68,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .alert-modal-content h2 {
   margin: 0 0 15px 0;
-  font-size: clamp(24px, 5vw, 32px);
+  font-size: clamp(16px, 2vw, 20px);
 }
 
 .alert-modal-content p {
   margin: 0 0 20px 0;
-  font-size: clamp(16px, 3.5vw, 20px);
+  font-size: clamp(12px, 1.6vw, 14px);
   line-height: 1.4;
 }
 
@@ -84,7 +84,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: clamp(14px, 3vw, 16px);
+  font-size: clamp(12px, 1.6vw, 14px);
   font-weight: bold;
   transition: background-color 0.3s;
   min-width: 80px;
@@ -296,12 +296,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .backend-popup-notification h2 {
   margin: 0 0 15px 0;
-  font-size: clamp(18px, 4vw, 26px);
+  font-size: clamp(15px, 1.9vw, 18px);
 }
 
 .backend-popup-notification p {
   margin: 0;
-  font-size: clamp(14px, 3vw, 18px);
+  font-size: clamp(12px, 1.5vw, 14px);
   line-height: 1.4;
 }
 

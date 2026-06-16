@@ -12,11 +12,11 @@
 .settings-dialog {
   background: rgb(45, 54, 58);
   color: white;
-  width: min(1500px, 92vw);
-  height: min(1100px, 95vh);
+  width: min(1120px, 95vw);
+  height: min(800px, 90vh);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-  padding: clamp(16px, 2vw, 24px);
+  padding: clamp(10px, 1.2vw, 14px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -28,54 +28,61 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 1rem;
+  min-height: 30px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  margin-bottom: 6px;
 }
 
 .settings-header h2 {
   margin: 0;
-  font-size: clamp(20px, 2.5vw, 28px);
+  font-size: clamp(15px, 1.7vw, 18px);
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .settings-body {
-  font-size: clamp(14px, 2vw, 16px);
+  font-size: 11px;
   flex: 1;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
   position: relative;
 }
 
 .header-close {
-  background: none;
-  border: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  color: #aaa;
-  padding: 6px;
-  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  width: 26px;
+  min-width: 26px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .header-close svg {
-  /* stroke: currentColor; Removed stroke */
   fill: currentColor;
-  width: 20px;
-  height: 20px;
+  width: 13px;
+  height: 13px;
 }
 
 .header-close:hover {
-  background-color: transparent;
-  /* No background */
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
   color: #fff;
-  transform: scale(1.1);
 }
 
 /* Layout Styles */
 .settings-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: 14px;
   height: 100%;
   position: relative;
   overflow: hidden;
@@ -89,7 +96,7 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
   transform: translateX(-50%);
   z-index: 1;
 }
@@ -97,7 +104,7 @@
 @media (max-width: 1024px) {
   .settings-layout {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 10px;
     overflow-y: auto;
   }
 
@@ -118,7 +125,7 @@
   scrollbar-gutter: stable;
 }
 
-.calibration-section {
+.left-section {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -126,9 +133,14 @@
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  padding-left: 0.5rem;
-  padding-right: 1rem;
+  padding: 0 9px 0 0;
   scrollbar-gutter: stable;
+  gap: 10px;
+}
+
+.calibration-section {
+  min-height: 0;
+  overflow: visible;
 }
 
 .right-section {
@@ -139,26 +151,32 @@
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  padding-left: 1rem;
-  padding-right: 0.5rem;
+  padding: 0 0 0 9px;
   scrollbar-gutter: stable;
-  gap: 1.5rem;
+  gap: 10px;
 }
 
 .subsection {
   display: flex;
   flex-direction: column;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  min-width: 0;
 }
 
 .subsection:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  padding-bottom: 9px;
+}
+
+.calibration-related-subsection {
+  margin-top: 10px;
 }
 
 @media (max-width: 1024px) {
-  .calibration-section,
+
+  .left-section,
   .right-section {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
@@ -168,12 +186,13 @@
     scrollbar-gutter: auto;
   }
 
+  .left-section,
   .right-section {
-    gap: 1.5rem;
+    gap: 10px;
   }
 
   .subsection {
-    padding-bottom: 1.5rem;
+    padding: 9px;
   }
 
   .subsection:last-child {
@@ -185,83 +204,103 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 8px;
+  min-height: 30px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .section-header h3 {
   margin: 0;
-  font-size: clamp(16px, 2vw, 20px);
-  color: #fff;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+  letter-spacing: 0;
+  min-width: 0;
 }
 
 /* Button Styles */
 .btn-primary,
 .btn-secondary,
 .btn-success {
-  padding: 8px 16px;
-  border: none;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 10.5px;
+  line-height: 1;
   font-weight: 500;
-  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .btn-primary {
-  background: #007bff;
-  color: white;
+  color: #7df9ff;
+  border-color: rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
 }
 
 .btn-primary:hover {
-  background: #0056b3;
+  color: #b9fdff;
+  border-color: rgba(125, 249, 255, 0.34);
+  background: rgba(125, 249, 255, 0.07);
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
 }
 
 .btn-secondary:hover {
-  background: #545b62;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .btn-secondary:disabled {
-  background: #495057;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.26);
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 .btn-success {
-  background: #28a745;
-  color: white;
+  color: #52d273;
+  border-color: rgba(82, 210, 115, 0.22);
+  background: rgba(82, 210, 115, 0.04);
 }
 
 .btn-success:hover {
-  background: #1e7e34;
+  color: #7cf09b;
+  border-color: rgba(124, 240, 155, 0.3);
+  background: rgba(124, 240, 155, 0.06);
 }
 
 
 
 /* Calibration Info Styles */
 .calibration-info {
-  padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .calibration-info p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 10.5px;
+  line-height: 1.45;
 }
 
 .calibration-info ul {
   margin: 0;
-  padding-left: 1.5rem;
-  color: rgba(255, 255, 255, 0.8);
+  padding-left: 1.2rem;
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .calibration-info li {
@@ -270,27 +309,30 @@
 
 /* Section info box - shared by both sections */
 .section-info {
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .section-info p {
-  margin: 0 0 1rem 0;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.5;
+  margin: 0 0 8px 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 10.5px;
+  line-height: 1.45;
 }
 
 .section-info ul {
   margin: 0;
-  padding-left: 1.5rem;
-  color: rgba(255, 255, 255, 0.8);
+  padding-left: 1.2rem;
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .section-info li {
   margin-bottom: 0.5rem;
 }
+
+
 
 /* Ensure calibration component can properly position within settings */
 app-calibration {
@@ -304,6 +346,7 @@ app-calibration {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 /* When calibration is active, ensure proper container behavior */
@@ -314,43 +357,233 @@ app-calibration {
 
 /* Alternative approach for older browsers that don't support :has() */
 .calibration-section.calibration-active {
-  position: relative;
-  z-index: 5;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Custom scrollbar for both sections */
-.calibration-section::-webkit-scrollbar,
+.left-section::-webkit-scrollbar,
 .right-section::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
-.calibration-section::-webkit-scrollbar-track,
+.left-section::-webkit-scrollbar-track,
 .right-section::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.calibration-section::-webkit-scrollbar-thumb,
+.left-section::-webkit-scrollbar-thumb,
 .right-section::-webkit-scrollbar-thumb {
-  background: rgba(0, 172, 193, 0.5);
+  background: rgba(125, 249, 255, 0.24);
   border-radius: 4px;
   transition: all 0.3s ease;
 }
 
-.calibration-section::-webkit-scrollbar-thumb:hover,
+.left-section::-webkit-scrollbar-thumb:hover,
 .right-section::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 172, 193, 0.8);
+  background: rgba(125, 249, 255, 0.42);
 }
 
 /* For Firefox */
-.calibration-section,
+.left-section,
 .right-section {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 172, 193, 0.5) transparent;
+  scrollbar-color: rgba(125, 249, 255, 0.24) transparent;
+}
+
+.settings-dialog ::ng-deep .calibration-modal,
+.settings-dialog ::ng-deep .update-card,
+.settings-dialog ::ng-deep .probe-results,
+.settings-dialog ::ng-deep .encoder-test-results,
+.settings-dialog ::ng-deep .firmware-details,
+.settings-dialog ::ng-deep .empty-state,
+.settings-dialog ::ng-deep .info-note {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+.settings-dialog ::ng-deep .calibration-modal {
+  padding: 9px;
+}
+
+.settings-dialog ::ng-deep .wifi-settings,
+.settings-dialog ::ng-deep .update-manager,
+.settings-dialog ::ng-deep .local-firmware-settings {
+  padding: 0;
+  gap: 8px;
+}
+
+.settings-dialog ::ng-deep .probe-row,
+.settings-dialog ::ng-deep .encoder-test-row,
+.settings-dialog ::ng-deep .firmware-row,
+.settings-dialog ::ng-deep .card-actions {
+  gap: 6px;
+}
+
+.settings-dialog ::ng-deep .form-group label,
+.settings-dialog ::ng-deep .input-group label,
+.settings-dialog ::ng-deep .probe-controls label,
+.settings-dialog ::ng-deep .encoder-test-controls label,
+.settings-dialog ::ng-deep .firmware-controls label,
+.settings-dialog ::ng-deep .detail-label {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.settings-dialog ::ng-deep .storage-label,
+.settings-dialog ::ng-deep .detail-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-dialog ::ng-deep input,
+.settings-dialog ::ng-deep select,
+.settings-dialog ::ng-deep .form-input,
+.settings-dialog ::ng-deep .form-select,
+.settings-dialog ::ng-deep .probe-controls input,
+.settings-dialog ::ng-deep .encoder-test-controls input,
+.settings-dialog ::ng-deep .firmware-controls select {
+  min-height: 26px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+  outline: none;
+}
+
+.settings-dialog ::ng-deep input:focus,
+.settings-dialog ::ng-deep select:focus,
+.settings-dialog ::ng-deep .form-input:focus,
+.settings-dialog ::ng-deep .form-select:focus,
+.settings-dialog ::ng-deep .probe-controls input:focus,
+.settings-dialog ::ng-deep .encoder-test-controls input:focus,
+.settings-dialog ::ng-deep .firmware-controls select:focus {
+  border-color: rgba(125, 249, 255, 0.38);
+  box-shadow: 0 0 0 2px rgba(125, 249, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.settings-dialog ::ng-deep button.btn,
+.settings-dialog ::ng-deep button.btn-primary,
+.settings-dialog ::ng-deep button.btn-secondary,
+.settings-dialog ::ng-deep button.btn-check,
+.settings-dialog ::ng-deep button.btn-update,
+.settings-dialog ::ng-deep button.btn-download,
+.settings-dialog ::ng-deep button.btn-flash,
+.settings-dialog ::ng-deep button.btn-refresh,
+.settings-dialog ::ng-deep button.probe-run,
+.settings-dialog ::ng-deep button.encoder-test-run {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.settings-dialog ::ng-deep button.btn-primary,
+.settings-dialog ::ng-deep button.btn-download,
+.settings-dialog ::ng-deep button.btn-check,
+.settings-dialog ::ng-deep button.btn-refresh {
+  color: #7df9ff;
+  border-color: rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
+}
+
+.settings-dialog ::ng-deep button.btn-update,
+.settings-dialog ::ng-deep button.btn-success {
+  color: #52d273;
+  border-color: rgba(82, 210, 115, 0.22);
+  background: rgba(82, 210, 115, 0.04);
+}
+
+.settings-dialog ::ng-deep button.btn-flash {
+  color: #ffb38a;
+  border-color: rgba(255, 179, 138, 0.26);
+  background: rgba(255, 179, 138, 0.08);
+}
+
+.settings-dialog ::ng-deep button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.settings-dialog ::ng-deep button:disabled {
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.settings-dialog ::ng-deep .status-message,
+.settings-dialog ::ng-deep .card-alert,
+.settings-dialog ::ng-deep .probe-status,
+.settings-dialog ::ng-deep .encoder-test-status,
+.settings-dialog ::ng-deep .success-message,
+.settings-dialog ::ng-deep .error-message {
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.settings-dialog ::ng-deep .step-description {
+  padding: 10px 11px;
+  border-left-color: #6cb7ff;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.settings-dialog ::ng-deep .step-description p {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.settings-dialog ::ng-deep p,
+.settings-dialog ::ng-deep .detail-value,
+.settings-dialog ::ng-deep .result-row,
+.settings-dialog ::ng-deep .alert-text,
+.settings-dialog ::ng-deep .meta-text,
+.settings-dialog ::ng-deep .card-source,
+.settings-dialog ::ng-deep .empty-state {
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.settings-dialog ::ng-deep .card-title,
+.settings-dialog ::ng-deep .section-title h4,
+.settings-dialog ::ng-deep .step-header h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-  .calibration-section::-webkit-scrollbar,
+
+  .left-section::-webkit-scrollbar,
   .right-section::-webkit-scrollbar {
     width: 6px;
   }

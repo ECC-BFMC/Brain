@@ -12,25 +12,27 @@
     <div class="settings-body">
       <div class="settings-layout">
         <!-- Left Half - Calibration Section -->
-        <div class="calibration-section" [class.calibration-active]="showCalibration">
-          <div class="section-header">
-            <h3>Speed and Steer Calibration</h3>
-            <button *ngIf="!showCalibration" class="btn-primary" (click)="startCalibration()">
-              Open
-            </button>
-            <button *ngIf="showCalibration" class="btn-secondary" (click)="onCalibrationClose()">
-              Close
-            </button>
-          </div>
+        <div class="left-section">
+          <div class="subsection calibration-section" [class.calibration-active]="showCalibration">
+            <div class="section-header">
+              <h3>Speed and Steer Calibration</h3>
+              <button *ngIf="!showCalibration" class="btn-primary" (click)="startCalibration()">
+                Open
+              </button>
+              <button *ngIf="showCalibration" class="btn-secondary" (click)="onCalibrationClose()">
+                Close
+              </button>
+            </div>
 
-          <!-- Calibration Component -->
-          <app-calibration [show]="showCalibration" [shouldExit]="requestCalibrationExit" (close)="onCalibrationClose()"
-            (complete)="onCalibrationComplete()" (exited)="onCalibrationExited()">
-          </app-calibration>
+            <!-- Calibration Component -->
+            <app-calibration [show]="showCalibration" [shouldExit]="requestCalibrationExit" (close)="onCalibrationClose()"
+              (complete)="onCalibrationComplete()" (exited)="onCalibrationExited()">
+            </app-calibration>
 
-          <!-- Calibration Status when not active -->
-          <div *ngIf="!showCalibration" class="calibration-info">
-            <p>Tune steering and speed motor accuracy.</p>
+            <!-- Calibration Status when not active -->
+            <div *ngIf="!showCalibration" class="calibration-info">
+              <p>Tune steering and speed motor accuracy.</p>
+            </div>
           </div>
         </div>
 
