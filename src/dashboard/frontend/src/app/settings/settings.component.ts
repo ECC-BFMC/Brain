@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { CalibrationComponent, CalibrationStep } from './calibration/calibration.component';
 import { WifiSettingsComponent } from './wifi-settings/wifi-settings.component';
 import { UpdateSettingsComponent } from './update-settings/update-settings.component';
+import { LocalFirmwareSettingsComponent } from './local-firmware-settings/local-firmware-settings.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, CalibrationComponent, WifiSettingsComponent, UpdateSettingsComponent],
+  imports: [CommonModule, CalibrationComponent, WifiSettingsComponent, UpdateSettingsComponent, LocalFirmwareSettingsComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.css']
 })
@@ -25,6 +26,7 @@ export class SettingsComponent implements OnChanges, OnDestroy {
 
   // Update settings state
   showUpdateSettings: boolean = false;
+  showLocalFirmwareSettings: boolean = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']) {
@@ -45,6 +47,7 @@ export class SettingsComponent implements OnChanges, OnDestroy {
     this.showCalibration = false;
     this.showWifiSettings = false;
     this.showUpdateSettings = false;
+    this.showLocalFirmwareSettings = false;
     this.requestCalibrationExit = false;
     this.pendingClose = false;
   }

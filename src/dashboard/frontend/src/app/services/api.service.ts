@@ -71,6 +71,20 @@ export interface FirmwareActionResponse {
     error?: string;
 }
 
+export interface LocalFirmwareFile {
+    name: string;
+    size: number;
+    modified_at: string;
+    is_default: boolean;
+}
+
+export interface LocalFirmwareFilesResponse {
+    success: boolean;
+    files?: LocalFirmwareFile[];
+    selected_file?: string;
+    error?: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -126,5 +140,13 @@ export class ApiService {
 
     flashFirmware(): Observable<FirmwareActionResponse> {
         return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/flash`, {});
+    }
+
+    listLocalFirmwareFiles(): Observable<LocalFirmwareFilesResponse> {
+        return this.http.get<LocalFirmwareFilesResponse>(`${this.baseUrl}/api/firmware/files`);
+    }
+
+    flashSelectedFirmware(filename: string): Observable<FirmwareActionResponse> {
+        return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/flash-selected`, { filename });
     }
 }

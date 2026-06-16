@@ -25,6 +25,47 @@ class FirmwareManager:
     def _get_firmware_dir(self):
         return os.path.join(self.repo_path, 'src', 'hardware', 'firmware')
 
+    def _list_local_bin_files(self):
+        """List .bin files available in the local firmware folder."""
+        fw_dir = self._get_firmware_dir()
+        if not os.path.isdir(fw_dir):
+            return []
+
+        files = []
+        for entry in os.scandir(fw_dir):
+            if not entry.is_file() or not entry.name.lower().endswith('.bin'):
+                continue
+
+            stat = entry.stat()
+            files.append({
+                'name': entry.name,
+                'size': stat.st_size,
+                'modified_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(stat.st_mtime)),
+                'is_default': entry.name == 'robot_car.bin',
+            })
+
+        files.sort(key=lambda item: (0 if item['is_default'] else 1, item['name'].lower()))
+        return files
+
+    def _resolve_local_firmware_path(self, filename):
+        """Resolve and validate a firmware filename inside the firmware folder."""
+        if not filename:
+            raise ValueError('No firmware filename was provided.')
+
+        normalized_name = os.path.basename(str(filename).strip())
+        if normalized_name != str(filename).strip():
+            raise ValueError('Invalid firmware filename.')
+
+        if not normalized_name.lower().endswith('.bin'):
+            raise ValueError('Only .bin firmware files can be flashed.')
+
+        firmware_dir = os.path.abspath(self._get_firmware_dir())
+        fw_path = os.path.abspath(os.path.join(firmware_dir, normalized_name))
+        if os.path.commonpath([firmware_dir, fw_path]) != firmware_dir:
+            raise ValueError('Firmware file must be inside the firmware folder.')
+
+        return fw_path, normalized_name
+
     def _get_local_info(self):
         """Read locally stored firmware version metadata."""
         info_path = os.path.join(self._get_firmware_dir(), 'firmware_version.json')
@@ -125,47 +166,79 @@ class FirmwareManager:
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    def handle_flash(self):
-        """Flash robot_car.bin to the Nucleo board via its USB mass storage."""
+    def handle_list_local_files(self):
+        """Return the local .bin files available for manual flashing."""
         try:
-            fw_path = os.path.join(self._get_firmware_dir(), 'robot_car.bin')
-            if not os.path.exists(fw_path):
-                return jsonify({
-                    'success': False,
-                    'error': 'Firmware file not found. Download it first.'
-                }), 400
-
-            fw_size = os.path.getsize(fw_path)
-            if fw_size == 0:
-                return jsonify({
-                    'success': False,
-                    'error': 'Firmware file is empty. Try downloading again.'
-                }), 400
-
-            nucleo_mount = self._find_nucleo_mount()
-            if not nucleo_mount:
-                return jsonify({
-                    'success': False,
-                    'error': 'Nucleo board not detected. Make sure it is connected via USB and mounted.'
-                }), 404
-
-            if not os.access(nucleo_mount, os.W_OK):
-                return jsonify({
-                    'success': False,
-                    'error': f'Cannot write to Nucleo mount point ({nucleo_mount}). Check permissions.'
-                }), 403
-
-            dest_path = os.path.join(nucleo_mount, 'robot_car.bin')
-            shutil.copy2(fw_path, dest_path)
-
-            subprocess.run(['sync'], timeout=10)
-
+            files = self._list_local_bin_files()
             return jsonify({
                 'success': True,
-                'message': f'Firmware flashed successfully to {nucleo_mount}. The Nucleo will reset automatically.'
+                'files': files,
+                'selected_file': files[0]['name'] if files else ''
             })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def _flash_firmware_file(self, fw_path, filename_for_target):
+        """Flash the selected firmware file to the Nucleo board."""
+        if not os.path.exists(fw_path):
+            return jsonify({
+                'success': False,
+                'error': f'Firmware file "{filename_for_target}" was not found.'
+            }), 400
+
+        fw_size = os.path.getsize(fw_path)
+        if fw_size == 0:
+            return jsonify({
+                'success': False,
+                'error': f'Firmware file "{filename_for_target}" is empty.'
+            }), 400
+
+        nucleo_mount = self._find_nucleo_mount()
+        if not nucleo_mount:
+            return jsonify({
+                'success': False,
+                'error': 'Nucleo board not detected. Make sure it is connected via USB and mounted.'
+            }), 404
+
+        if not os.access(nucleo_mount, os.W_OK):
+            return jsonify({
+                'success': False,
+                'error': f'Cannot write to Nucleo mount point ({nucleo_mount}). Check permissions.'
+            }), 403
+
+        dest_path = os.path.join(nucleo_mount, filename_for_target)
+        shutil.copy2(fw_path, dest_path)
+
+        subprocess.run(['sync'], timeout=10)
+
+        return jsonify({
+            'success': True,
+            'message': f'Firmware "{filename_for_target}" flashed successfully to {nucleo_mount}. The Nucleo will reset automatically.'
+        })
+
+    def handle_flash(self):
+        """Flash the default robot_car.bin to the Nucleo board via its USB mass storage."""
+        try:
+            fw_path, filename = self._resolve_local_firmware_path('robot_car.bin')
+            return self._flash_firmware_file(fw_path, filename)
+        except ValueError as e:
+            return jsonify({'success': False, 'error': str(e)}), 400
         except PermissionError:
             return jsonify({'success': False, 'error': 'Permission denied writing to Nucleo. Try running with sudo.'}), 403
+        except OSError as e:
+            return jsonify({'success': False, 'error': f'Failed to flash firmware: {e}'}), 500
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def handle_flash_selected(self, filename):
+        """Flash a selected local .bin file to the Nucleo board."""
+        try:
+            fw_path, normalized_name = self._resolve_local_firmware_path(filename)
+            return self._flash_firmware_file(fw_path, normalized_name)
+        except PermissionError:
+            return jsonify({'success': False, 'error': 'Permission denied writing to Nucleo. Try running with sudo.'}), 403
+        except ValueError as e:
+            return jsonify({'success': False, 'error': str(e)}), 400
         except OSError as e:
             return jsonify({'success': False, 'error': f'Failed to flash firmware: {e}'}), 500
         except Exception as e:

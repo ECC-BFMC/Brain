@@ -66,6 +66,9 @@ class processDashboard(WorkerProcess):
     """
     # ====================================== INIT ==========================================
     def __init__(self, queueList, logging, ready_event=None, debugging = False):
+        self.fast_stream_interval = 0.03
+        self.default_stream_interval = 0.1
+        self.fast_stream_candidates = ("serialCamera", "mainCamera")
 
         self.running = True
         self.queueList = queueList
@@ -115,6 +118,12 @@ class processDashboard(WorkerProcess):
 
         # initialize message handling
         self._initialize_messages()
+        self.fast_stream_messages = tuple(
+            name for name in self.fast_stream_candidates if name in self.messages
+        )
+        self.default_stream_messages = tuple(
+            name for name in self.messages if name not in self.fast_stream_messages
+        )
 
         super(processDashboard, self).__init__(self.queueList, ready_event)
     
@@ -181,6 +190,48 @@ class processDashboard(WorkerProcess):
                 return jsonify({'success': True, 'message': 'Table state saved'})
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
+
+        # Calibration Measurement Persistence
+        @self.app.route('/api/calibration/measurements', methods=['GET'])
+        def api_list_calibration_measurements():
+            try:
+                measurements = self.calibration.list_saved_measurements()
+                return jsonify({'success': True, 'measurements': measurements})
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/api/calibration/measurements', methods=['POST'])
+        def api_save_calibration_measurements():
+            try:
+                data = flask_request.get_json() or {}
+                result = self.calibration.save_measurements(
+                    data.get('name', ''),
+                    data.get('requestedSteeringLimit')
+                )
+                return jsonify({
+                    'success': True,
+                    'message': 'Calibration measurements saved',
+                    **result
+                })
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 400
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/api/calibration/measurements/load', methods=['POST'])
+        def api_load_calibration_measurements():
+            try:
+                data = flask_request.get_json() or {}
+                result = self.calibration.load_measurements(data.get('id', ''))
+                return jsonify({
+                    'success': True,
+                    'message': 'Calibration measurements loaded',
+                    **result
+                })
+            except (ValueError, FileNotFoundError) as e:
+                return jsonify({'success': False, 'error': str(e)}), 400
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # Serial Connection Status
         @self.app.route('/api/serial/status', methods=['GET'])
@@ -204,10 +255,19 @@ class processDashboard(WorkerProcess):
         @self.app.route('/api/firmware/download', methods=['POST'])
         def api_download_firmware():
             return self.firmware.handle_download()
-        
+
+        @self.app.route('/api/firmware/files', methods=['GET'])
+        def api_list_firmware_files():
+            return self.firmware.handle_list_local_files()
+
         @self.app.route('/api/firmware/flash', methods=['POST'])
         def api_flash_firmware():
             return self.firmware.handle_flash()
+
+        @self.app.route('/api/firmware/flash-selected', methods=['POST'])
+        def api_flash_selected_firmware():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_flash_selected(data.get('filename', ''))
 
 
     def _start_background_tasks(self):
@@ -215,7 +275,8 @@ class processDashboard(WorkerProcess):
         psutil.cpu_percent(interval=1, percpu=False)
 
         eventlet.spawn(self.update_hardware_data)
-        eventlet.spawn(self.send_continuous_messages)
+        eventlet.spawn(self.send_continuous_messages, self.fast_stream_messages, self.fast_stream_interval)
+        eventlet.spawn(self.send_continuous_messages, self.default_stream_messages, self.default_stream_interval)
         eventlet.spawn(self.send_hardware_data_to_frontend)
         eventlet.spawn(self.send_heartbeat)
         eventlet.spawn(self.stream_console_logs)
@@ -462,12 +523,16 @@ class processDashboard(WorkerProcess):
             eventlet.spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
 
 
-    def send_continuous_messages(self):
+    def send_continuous_messages(self, message_names, interval):
         """Process and send subscriber messages to the frontend."""
         if not self.running:
             return
 
-        for msg, subscriber in self.messages.items():
+        for msg in message_names:
+            subscriber = self.messages.get(msg)
+            if subscriber is None:
+                continue
+
             resp = subscriber["obj"].receive()
             if resp is not None:
                 if msg == "SerialConnectionState":
@@ -477,7 +542,7 @@ class processDashboard(WorkerProcess):
                 if self.debugging:
                     self.logger.info(f"{msg}: {resp}")
 
-        eventlet.spawn_after(0.1, self.send_continuous_messages)
+        eventlet.spawn_after(interval, self.send_continuous_messages, message_names, interval)
 
 
     def send_hardware_data_to_frontend(self):
