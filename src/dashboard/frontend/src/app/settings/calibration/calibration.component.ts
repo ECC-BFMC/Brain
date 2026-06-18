@@ -912,6 +912,42 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     document.body.classList.remove('modal-open');
   }
 
+  private normalizeLimitPoints(limitPoints: any[] | undefined): Array<{ x: number; y: number; label: string; kind: 'calculated' | 'imposed' }> {
+    if (!limitPoints || limitPoints.length === 0) {
+      return [];
+    }
+
+    return limitPoints
+      .map(point => {
+        if (Array.isArray(point)) {
+          const x = Number(point[0]);
+          const y = Number(point[1]);
+          return {
+            x,
+            y,
+            label: x < 0 ? 'Calculated Left' : 'Calculated Right',
+            kind: 'calculated' as const
+          };
+        }
+
+        if (point && point.x !== undefined && point.y !== undefined) {
+          return {
+            x: Number(point.x),
+            y: Number(point.y),
+            label: String(point.label || (Number(point.x) < 0 ? 'Calculated Left' : 'Calculated Right')),
+            kind: point.kind === 'imposed' ? 'imposed' as const : 'calculated' as const
+          };
+        }
+
+        return null;
+      })
+      .filter((point): point is { x: number; y: number; label: string; kind: 'calculated' | 'imposed' } => point !== null);
+  }
+
+  private getLimitPointColor(kind: 'calculated' | 'imposed'): string {
+    return kind === 'imposed' ? '#008f5a' : '#ff0000';
+  }
+
   private renderChart(canvasId: string, data: any, title: string, xLabel: string, yLabel: string): void {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
@@ -923,10 +959,13 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     if (!ctx) return;
 
     const splineData = data.spline;
-    const allPoints = data.points;
+    const rawPoints = data.points || [];
+    const filteredPoints = data.filteredPoints || [];
+    const syntheticPoints = data.syntheticPoints || [];
+    const normalizedLimitPoints = this.normalizeLimitPoints(data.limitPoints);
     const error = data.error;
 
-    if (!allPoints || allPoints.length === 0) {
+    if (!rawPoints || rawPoints.length === 0) {
       console.error(`No points found for chart ${canvasId}`);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#000';
@@ -951,8 +990,11 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    const xValues = allPoints.map((p: number[]) => p[0]);
-    const yValues = allPoints.map((p: number[]) => p[1]);
+    const boundsPoints = filteredPoints.length > 0
+      ? [...rawPoints, ...filteredPoints, ...syntheticPoints]
+      : [...rawPoints, ...syntheticPoints];
+    const xValues = boundsPoints.map((p: number[]) => p[0]);
+    const yValues = boundsPoints.map((p: number[]) => p[1]);
     const xMin = Math.min(...xValues);
     const xMax = Math.max(...xValues);
     const yMin = Math.min(...yValues);
@@ -1000,8 +1042,12 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     ctx.lineWidth = 3;
     ctx.beginPath();
     const numPoints = 300;
+    const splineXMin = splineData.knots[0];
+    const splineXMax = splineData.knots[splineData.knots.length - 1];
+    const drawXMin = Math.max(xMinPadded, splineXMin);
+    const drawXMax = Math.min(xMaxPadded, splineXMax);
     for (let i = 0; i <= numPoints; i++) {
-      const xVal = xMinPadded + (i / numPoints) * (xMaxPadded - xMinPadded);
+      const xVal = drawXMin + (i / numPoints) * (drawXMax - drawXMin);
       const yVal = this.evaluateSpline(splineData, xVal);
       const x = scaleX(xVal);
       const y = scaleY(yVal);
@@ -1009,24 +1055,52 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     }
     ctx.stroke();
 
-    ctx.fillStyle = '#0066cc';
-    for (const point of allPoints) {
+    ctx.fillStyle = '#6aa9ff';
+    for (const point of rawPoints) {
       const x = scaleX(point[0]);
       const y = scaleY(point[1]);
       ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.arc(x, y, 4, 0, 2 * Math.PI);
       ctx.fill();
     }
 
-    // Highlight limit points: vertical dashed line from x-axis (y=0) up to the point
-    if (data.limitPoints && data.limitPoints.length > 0) {
-      for (let i = 0; i < data.limitPoints.length; i++) {
-        const point = data.limitPoints[i];
+    if (filteredPoints.length > 0) {
+      ctx.fillStyle = '#ff8a00';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      for (const point of filteredPoints) {
         const x = scaleX(point[0]);
         const y = scaleY(point[1]);
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    if (syntheticPoints.length > 0) {
+      ctx.fillStyle = '#00a86b';
+      ctx.strokeStyle = '#0b3d2e';
+      ctx.lineWidth = 1.5;
+      for (const point of syntheticPoints) {
+        const x = scaleX(point[0]);
+        const y = scaleY(point[1]);
+        ctx.beginPath();
+        ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    // Highlight limit points: vertical dashed line from x-axis (y=0) up to the point
+    if (normalizedLimitPoints.length > 0) {
+      for (const point of normalizedLimitPoints) {
+        const x = scaleX(point.x);
+        const y = scaleY(point.y);
+        const color = this.getLimitPointColor(point.kind);
         // Dotted line from point down to x-axis
         ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = '#ff0000';
+        ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -1034,7 +1108,7 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
         ctx.stroke();
         ctx.setLineDash([]);
         // Highlight circle
-        ctx.fillStyle = '#ff0000';
+        ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(x, y, 8, 0, 2 * Math.PI);
         ctx.fill();
@@ -1045,8 +1119,7 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
         ctx.fillStyle = '#000';
         ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'center';
-        const label = point[0] < 0 ? 'Max Left' : 'Max Right';
-        ctx.fillText(label, x, y - 15);
+        ctx.fillText(point.label, x, y - 15);
       }
     }
 
@@ -1054,6 +1127,9 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
 
     if ((title === 'Steering' || title === 'Speed' || title === 'Zero Offset Spline') && xMinPadded <= 0 && xMaxPadded >= 0) {
       const zeroY = this.evaluateSpline(splineData, 0);
+      const appliedOffset = title === 'Zero Offset Spline' && data.appliedOffset !== undefined && data.appliedOffset !== null
+        ? Number(data.appliedOffset)
+        : null;
       const x = scaleX(0);
       const y = scaleY(zeroY);
       
@@ -1085,18 +1161,25 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
       } else if (title === 'Speed') {
         ctx.fillText('0 cm/s', x, y - 15);
       } else if (title === 'Zero Offset Spline') {
-        ctx.fillText(`Offset: ${zeroY.toFixed(2)}°`, x, y - 15);
+        ctx.fillText(`Spline @ 0°: ${zeroY.toFixed(2)}°`, x, y - 15);
+        if (appliedOffset !== null) {
+          ctx.fillText(`Applied: ${appliedOffset.toFixed(2)}°`, x, y - 30);
+        }
       }
     }
 
     // --- Render Legend ---
-    const legendWidth = 150;
+    const legendWidth = title === 'Steering' ? 220 : 150;
     const legendItemHeight = 20;
     const legendPadding = 10;
-    let legendItems = 2; // Spline + Points
+    let legendItems = filteredPoints.length > 0 ? 3 : 2; // Spline + raw + filtered (optional)
 
-    if (title === 'Steering' && data.limitPoints && data.limitPoints.length > 0) {
-      legendItems += data.limitPoints.length; // One for each limit point
+    if (syntheticPoints.length > 0) {
+      legendItems++;
+    }
+
+    if (title === 'Steering' && normalizedLimitPoints.length > 0) {
+      legendItems += normalizedLimitPoints.length; // One for each limit point
     }
     if (title === 'Steering' && this.correctedSteer !== null) {
       legendItems++; // Steering Offset
@@ -1104,8 +1187,16 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     
     // Recalculate height for non-steering charts to be more compact
     if (title !== 'Steering') {
-      legendItems = 2; // Reset for non-steering charts
-      if (title === 'Zero Offset Spline') legendItems++; // For offset value
+      legendItems = filteredPoints.length > 0 ? 3 : 2; // Reset for non-steering charts
+      if (syntheticPoints.length > 0) {
+        legendItems++;
+      }
+      if (title === 'Zero Offset Spline') {
+        legendItems++; // For spline zero-crossing value
+        if (data.appliedOffset !== undefined && data.appliedOffset !== null) {
+          legendItems++; // For applied weighted correction
+        }
+      }
     }
 
     const legendHeight = legendItems * legendItemHeight + legendPadding;
@@ -1151,30 +1242,55 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     ctx.fillText('Fitted Spline', legendTextX, legendCurrentY);
     legendCurrentY += legendItemHeight;
 
-    // Calibration Points
-    ctx.fillStyle = '#0066cc';
+    // Raw calibration points
+    ctx.fillStyle = '#6aa9ff';
     ctx.beginPath();
     ctx.arc(legendSymbolX, legendCurrentY, 5, 0, 2 * Math.PI);
     ctx.fill();
     ctx.fillStyle = '#000';
-    ctx.fillText('Calibration Points', legendTextX, legendCurrentY);
+    ctx.fillText('Raw Points', legendTextX, legendCurrentY);
     legendCurrentY += legendItemHeight;
 
+    if (filteredPoints.length > 0) {
+      ctx.fillStyle = '#ff8a00';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(legendSymbolX, legendCurrentY, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#000';
+      ctx.fillText('Filtered Points', legendTextX, legendCurrentY);
+      legendCurrentY += legendItemHeight;
+    }
+
+    if (syntheticPoints.length > 0) {
+      ctx.fillStyle = '#00a86b';
+      ctx.strokeStyle = '#0b3d2e';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(legendSymbolX, legendCurrentY, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#000';
+      ctx.fillText('Synthetic Points', legendTextX, legendCurrentY);
+      legendCurrentY += legendItemHeight;
+    }
+
     // Limit Points (for steer chart)
-    if (title === 'Steering' && data.limitPoints && data.limitPoints.length > 0) {
+    if (title === 'Steering' && normalizedLimitPoints.length > 0) {
       // Sort points to show left (negative) then right (positive)
-      const sortedLimitPoints = [...data.limitPoints].sort((a, b) => a[0] - b[0]);
+      const sortedLimitPoints = [...normalizedLimitPoints].sort((a, b) => a.x - b.x);
 
       for (const point of sortedLimitPoints) {
-        const angle = point[0] / 10; // Unscale from backend
-        const label = angle < 0 ? 'Max Left' : 'Max Right';
+        const angle = point.x / 10; // Unscale from backend
 
-        ctx.fillStyle = '#ff0000';
+        ctx.fillStyle = this.getLimitPointColor(point.kind);
         ctx.beginPath();
         ctx.arc(legendSymbolX, legendCurrentY, 5, 0, 2 * Math.PI);
         ctx.fill();
         ctx.fillStyle = '#000';
-        ctx.fillText(`${label}: ${angle.toFixed(1)}°`, legendTextX, legendCurrentY);
+        ctx.fillText(`${point.label}: ${angle.toFixed(1)}°`, legendTextX, legendCurrentY);
         legendCurrentY += legendItemHeight;
       }
     }
@@ -1189,7 +1305,11 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     if (title === 'Zero Offset Spline') {
       const zeroY = this.evaluateSpline(splineData, 0);
       ctx.fillStyle = '#000';
-      ctx.fillText(`Offset: ${zeroY.toFixed(2)}°`, legendTextX - 20, legendCurrentY);
+      ctx.fillText(`Spline @ 0°: ${zeroY.toFixed(2)}°`, legendTextX - 20, legendCurrentY);
+      legendCurrentY += legendItemHeight;
+      if (data.appliedOffset !== undefined && data.appliedOffset !== null) {
+        ctx.fillText(`Applied offset: ${Number(data.appliedOffset).toFixed(2)}°`, legendTextX - 20, legendCurrentY);
+      }
     }
 
     ctx.fillStyle = '#000';

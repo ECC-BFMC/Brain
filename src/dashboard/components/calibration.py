@@ -37,7 +37,7 @@ import os
 import base64
 from datetime import datetime
 from io import BytesIO
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 
 from string import Template
 
@@ -64,6 +64,15 @@ class Calibration():
 
         self.current_step = 0
         self.socketio = socketio
+        self.steer_point_merge_tolerance_deg = 0.8
+        self.steer_synthetic_endpoint_deg = 27.2
+        self.steer_synthetic_gap_tolerance_deg = 0.5
+        self.steer_synthetic_slope_damping = 0.75
+        self.steer_synthetic_pwm_margin = 5.0
+        self.speed_synthetic_endpoint_mm_s = 550.0
+        self.speed_synthetic_gap_tolerance_mm_s = 20.0
+        self.speed_synthetic_slope_damping = 0.75
+        self.speed_synthetic_pwm_margin = 5.0
         
         self.valid_angles = []  # store all angles that fall within tolerance range
         self.max_angle_left = None  # store the final max angle for left steering
@@ -207,19 +216,23 @@ class Calibration():
         }
         
         if len(speed_points) >= 2:
-            spline_data, err = self.fit_cubic_spline(speed_points, "Speed")
+            spline_data, err, filtered_speed_points, synthetic_speed_points = self.fit_cubic_spline(speed_points, "Speed")
             if spline_data is not None:
                 response['speedData'] = {
                     'points': speed_points,
+                    'filteredPoints': filtered_speed_points,
+                    'syntheticPoints': synthetic_speed_points,
                     'spline': spline_data,
                     'error': err
                 }
         
         if len(steer_points) >= 2:
-            spline_data, err = self.fit_cubic_spline(steer_points, "Steer")
+            spline_data, err, filtered_steer_points, synthetic_steer_points = self.fit_cubic_spline(steer_points, "Steer")
             if spline_data is not None:
                 response['steerData'] = {
                     'points': steer_points,
+                    'filteredPoints': filtered_steer_points,
+                    'syntheticPoints': synthetic_steer_points,
                     'spline': spline_data,
                     'error': err
                 }
@@ -227,24 +240,14 @@ class Calibration():
                 # Evaluate adjusted limit points for display
                 limit_points = []
                 if self.max_angle_left is not None or self.max_angle_right is not None:
-                    # Recreate cs for evaluation
-                    grouped_points = {}
-                    for x, y in steer_points:
-                        if y not in grouped_points:
-                            grouped_points[y] = []
-                        grouped_points[y].append(x)
-
-                    filtered_points = []
-                    for y, x_values in grouped_points.items():
-                        avg_x = np.mean(x_values)
-                        filtered_points.append([avg_x, y])
-
-                    filtered_points.sort(key=lambda p: p[0])
-                    x_all, y_all = zip(*filtered_points)
+                    fit_points = filtered_steer_points
+                    if synthetic_steer_points:
+                        fit_points = sorted(fit_points + synthetic_steer_points, key=lambda point: point[0])
+                    x_all, y_all = zip(*fit_points)
                     x_all, y_all = np.array(x_all), np.array(y_all)
 
                     try:
-                        cs = CubicSpline(x_all, y_all, bc_type='natural')
+                        cs = PchipInterpolator(x_all, y_all)
 
                         # Adjust limits by steering offset
                         if self.max_angle_left is not None:
@@ -606,41 +609,162 @@ class Calibration():
         return res // scale, False
 
 
-    def fit_cubic_spline(self, points, type):
-        """Fit a cubic spline to the calibration points."""
-
+    def _merge_points_by_x_tolerance(self, points, tolerance):
+        """Merge adjacent points whose measured x values are effectively equal."""
         if len(points) < 2:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough points to calculate spline for {type}")
-            return None, None
+            return points
 
+        merged_points = []
+        cluster = [points[0]]
+        for point in points[1:]:
+            cluster_mean = float(np.mean([item[0] for item in cluster]))
+            if abs(point[0] - cluster_mean) <= tolerance:
+                cluster.append(point)
+            else:
+                merged_points.append([
+                    float(np.mean([item[0] for item in cluster])),
+                    float(np.mean([item[1] for item in cluster])),
+                ])
+                cluster = [point]
+        merged_points.append([
+            float(np.mean([item[0] for item in cluster])),
+            float(np.mean([item[1] for item in cluster])),
+        ])
+        return merged_points
+
+    def _prepare_curve_points(self, points, type):
         grouped_points = {}
         for x, y in points:
-            if y not in grouped_points:
-                grouped_points[y] = []
-            grouped_points[y].append(x)
-        
+            grouped_points.setdefault(y, []).append(x)
+
         filtered_points = []
         for y, x_values in grouped_points.items():
-            avg_x = np.mean(x_values)
-            filtered_points.append([avg_x, y])
-        
-        # sort the points by the x-value after averaging
+            filtered_points.append([float(np.mean(x_values)), float(y)])
         filtered_points.sort(key=lambda p: p[0])
 
+        merged = []
+        for point in filtered_points:
+            if merged and math.isclose(point[0], merged[-1][0], abs_tol=1e-9):
+                merged[-1][1] = (merged[-1][1] + point[1]) / 2.0
+            else:
+                merged.append(point)
+
+        if type == "Steer" and len(merged) >= 2:
+            merged = self._merge_points_by_x_tolerance(
+                merged,
+                self.steer_point_merge_tolerance_deg * self.STEER_SCALING_FACTOR,
+            )
+        return merged
+
+    def _estimate_tail_pwm_slope(self, tail_points, expected_sign=None):
+        if tail_points is None or len(tail_points) < 2:
+            return None
+
+        ordered = sorted([[float(x), float(y)] for x, y in tail_points], key=lambda point: point[0])
+        slopes = []
+        for first, second in zip(ordered, ordered[1:]):
+            dx = second[0] - first[0]
+            if abs(dx) <= 1e-9:
+                continue
+            slope = (second[1] - first[1]) / dx
+            if expected_sign is None or slope * expected_sign > 0:
+                slopes.append(float(slope))
+
+        span_dx = ordered[-1][0] - ordered[0][0]
+        if abs(span_dx) > 1e-9:
+            span_slope = (ordered[-1][1] - ordered[0][1]) / span_dx
+            if expected_sign is None or span_slope * expected_sign > 0:
+                slopes.append(float(span_slope))
+        return float(np.median(slopes)) if slopes else None
+
+    def _build_synthetic_endpoint_points(self, filtered_points, endpoint_x, gap_tolerance_x,
+                                         slope_damping, pwm_margin, monotonic_sign):
+        if filtered_points is None or len(filtered_points) < 2:
+            return []
+
+        synthetic_points = []
+        side_configs = (
+            ("left", [point for point in filtered_points if point[0] <= 0], -endpoint_x),
+            ("right", [point for point in filtered_points if point[0] >= 0], endpoint_x),
+        )
+        for side, side_points, target_x in side_configs:
+            if len(side_points) < 2:
+                continue
+            if side == "left":
+                edge_point = side_points[0]
+                tail_points = side_points[:min(3, len(side_points))]
+                gap_to_target = edge_point[0] - target_x
+            else:
+                edge_point = side_points[-1]
+                tail_points = side_points[-min(3, len(side_points)):]
+                gap_to_target = target_x - edge_point[0]
+
+            if gap_to_target <= gap_tolerance_x:
+                continue
+            slope = self._estimate_tail_pwm_slope(tail_points, expected_sign=monotonic_sign)
+            if slope is None:
+                continue
+
+            synthetic_y = edge_point[1] + (slope * slope_damping) * (target_x - edge_point[0])
+            if monotonic_sign >= 0:
+                synthetic_y = (min(synthetic_y, edge_point[1] - pwm_margin) if side == "left"
+                               else max(synthetic_y, edge_point[1] + pwm_margin))
+            else:
+                synthetic_y = (max(synthetic_y, edge_point[1] + pwm_margin) if side == "left"
+                               else min(synthetic_y, edge_point[1] - pwm_margin))
+            if math.isfinite(synthetic_y):
+                synthetic_points.append([float(target_x), float(synthetic_y)])
+        return sorted(synthetic_points, key=lambda point: point[0])
+
+    def _build_steering_synthetic_points(self, filtered_points):
+        return self._build_synthetic_endpoint_points(
+            filtered_points,
+            self.steer_synthetic_endpoint_deg * self.STEER_SCALING_FACTOR,
+            self.steer_synthetic_gap_tolerance_deg * self.STEER_SCALING_FACTOR,
+            self.steer_synthetic_slope_damping,
+            self.steer_synthetic_pwm_margin,
+            1,
+        )
+
+    def _build_speed_synthetic_points(self, filtered_points):
+        if filtered_points is None or len(filtered_points) < 2:
+            return []
+        monotonic_sign = 1 if filtered_points[-1][1] >= filtered_points[0][1] else -1
+        return self._build_synthetic_endpoint_points(
+            filtered_points,
+            self.speed_synthetic_endpoint_mm_s,
+            self.speed_synthetic_gap_tolerance_mm_s,
+            self.speed_synthetic_slope_damping,
+            self.speed_synthetic_pwm_margin,
+            monotonic_sign,
+        )
+
+    def fit_cubic_spline(self, points, type):
+        """Fit a shape-preserving piecewise cubic curve with guarded endpoint extension."""
+        if len(points) < 2:
+            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough points to calculate spline for {type}")
+            return None, None, None, []
+
+        filtered_points = self._prepare_curve_points(points, type)
         if len(filtered_points) < 2:
             print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough unique points after filtering to calculate spline for {type}")
-            return None, None
+            return None, None, filtered_points, []
 
-        x_all, y_all = zip(*filtered_points)
+        synthetic_points = []
+        if type == "Steer":
+            synthetic_points = self._build_steering_synthetic_points(filtered_points)
+        elif type == "Speed":
+            synthetic_points = self._build_speed_synthetic_points(filtered_points)
+        spline_points = sorted(filtered_points + synthetic_points, key=lambda point: point[0])
+
+        x_all, y_all = zip(*spline_points)
         x_all, y_all = np.array(x_all), np.array(y_all)
 
-        # create cubic spline interpolation
-        # use natural boundary conditions (second derivative = 0 at boundaries)
         try:
-            cs = CubicSpline(x_all, y_all, bc_type='natural')
+            cs = PchipInterpolator(x_all, y_all)
         except Exception as e:
             print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Could not create cubic spline for {type}: {e}")
-            return None, None
+            return None, None, filtered_points, synthetic_points
         
         # extract spline coefficients for each segment
         # CubicSpline stores coefficients in shape (n_segments, 4) where each row is [a, b, c, d]
@@ -651,11 +775,11 @@ class Calibration():
             'n_segments': len(x_all) - 1
         }
         
-        # calculate error by evaluating spline at original points
-        y_pred = cs(x_all)
-        err = np.mean((y_all - y_pred)**2)
-        
-        return spline_data, err
+        filtered_x, filtered_y = zip(*filtered_points)
+        y_pred = cs(np.array(filtered_x))
+        err = np.mean((np.array(filtered_y) - y_pred)**2)
+
+        return spline_data, err, filtered_points, synthetic_points
 
 
     def generate_code_from_spline(self, spline_data, type):
@@ -796,7 +920,7 @@ class Calibration():
         if len(points) < 2:
             return
 
-        spline_data, err = self.fit_cubic_spline(points, type)
+        spline_data, err, _, _ = self.fit_cubic_spline(points, type)
         if spline_data is None:
             return
 
