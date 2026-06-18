@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import copy
+import json
 import math
 import numpy as np
 import warnings
@@ -34,6 +35,7 @@ import re
 import zipfile
 import os
 import base64
+from datetime import datetime
 from io import BytesIO
 from scipy.interpolate import CubicSpline
 
@@ -909,12 +911,259 @@ class Calibration():
         self.zero_offset_spline_data_for_frontend = None
 
 
+    def _get_saved_measurements_dir(self):
+        measurements_dir = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            '..',
+            '..',
+            'calibration',
+            'measurements'
+        )
+        return os.path.abspath(measurements_dir)
+
+
+    def _normalize_measurement_id(self, name):
+        normalized = re.sub(r'[^a-zA-Z0-9._-]+', '_', (name or '').strip().lower())
+        normalized = normalized.strip('._-')
+        return normalized or 'calibration'
+
+
+    def _build_saved_measurement_path(self, measurement_id):
+        return os.path.join(
+            self._get_saved_measurements_dir(),
+            f"{self._normalize_measurement_id(measurement_id)}.json"
+        )
+
+
+    def _build_saved_measurement_summary(self, payload, fallback_id=None, fallback_name=None):
+        measurement_id = (
+            payload.get('id')
+            or fallback_id
+            or self._normalize_measurement_id(payload.get('name', fallback_name or 'calibration'))
+        )
+        return {
+            'id': self._normalize_measurement_id(measurement_id),
+            'name': payload.get('name') or fallback_name or 'Calibration',
+            'mode': 'basic',
+            'modeLabel': '1D cubic spline',
+            'measurementMode': 'manual',
+            'measurementModeLabel': 'Manual measurements',
+            'savedAt': payload.get('savedAt')
+        }
+
+
+    def _build_calibration_state_response(self):
+        return {
+            'mode': 'basic',
+            'modeLabel': '1D cubic spline',
+            'measurementMode': 'manual',
+            'measurementModeLabel': 'Manual measurements',
+            'useDummyData': False,
+            'forward': False,
+            'left': self.left_completed,
+            'right': self.right_completed,
+            'backward': self.backward_completed,
+            'testRun': self.test_run_completed,
+            'steeringOffset': self.steering_offset,
+            'maxAngleLeft': self.max_angle_left,
+            'maxAngleRight': self.max_angle_right
+        }
+
+
+    def _serialize_saved_measurement(self, name):
+        return {
+            'schemaVersion': 2,
+            'id': self._normalize_measurement_id(name),
+            'name': name.strip(),
+            'savedAt': datetime.now().astimezone().isoformat(timespec='seconds'),
+            'calibrationMode': 'basic',
+            'modeLabel': '1D cubic spline',
+            'measurementMode': 'manual',
+            'measurementModeLabel': 'Manual measurements',
+            'useDummyData': False,
+            'commands': copy.deepcopy(self.commands),
+            'testRun': copy.deepcopy(self.test_run),
+            'completion': {
+                'forward': False,
+                'left': self.left_completed,
+                'right': self.right_completed,
+                'backward': self.backward_completed,
+                'testRun': self.test_run_completed
+            },
+            'derived': {
+                'maxAngleLeft': self.max_angle_left,
+                'maxAngleRight': self.max_angle_right,
+                'steeringOffset': self.steering_offset,
+                'zeroOffsetSplineData': copy.deepcopy(self.zero_offset_spline_data_for_frontend)
+            }
+        }
+
+
+    def list_saved_measurements(self):
+        measurements_dir = self._get_saved_measurements_dir()
+        if not os.path.isdir(measurements_dir):
+            return []
+
+        measurements = []
+        for filename in os.listdir(measurements_dir):
+            if not filename.lower().endswith('.json'):
+                continue
+
+            file_path = os.path.join(measurements_dir, filename)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as json_file:
+                    payload = json.load(json_file)
+                self._validate_saved_measurement(payload)
+                measurements.append(
+                    self._build_saved_measurement_summary(
+                        payload,
+                        fallback_id=os.path.splitext(filename)[0],
+                        fallback_name=os.path.splitext(filename)[0]
+                    )
+                )
+            except Exception as exc:
+                print(
+                    f"\033[1;97m[ Calibration ] :\033[0m "
+                    f"\033[1;93mWARNING\033[0m - Skipping incompatible saved calibration "
+                    f"'{filename}': {exc}"
+                )
+
+        measurements.sort(
+            key=lambda item: (item.get('savedAt') or '', item.get('name') or ''),
+            reverse=True
+        )
+        return measurements
+
+
+    def save_measurements(self, name, requested_limit=None):
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("A calibration measurement name is required.")
+
+        payload = self._serialize_saved_measurement(name)
+        measurements_dir = self._get_saved_measurements_dir()
+        os.makedirs(measurements_dir, exist_ok=True)
+
+        with open(self._build_saved_measurement_path(payload['id']), 'w', encoding='utf-8') as json_file:
+            json.dump(payload, json_file, indent=2)
+
+        return {
+            'measurement': self._build_saved_measurement_summary(payload),
+            'calibration': self._build_calibration_state_response()
+        }
+
+
+    def _validate_saved_measurement(self, payload):
+        if not isinstance(payload, dict):
+            raise ValueError("Saved calibration must contain a JSON object.")
+
+        calibration_mode = payload.get('calibrationMode', 'basic')
+        if calibration_mode != 'basic':
+            raise ValueError(
+                f"Unsupported calibration mode '{calibration_mode}'. "
+                "This repository supports basic measurement-based calibration only."
+            )
+
+        measurement_mode = payload.get('measurementMode', 'manual')
+        if measurement_mode != 'manual':
+            raise ValueError(
+                f"Unsupported measurement mode '{measurement_mode}'. "
+                "This repository supports manual measurements only."
+            )
+
+        commands = payload.get('commands')
+        if not isinstance(commands, dict):
+            raise ValueError("Saved calibration file is missing the command measurements.")
+
+        for direction in ('left', 'right', 'backward'):
+            direction_commands = commands.get(direction)
+            if not isinstance(direction_commands, list) or not direction_commands:
+                raise ValueError(f"Saved calibration is missing '{direction}' measurements.")
+
+            expected_count = len(self.commands_template[direction])
+            if len(direction_commands) != expected_count:
+                raise ValueError(
+                    f"Saved calibration has {len(direction_commands)} '{direction}' measurements; "
+                    f"this calibration expects {expected_count}."
+                )
+
+            for command in direction_commands:
+                if not isinstance(command, dict):
+                    raise ValueError(f"Invalid command entry in '{direction}' measurements.")
+                for field in ('desiredSpeed', 'desiredSteer', 'time', 'actualSpeed', 'actualSpeedPWM'):
+                    if field not in command:
+                        raise ValueError(f"Saved '{direction}' measurement is missing '{field}'.")
+                if direction != 'backward':
+                    for field in ('actualSteer', 'actualSteerPWM'):
+                        if field not in command:
+                            raise ValueError(f"Saved '{direction}' measurement is missing '{field}'.")
+
+        return commands
+
+
+    def _apply_loaded_measurements(self, payload):
+        commands = self._validate_saved_measurement(payload)
+        completion = payload.get('completion') or {}
+        derived = payload.get('derived') or {}
+
+        self.commands = copy.deepcopy(self.commands_template)
+        for direction in ('left', 'right', 'backward'):
+            self.commands[direction] = copy.deepcopy(commands[direction])
+        if isinstance(commands.get('zero'), list):
+            self.commands['zero'] = copy.deepcopy(commands['zero'])
+
+        self.test_run = copy.deepcopy(payload.get('testRun', self.test_run))
+        self.left_completed = bool(completion.get('left', True))
+        self.right_completed = bool(completion.get('right', True))
+        self.backward_completed = bool(completion.get('backward', True))
+        self.test_run_completed = bool(completion.get('testRun', bool(self.commands.get('zero'))))
+        self.max_angle_left = derived.get('maxAngleLeft')
+        self.max_angle_right = derived.get('maxAngleRight')
+        self.steering_offset = float(derived.get('steeringOffset') or 0)
+        self.zero_offset_spline_data_for_frontend = copy.deepcopy(
+            derived.get('zeroOffsetSplineData')
+        )
+
+        self.current_step = 0
+        self.current_command = None
+        self.valid_angles = []
+
+
+    def load_measurements(self, measurement_id):
+        normalized_id = self._normalize_measurement_id(measurement_id)
+        measurement_path = self._build_saved_measurement_path(normalized_id)
+        if not os.path.isfile(measurement_path):
+            raise FileNotFoundError(
+                f"No saved calibration measurements found for '{measurement_id}'."
+            )
+
+        with open(measurement_path, 'r', encoding='utf-8') as json_file:
+            payload = json.load(json_file)
+
+        self._apply_loaded_measurements(payload)
+        return {
+            'measurement': self._build_saved_measurement_summary(
+                payload,
+                fallback_id=normalized_id,
+                fallback_name=measurement_id
+            ),
+            'calibration': self._build_calibration_state_response()
+        }
+
+
     def create_source_zip(self):
         """Create a zip file of the source folder and return as base64 string."""
         try:
             zip_buffer = BytesIO()
             
-            source_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'source')
+            source_path = os.path.join(
+                os.path.dirname(__file__),
+                '..',
+                '..',
+                '..',
+                'calibration',
+                'source'
+            )
             source_path = os.path.abspath(source_path)
             
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:

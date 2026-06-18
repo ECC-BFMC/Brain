@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { CALIBRATION_STEPS, registerFunction } from './calibration-steps.data';
 import { WebSocketService } from '../../services/web-socket.service';
 import { ClusterService } from '../../cluster/cluster.service';
+import {
+  ApiService,
+  type CalibrationMeasurementState,
+  type CalibrationMeasurementSummary
+} from '../../services/api.service';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -78,6 +83,14 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
   backwardCompleted: boolean = false;
   testRunCompleted: boolean = false;
   calibrationSavedSuccessfully: boolean = false;
+  savedCalibrationMeasurements: CalibrationMeasurementSummary[] = [];
+  selectedSavedMeasurementId: string = '';
+  saveMeasurementName: string = '';
+  calibrationMeasurementsMessage: string | null = null;
+  calibrationMeasurementsMessageType: 'success' | 'error' | null = null;
+  private calibrationMeasurementsMessageTimeout: ReturnType<typeof setTimeout> | null = null;
+  isSavingMeasurements: boolean = false;
+  isLoadingMeasurements: boolean = false;
   
   // Polynomial visualization data
   polynomialDataAvailable: boolean = false;
@@ -91,7 +104,11 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
   showChartModal: boolean = false;
   zoomedChartType: string = '';
 
-  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService) {}
+  constructor(
+    private webSocketService: WebSocketService,
+    private clusterService: ClusterService,
+    private apiService: ApiService
+  ) {}
 
 
   updateSteeringAngle(angle: number): void {
@@ -254,6 +271,7 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     registerFunction('setCalibrationRunInProgress', (inProgress: boolean) => { this.isCalibrationRunInProgress = inProgress; });
     registerFunction('requestPolynomialData', () => this.requestPolynomialData());
     registerFunction('requestZeroOffsetSplineData', () => this.requestZeroOffsetSplineData());
+    this.fetchSavedCalibrationMeasurements();
 
     this.subscriptions.add(
       this.webSocketService.receiveCalibrationData().subscribe(event => {
@@ -328,6 +346,9 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
   }
 
   ngOnDestroy(): void {
+    if (this.calibrationMeasurementsMessageTimeout) {
+      clearTimeout(this.calibrationMeasurementsMessageTimeout);
+    }
     this.subscriptions.unsubscribe();
   }
 
@@ -406,6 +427,7 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
     this.testRunCompleted = false;
     this.calibrationSavedSuccessfully = false;
     this.correctedSteer = null;
+    this.setCalibrationMeasurementsMessage(null, null);
 
     this.clusterService.kl$.pipe(take(1)).subscribe(currentKl => {
       this.previousKlValue = currentKl;
@@ -525,6 +547,146 @@ export class CalibrationComponent implements OnInit, OnDestroy, OnChanges, After
       Name: 'Calibration',
       Action: 'get_status'
     }));
+  }
+
+  fetchSavedCalibrationMeasurements(): void {
+    this.apiService.listCalibrationMeasurements().subscribe({
+      next: response => {
+        this.savedCalibrationMeasurements = response.measurements || [];
+        if (
+          this.selectedSavedMeasurementId &&
+          !this.savedCalibrationMeasurements.some(
+            measurement => measurement.id === this.selectedSavedMeasurementId
+          )
+        ) {
+          this.selectedSavedMeasurementId = '';
+        }
+      },
+      error: error => {
+        this.savedCalibrationMeasurements = [];
+        this.setCalibrationMeasurementsMessage(
+          error?.error?.error || 'Could not list saved calibration measurements.',
+          'error'
+        );
+      }
+    });
+  }
+
+  saveCalibrationMeasurements(): void {
+    const name = this.saveMeasurementName.trim();
+    if (!name) {
+      this.setCalibrationMeasurementsMessage(
+        'Enter a name before saving the measurements.',
+        'error'
+      );
+      return;
+    }
+
+    this.isSavingMeasurements = true;
+    this.setCalibrationMeasurementsMessage(null, null);
+    this.apiService.saveCalibrationMeasurements(name).subscribe({
+      next: response => {
+        this.isSavingMeasurements = false;
+        if (!response.success || !response.measurement) {
+          this.setCalibrationMeasurementsMessage(
+            response.error || 'Could not save calibration measurements.',
+            'error'
+          );
+          return;
+        }
+
+        this.selectedSavedMeasurementId = response.measurement.id;
+        this.saveMeasurementName = response.measurement.name;
+        this.setCalibrationMeasurementsMessage(
+          `Saved measurements as "${response.measurement.name}".`,
+          'success'
+        );
+        this.fetchSavedCalibrationMeasurements();
+      },
+      error: error => {
+        this.isSavingMeasurements = false;
+        this.setCalibrationMeasurementsMessage(
+          error?.error?.error || 'Could not save calibration measurements.',
+          'error'
+        );
+      }
+    });
+  }
+
+  loadSavedCalibrationMeasurements(): void {
+    if (!this.selectedSavedMeasurementId) {
+      this.setCalibrationMeasurementsMessage(
+        'Select a saved measurement set first.',
+        'error'
+      );
+      return;
+    }
+
+    this.isLoadingMeasurements = true;
+    this.setCalibrationMeasurementsMessage(null, null);
+    this.apiService.loadCalibrationMeasurements(this.selectedSavedMeasurementId).subscribe({
+      next: response => {
+        this.isLoadingMeasurements = false;
+        if (!response.success || !response.measurement || !response.calibration) {
+          this.setCalibrationMeasurementsMessage(
+            response.error || 'Could not load calibration measurements.',
+            'error'
+          );
+          return;
+        }
+
+        this.applyLoadedCalibrationState(response.calibration);
+        this.saveMeasurementName = response.measurement.name;
+        this.currentStepIndex = this.calibrationSteps.length - 1;
+        this.currentSubstepId = null;
+        this.setCalibrationMeasurementsMessage(
+          `Loaded "${response.measurement.name}". The calibration source can now be regenerated.`,
+          'success'
+        );
+      },
+      error: error => {
+        this.isLoadingMeasurements = false;
+        this.setCalibrationMeasurementsMessage(
+          error?.error?.error || 'Could not load calibration measurements.',
+          'error'
+        );
+      }
+    });
+  }
+
+  private applyLoadedCalibrationState(calibration: CalibrationMeasurementState): void {
+    this.leftCompleted = calibration.left;
+    this.rightCompleted = calibration.right;
+    this.backwardCompleted = calibration.backward;
+    this.testRunCompleted = calibration.testRun;
+    this.correctedSteer = calibration.steeringOffset ?? null;
+    this.calibrationSavedSuccessfully = false;
+    this.polynomialDataAvailable = false;
+    this.speedPolynomialData = null;
+    this.steerPolynomialData = null;
+    this.limitPointsData = null;
+    this.zeroOffsetSplineData = null;
+  }
+
+  private setCalibrationMeasurementsMessage(
+    message: string | null,
+    type: 'success' | 'error' | null
+  ): void {
+    if (this.calibrationMeasurementsMessageTimeout) {
+      clearTimeout(this.calibrationMeasurementsMessageTimeout);
+      this.calibrationMeasurementsMessageTimeout = null;
+    }
+
+    this.calibrationMeasurementsMessage = message;
+    this.calibrationMeasurementsMessageType = type;
+
+    if (message) {
+      this.calibrationMeasurementsMessageTimeout = setTimeout(() => {
+        this.calibrationMeasurementsMessage = null;
+        this.calibrationMeasurementsMessageType = null;
+        this.calibrationMeasurementsMessageTimeout = null;
+      }, 5000);
+    }
   }
 
   private resetInputFields(): void {

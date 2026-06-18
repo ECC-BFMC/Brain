@@ -109,6 +109,12 @@ export const CALIBRATION_STEPS: CalibrationStep[] = [
         buttons: [
           {
             enable: true,
+            text: 'Back',
+            action: 'navigateTo',
+            navigateTo: '..parent'
+          },
+          {
+            enable: true,
             text: 'Start {steeringAngle}° Run',
             action: 'functionAndNavigateTo',
             navigateTo: 'step2_substep2',
@@ -221,6 +227,12 @@ export const CALIBRATION_STEPS: CalibrationStep[] = [
           fields: []
         },
         buttons: [
+          {
+            enable: true,
+            text: 'Back',
+            action: 'navigateTo',
+            navigateTo: '..parent'
+          },
           {
             enable: true,
             text: 'Start {steeringAngle}° Run',
@@ -504,6 +516,12 @@ export const CALIBRATION_STEPS: CalibrationStep[] = [
           fields: []
         },
         buttons: [
+          {
+            enable: true,
+            text: 'Back',
+            action: 'navigateTo',
+            navigateTo: '..parent'
+          },
           {
             enable: true,
             text: 'Start {speed} cm/s Run',

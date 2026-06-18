@@ -1,11 +1,13 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "test",
-  "name": "test",
+  "name": "Simple manual calibration",
   "savedAt": "2026-03-25T15:22:10+02:00",
   "calibrationMode": "basic",
   "modeLabel": "1D cubic spline",
-  "useDummyData": true,
+  "measurementMode": "manual",
+  "measurementModeLabel": "Manual measurements",
+  "useDummyData": false,
   "commands": {
     "left": [
       {
@@ -201,29 +203,6 @@
     "steer": 0,
     "time": 30
   },
-  "complexSpeedValues": [
-    100,
-    200,
-    300,
-    400,
-    500
-  ],
-  "complexSteerValues": [
-    -27.2,
-    -25.0,
-    -23.2,
-    -20.0,
-    -15.0,
-    -10.0,
-    -5.0,
-    5.0,
-    10.0,
-    15.0,
-    20.0,
-    23.2,
-    25.0,
-    27.2
-  ],
   "completion": {
     "forward": false,
     "left": true,

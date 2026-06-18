@@ -281,6 +281,7 @@ class processDashboard(WorkerProcess):
         eventlet.spawn(self.send_heartbeat)
         eventlet.spawn(self.stream_console_logs)
 
+
     def stream_console_logs(self):
         """Monitor the Log queue and emit messages to frontend."""
         log_queue = self.queueList.get("Log")

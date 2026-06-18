@@ -53,6 +53,46 @@ export interface UpdateActionResponse {
     error?: string;
 }
 
+export interface CalibrationMeasurementSummary {
+    id: string;
+    name: string;
+    mode: 'basic';
+    modeLabel: string;
+    measurementMode: 'manual';
+    measurementModeLabel: string;
+    savedAt?: string;
+}
+
+export interface CalibrationMeasurementState {
+    mode: 'basic';
+    modeLabel: string;
+    measurementMode: 'manual';
+    measurementModeLabel: string;
+    useDummyData?: boolean;
+    forward: boolean;
+    left: boolean;
+    right: boolean;
+    backward: boolean;
+    testRun: boolean;
+    steeringOffset: number;
+    maxAngleLeft?: number | null;
+    maxAngleRight?: number | null;
+}
+
+export interface CalibrationMeasurementsResponse {
+    success: boolean;
+    measurements?: CalibrationMeasurementSummary[];
+    error?: string;
+}
+
+export interface CalibrationMeasurementResponse {
+    success: boolean;
+    measurement?: CalibrationMeasurementSummary;
+    calibration?: CalibrationMeasurementState;
+    message?: string;
+    error?: string;
+}
+
 export interface FirmwareCheckResponse {
     success: boolean;
     update_available?: boolean;
@@ -113,6 +153,25 @@ export class ApiService {
 
     saveTableState(data: any): Observable<TableResponse> {
         return this.http.post<TableResponse>(`${this.baseUrl}/api/table`, data);
+    }
+
+    // Calibration Measurement Persistence
+    listCalibrationMeasurements(): Observable<CalibrationMeasurementsResponse> {
+        return this.http.get<CalibrationMeasurementsResponse>(`${this.baseUrl}/api/calibration/measurements`);
+    }
+
+    saveCalibrationMeasurements(name: string): Observable<CalibrationMeasurementResponse> {
+        return this.http.post<CalibrationMeasurementResponse>(
+            `${this.baseUrl}/api/calibration/measurements`,
+            { name }
+        );
+    }
+
+    loadCalibrationMeasurements(id: string): Observable<CalibrationMeasurementResponse> {
+        return this.http.post<CalibrationMeasurementResponse>(
+            `${this.baseUrl}/api/calibration/measurements/load`,
+            { id }
+        );
     }
 
     // Serial Connection Status
