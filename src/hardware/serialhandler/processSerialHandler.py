@@ -37,6 +37,7 @@ import threading
 from threading import Lock
 
 from src.templates.workerprocess import WorkerProcess
+from src.hardware.serialhandler.mock.nucleoMockSerial import NucleoMockSerial
 from src.hardware.serialhandler.threads.filehandler import FileHandler
 from src.hardware.serialhandler.threads.threadRead import threadRead
 from src.hardware.serialhandler.threads.threadWrite import threadWrite
@@ -55,7 +56,7 @@ class processSerialHandler(WorkerProcess):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, queueList, logging, ready_event=None, dashboard_ready=None, debugging=False, example=False):
+    def __init__(self, queueList, logging, ready_event=None, dashboard_ready=None, debugging=False, example=False, use_mock=False):
         # devFile = "/dev/ttyACM0"
         logFile = "temp/serial_history.log"
 
@@ -64,6 +65,7 @@ class processSerialHandler(WorkerProcess):
         self.debugging = debugging
         self.example = example
         self.dashboard_ready = dashboard_ready
+        self.use_mock = use_mock
 
         # comm init
         self.serialCon = None
@@ -101,6 +103,14 @@ class processSerialHandler(WorkerProcess):
     def _try_serial_connection(self):
         """Try to connect to the serial device."""
         with self.serialLock:
+            if self.use_mock:
+                self._safe_close_serial()
+                self.serialDevice = "MOCK_NUCLEO"
+                self.serialCon = NucleoMockSerial()
+                self.serialConnected = True
+                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;92mINFO\033[0m - Connected to \033[94m{self.serialDevice}\033[0m")
+                return
+
             try:
                 # clean up existing connection safely
                 self._safe_close_serial()
@@ -119,6 +129,9 @@ class processSerialHandler(WorkerProcess):
 
     def _try_reconnect(self):
         """Try to reconnect to serial device (called by timer)."""
+        if self.use_mock:
+            return
+
         if self.reconnecting:
             return # another reconnection attempt is already in progress
 
@@ -153,6 +166,8 @@ class processSerialHandler(WorkerProcess):
 
     def _handle_serial_disconnection(self):
         """Handle serial disconnection by pausing threads and starting reconnection."""
+        if self.use_mock:
+            return
 
         with self.serialLock:
             # check if already handling disconnection
@@ -184,7 +199,8 @@ class processSerialHandler(WorkerProcess):
 
         if not self.serialConnected:
             print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - No serial connection found")
-            threading.Timer(1, self._try_reconnect).start()
+            if not self.use_mock:
+                threading.Timer(1, self._try_reconnect).start()
 
         if self.dashboard_ready is not None:
             if self.dashboard_ready.is_set():

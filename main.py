@@ -42,6 +42,7 @@ import sys
 import time
 import os
 import psutil
+import argparse
 
 # Pin to CPU cores 0–3
 available_cores = list(range(psutil.cpu_count()))
@@ -110,6 +111,14 @@ if __name__ == "__main__":
     from multiprocessing import freeze_support
     freeze_support()
 
+    parser = argparse.ArgumentParser(description="Start the BFMC Brain application.")
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Enable development mode with mocked NUCLEO serial and offline camera frames.",
+    )
+    args = parser.parse_args()
+
     print(BigPrint.PLEASE_WAIT.value)
     allProcesses = list()
     allEvents = list()
@@ -147,7 +156,7 @@ if __name__ == "__main__":
 
     # Initializing camera
     camera_ready = Event()
-    processCamera = processCamera(queueList, logging, camera_ready, debugging = False)
+    processCamera = processCamera(queueList, logging, camera_ready, debugging = False, dev_mode=args.dev)
 
     # Initializing semaphores
     semaphore_ready = Event()
@@ -159,7 +168,7 @@ if __name__ == "__main__":
 
     # Initializing serial connection NUCLEO - > PI
     serial_handler_ready = Event()
-    processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False)
+    processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False, use_mock=args.dev)
 
     # Adding all processes to the list
     allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
