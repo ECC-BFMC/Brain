@@ -1,5 +1,6 @@
 import time
 import threading
+import random
 
 
 class NucleoMockSerial:
@@ -220,13 +221,13 @@ class NucleoMockSerial:
 
     def _telemetry_value(self, action):
         if action == "battery":
-            return "8400"
+            return f"{random.randint(8000, 8400)}"
         if action == "instant":
-            return "120"
+            return f"{random.randint(4000, 5500)}"
         if action == "imu":
-            return "0.000;0.000;0.000;0.000;0.000;9.810"
+            return f"{random.uniform(0, 10):.3f};{random.uniform(0, 10):.3f};{random.uniform(0, 10):.3f};{random.uniform(0, 10):.3f};{random.uniform(0, 10):.3f};{random.uniform(0, 10):.3f}"
         if action == "resourceMonitor":
-            return "Heap (12.50);Stack (8.25)"
+            return f"Heap ({random.uniform(0, 100):.2f});Stack ({random.uniform(0, 100):.2f})"
         raise ValueError(action)
 
     def _enqueue(self, action, value):

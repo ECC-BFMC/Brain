@@ -23,7 +23,7 @@ class FirmwareManager:
         self.repo_path = repo_path
 
     def _get_firmware_dir(self):
-        return os.path.join(self.repo_path, 'src', 'hardware', 'firmware')
+        return os.path.join(self.repo_path, 'runtime', 'firmware')
 
     def _list_local_bin_files(self):
         """List .bin files available in the local firmware folder."""
@@ -159,7 +159,7 @@ class FirmwareManager:
 
             return jsonify({
                 'success': True,
-                'message': f'Firmware downloaded successfully ({len(firmware_data)} bytes). File saved to src/hardware/firmware/robot_car.bin'
+                'message': f'Firmware downloaded successfully ({len(firmware_data)} bytes). File saved to runtime/firmware/robot_car.bin'
             })
         except urllib.error.URLError as e:
             return jsonify({'success': False, 'error': f'Failed to download firmware: {e.reason}'}), 500

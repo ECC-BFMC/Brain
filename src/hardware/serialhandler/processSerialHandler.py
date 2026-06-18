@@ -31,6 +31,7 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 import re
+import os
 import serial
 import serial.tools.list_ports
 import threading
@@ -58,7 +59,7 @@ class processSerialHandler(WorkerProcess):
     # ===================================== INIT =========================================
     def __init__(self, queueList, logging, ready_event=None, dashboard_ready=None, debugging=False, example=False, use_mock=False):
         # devFile = "/dev/ttyACM0"
-        logFile = "temp/serial_history.log"
+        logFile = os.path.join("runtime", "temp", "serial_history.log")
 
         self.logger = logging
         self.queuesList = queueList

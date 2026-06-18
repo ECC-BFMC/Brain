@@ -731,9 +731,9 @@ class Calibration():
     def write_calibration_to_file(self, new_code, type):
         """Write the generated calibration code to the appropriate file."""
         if type == "Speed":
-            filename = "calibration/templates/speedingmotor.cpp"
+            filename = "runtime/calibration/templates/speedingmotor.cpp"
         elif type == "Steer":
-            filename = "calibration/templates/steeringmotor.cpp"
+            filename = "runtime/calibration/templates/steeringmotor.cpp"
         
         start_marker = "// POLYNOMIAL CODE START"
         end_marker = "// POLYNOMIAL CODE END"
@@ -917,6 +917,7 @@ class Calibration():
             '..',
             '..',
             '..',
+            'runtime',
             'calibration',
             'measurements'
         )
@@ -1161,6 +1162,7 @@ class Calibration():
                 '..',
                 '..',
                 '..',
+                'runtime',
                 'calibration',
                 'source'
             )
