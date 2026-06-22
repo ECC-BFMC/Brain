@@ -105,13 +105,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 .warning-container {
     position: absolute;
     bottom: 1%;
-    left: 50%;
-    transform: translateX(-50%);
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
-    width: 70%;
-    max-width: 80%;
+    /* Inset from the gauge's left edge and size to the single-line text
+       (max-content), so the background always fits the text and simply extends
+       to the right rather than wrapping or clipping. */
+    left: 15%;
+    width: max-content;
 }
 
 .warning-container.show {
@@ -128,6 +129,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     box-shadow: 0 0.1vw 0.4vw rgba(0, 0, 0, 0.3);
     animation: pulse 2s infinite;
     text-align: center;
+    /* Keep the warning on a single line; the container grows to the right to
+       fit it (see .warning-container width: max-content). */
     white-space: nowrap;
     filter: drop-shadow(0 0 0.3vw rgba(0, 0, 0, 0.3));
 }

@@ -26,10 +26,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
-<div class="cluster-container" [ngClass]="{'pulse-red': this.warningSignal}">
-  <app-map class="cluster-map" [cursorRotation]="cursorRotation" />
+<div class="cluster-container" [ngClass]="{'pulse-red': this.warningSignal}" [class.mobile-driving]="isMobileDriving">
+  <app-map class="cluster-map" [class.cluster-hidden]="isMobileDriving" [cursorRotation]="cursorRotation" />
 
-  <div class="cluster-digital-container">
+  <div class="cluster-digital-container" [class.cluster-hidden]="isMobileDriving">
     <div class="cluster-digital-text-container">
       <h1 class="cluster-digital-text">{{battery}}</h1>
       <p class="cluster-digital-unit">%</p>
@@ -54,12 +54,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     </div>
   </div>
 
-  <app-car class="cluster-car" [position]="carPosition" [leftLaneOn]="carLeftLaneOn" [rightLaneOn]="carRightLaneOn" />
+  <app-car class="cluster-car" [class.cluster-hidden]="isMobileDriving" [position]="carPosition" [leftLaneOn]="carLeftLaneOn" [rightLaneOn]="carRightLaneOn" />
   <app-steering class="cluster-steering" />
   <app-record class="cluster-record" />
-  <app-live-camera class="cluster-live-camera" />
-  <app-warning-light class="cluster-warning-light" />
-  <app-hardware-data class="cluster-hardware-data" />
-  <app-time-speed-steer class="cluster-time-speed-steer" />
-  <app-side-marker class="cluster-side-marker" />
+  <app-live-camera class="cluster-live-camera" [ngClass]="{'cluster-live-camera-map': isMobileDriving}" />
+  <app-warning-light class="cluster-warning-light" [class.cluster-hidden]="isMobileDriving" />
+  <app-hardware-data class="cluster-hardware-data" [class.cluster-hidden]="isMobileDriving" />
+  <app-time-speed-steer class="cluster-time-speed-steer" [class.cluster-hidden]="isMobileDriving" />
+  <app-side-marker class="cluster-side-marker" [class.cluster-hidden]="isMobileDriving" />
 </div>

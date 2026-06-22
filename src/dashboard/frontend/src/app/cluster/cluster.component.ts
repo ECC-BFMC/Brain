@@ -76,7 +76,9 @@ export class ClusterComponent {
   private speedSubscription: Subscription | undefined;
   private warningSubscription: Subscription | undefined;
   public warningSignal: Boolean = false;
+  public isMobileDriving: boolean = false;
   private klSubscription: Subscription | undefined;
+  private isMobileDrivingSubscription: Subscription | undefined;
   private currentSerialConnectionStateSubscription: Subscription | undefined;
   private serialConnectionStateSubscription: Subscription | undefined;
   constructor(private webSocketService: WebSocketService, private clusterService: ClusterService, private apiService: ApiService) { }
@@ -127,6 +129,15 @@ export class ClusterComponent {
       }
     );
 
+    this.isMobileDrivingSubscription = this.clusterService.isMobileDriving$.subscribe(
+      (isMobileDriving) => {
+        this.isMobileDriving = isMobileDriving;
+      },
+      (error) => {
+        console.error('Error receiving mobile driving state:', error);
+      }
+    );
+
     this.klSubscription = this.clusterService.kl$.subscribe(
       (klState) => {
         if (klState === '0') {
@@ -155,6 +166,10 @@ export class ClusterComponent {
 
     if (this.klSubscription) {
       this.klSubscription.unsubscribe();
+    }
+
+    if (this.isMobileDrivingSubscription) {
+      this.isMobileDrivingSubscription.unsubscribe();
     }
 
     if (this.currentSerialConnectionStateSubscription) {

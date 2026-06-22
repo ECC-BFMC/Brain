@@ -26,7 +26,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
-<div class="state-switch">
+<div class="state-switch" [class.mobile-driving]="isMobile">
   <label *ngIf="!isMobile" class="state-switch-text">Driving Mode</label>
   <div *ngIf="!isMobile" class="state-switch-body">
     <ng-container *ngFor="let state of states; let i = index">
@@ -46,22 +46,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     </a>
   </div> 
   
-  <div *ngIf="isMobile" class="button-container">
-    <button *ngIf="isMobile" class="control-button" (click)="increaseSpeed()">
+  <!-- Forward / backward (left side). Pointer events fire per-finger, so speed
+       can be changed while a steer button is held (true multi-touch). -->
+  <div *ngIf="isMobile" class="drive-container">
+    <button class="control-button" (pointerdown)="increaseSpeed()">
       <span class="control-arrow up-arrow" aria-hidden="true" unselectable="on">▲</span>
     </button>
-    <button *ngIf="isMobile" class="control-button" (click)="decreaseSpeed()">
+    <button class="control-button" (pointerdown)="decreaseSpeed()">
       <span class="control-arrow down-arrow" aria-hidden="true" unselectable="on">▼</span>
     </button>
-    <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
+  </div>
+
+  <!-- Steering left / right (right side). -->
+  <div *ngIf="isMobile" class="steer-container">
+    <button class="control-button" (pointerdown)="onButtonPress($event, 'left')" (pointerup)="onButtonRelease()" (pointercancel)="onButtonRelease()">
       <span class="control-arrow left-arrow" aria-hidden="true" unselectable="on">◀</span>
     </button>
-    <button *ngIf="isMobile" class="control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
+    <button class="control-button" (pointerdown)="onButtonPress($event, 'right')" (pointerup)="onButtonRelease()" (pointercancel)="onButtonRelease()">
       <span class="control-arrow right-arrow" aria-hidden="true" unselectable="on">▶</span>
     </button>
   </div>
 
-  <div *ngIf="isMobile" class="stop-button-container">
-    <button *ngIf="isMobile" class="stop-button" (click)="setState(0)">stop car</button>
+  <!-- Stop + brake (centre bottom; record button sits next to these) -->
+  <div *ngIf="isMobile" class="action-container">
+    <button class="stop-button" (click)="setState(0)">stop car</button>
+    <button class="brake-button" (click)="brake()">brake</button>
   </div>
 </div>

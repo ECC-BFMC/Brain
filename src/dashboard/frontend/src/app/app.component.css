@@ -40,6 +40,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   align-items: center;
 }
 
+/* Mobile driving only: fit the fixed-aspect (16:9) dashboard within BOTH the
+   viewport width and height so nothing is clipped, while still using the full
+   width whenever the viewport is taller than 16:9 (only the binding dimension
+   limits the box). Scoped to .fit-viewport so desktop / normal mobile layout
+   is unaffected. dvh reflects the real available height (so we don't waste
+   space the way svh does), and tracks the browser bars showing/hiding. */
+.cluster-container.fit-viewport {
+  width: min(var(--cluster-width), calc(100dvh * var(--aspect-ratio)));
+  height: calc(min(var(--cluster-width), calc(100dvh * var(--aspect-ratio))) / var(--aspect-ratio));
+}
+
 .alert-modal {
   position: fixed;
   top: 0;

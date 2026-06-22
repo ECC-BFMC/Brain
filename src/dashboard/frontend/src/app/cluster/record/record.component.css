@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   height: 100%;
 }
 
-.record-button { 
+.record-button {
   width: 100%;
   height: 100%;
   background-color: #d9534f;
@@ -42,6 +42,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   text-shadow: 0 0 0.3vw rgba(0, 0, 0, 1);
   filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.3));
   user-select: none;
+  /* Centre the label within the fixed button box so it doesn't shift when the
+     text changes (start record <-> stop record) and wraps to a different
+     number of lines. overflow:hidden keeps any spill from escaping the box. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  overflow: hidden;
   text-align: center;
   text-decoration: none;
   -webkit-user-select: none;
