@@ -4,17 +4,17 @@
   <div class="update-card">
     <div class="card-header">
       <span class="card-title">Brain Software</span>
-      <span class="card-source">ECC-BFMC/Brain</span>
+      <span class="card-source" [title]="source">{{ source || 'configured source' }}</span>
     </div>
 
-    <!-- Validation Warning -->
-    <div *ngIf="validationError" class="card-alert warning">
+    <!-- Not git-tracked (e.g. ZIP install) -->
+    <div *ngIf="hasChecked && !isGitRepo" class="card-alert warning">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
       </svg>
       <div class="alert-content">
-        <span class="alert-title">Updates Unavailable</span>
-        <span class="alert-text">{{ validationError }}</span>
+        <span class="alert-title">Not git-tracked</span>
+        <span class="alert-text">This install wasn't cloned with git, so it can't be updated incrementally. Set a repository URL in <code>runtime/update_config.json</code>, then set it up. This fetches that repo and <strong>overwrites local file changes</strong>.</span>
       </div>
     </div>
 
@@ -28,13 +28,43 @@
     <div *ngIf="needsRestart" class="card-alert restart">
       <div class="alert-content">
         <span class="alert-title">Restart Required</span>
-        <span class="alert-text">The car must be restarted for the update to take effect.</span>
+        <span class="alert-text">The car must be restarted for the update to take effect.<span *ngIf="depsChanged"> Dependencies changed &mdash; reinstall them first (<code>pip install -r requirements.txt</code>, and <code>npm install</code> in the frontend).</span></span>
+      </div>
+    </div>
+
+    <!-- Conflict panel -->
+    <div *ngIf="conflict" class="card-alert error">
+      <div class="alert-content">
+        <span class="alert-title">{{ conflict.diverged ? 'Cannot fast-forward' : 'Local changes block the update' }}</span>
+        <span class="alert-text">{{ conflict.message }}</span>
+        <ul class="conflict-files" *ngIf="conflict.files?.length">
+          <li *ngFor="let f of conflict.files">{{ f }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Branch selector -->
+    <div *ngIf="isGitRepo && branches.length" class="card-details">
+      <div class="detail-row">
+        <span class="detail-label">Track branch</span>
+        <select class="branch-select" [ngModel]="selectedBranch" (ngModelChange)="onBranchChange($event)"
+          [disabled]="isUpdating || isForcing || isChecking">
+          <option *ngFor="let b of branches" [value]="b">{{ b }}{{ b === defaultBranch ? ' (default)' : '' }}</option>
+        </select>
       </div>
     </div>
 
     <!-- Brain Actions Row -->
     <div class="card-actions">
-      <button class="btn btn-check" (click)="checkForUpdates()" [disabled]="isChecking || isUpdating">
+      <!-- Set up updates (adopt) for a non-git install -->
+      <button *ngIf="hasChecked && !isGitRepo" class="btn btn-update"
+        (click)="showAdoptConfirm = true" [disabled]="isAdopting">
+        <span>{{ isAdopting ? 'Setting up...' : 'Set up updates' }}</span>
+      </button>
+
+      <!-- Check -->
+      <button *ngIf="!hasChecked || isGitRepo" class="btn btn-check" (click)="checkForUpdates()"
+        [disabled]="isChecking || isUpdating || isForcing || isAdopting">
         <svg *ngIf="!isChecking" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
         </svg>
@@ -44,8 +74,9 @@
         <span>{{ isChecking ? 'Checking...' : 'Check' }}</span>
       </button>
 
-      <button *ngIf="updateAvailable && !validationError" class="btn btn-update"
-        (click)="performUpdate()" [disabled]="isUpdating || isChecking">
+      <!-- Pull update -->
+      <button *ngIf="isGitRepo && updateAvailable && !conflict" class="btn btn-update"
+        (click)="performUpdate()" [disabled]="isUpdating || isChecking || isForcing">
         <svg *ngIf="!isUpdating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
         </svg>
@@ -55,11 +86,17 @@
         <span>{{ isUpdating ? 'Updating...' : 'Pull Update' }}</span>
       </button>
 
+      <!-- Force update (offered when a conflict blocks the fast-forward) -->
+      <button *ngIf="isGitRepo && conflict" class="btn btn-danger"
+        (click)="showForceConfirm = true" [disabled]="isForcing || isUpdating">
+        <span>{{ isForcing ? 'Updating...' : 'Discard local changes & update' }}</span>
+      </button>
+
       <span *ngIf="lastChecked" class="meta-text">{{ lastChecked }}</span>
     </div>
 
     <!-- Brain Version Details -->
-    <div *ngIf="currentCommitShort && !validationError" class="card-details">
+    <div *ngIf="isGitRepo && currentCommitShort" class="card-details">
       <div *ngIf="currentBranch" class="detail-row">
         <span class="detail-label">Branch</span>
         <span class="detail-value tag tag-blue">{{ currentBranch }}</span>
@@ -72,21 +109,40 @@
         <span class="detail-label">Latest</span>
         <span class="detail-value tag tag-green" [title]="remoteCommit">{{ remoteCommitShort }}</span>
       </div>
-    </div>
-
-    <!-- Wrong branch info -->
-    <div *ngIf="validationError && isOfficialClone && !isValidBranch && currentBranch" class="card-details">
-      <div class="detail-row">
-        <span class="detail-label">Current</span>
-        <span class="detail-value tag tag-warn">{{ currentBranch }}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Required</span>
-        <span class="detail-value tag tag-blue">master</span>
+      <div *ngIf="behindBy > 0" class="detail-row">
+        <span class="detail-label">Behind by</span>
+        <span class="detail-value tag tag-warn">{{ behindBy }} commit{{ behindBy === 1 ? '' : 's' }}</span>
       </div>
     </div>
 
-    <div class="card-footer">Official clones only, on master branch.</div>
+    <!-- Adopt confirmation -->
+    <div *ngIf="showAdoptConfirm" class="card-alert warning">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+      </svg>
+      <div class="alert-content">
+        <span class="alert-title">Set up updates?</span>
+        <span class="alert-text">This turns this folder into a git clone of the configured repo and <strong>overwrites any local edits</strong>. Continue?</span>
+        <div class="confirm-actions">
+          <button class="btn btn-danger" (click)="adopt()">Yes, set up</button>
+          <button class="btn btn-check" (click)="showAdoptConfirm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Force confirmation -->
+    <div *ngIf="showForceConfirm" class="card-alert error">
+      <div class="alert-content">
+        <span class="alert-title">Discard local changes?</span>
+        <span class="alert-text">This resets the codebase to the update and <strong>permanently discards local changes</strong> to tracked files (including any committed firmware/calibration that was modified locally). Continue?</span>
+        <div class="confirm-actions">
+          <button class="btn btn-danger" (click)="forceUpdate()">Yes, discard &amp; update</button>
+          <button class="btn btn-check" (click)="showForceConfirm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">Updates from your configured repository. Private repos use the Pi's own git credentials &mdash; no token is stored here.</div>
   </div>
 
   <!-- ==================== NUCLEO FIRMWARE ==================== -->

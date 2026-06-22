@@ -170,6 +170,54 @@
   background: #bf360c;
 }
 
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b02a37;
+}
+
+/* ===== Branch selector ===== */
+.branch-select {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.branch-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Conflict file list ===== */
+.conflict-files {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  max-height: 8rem;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.76rem;
+  opacity: 0.9;
+}
+
+.conflict-files li {
+  margin: 0.1rem 0;
+  word-break: break-all;
+}
+
+/* ===== Inline confirmation actions ===== */
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 .meta-text {
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.35);

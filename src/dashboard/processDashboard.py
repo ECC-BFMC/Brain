@@ -246,6 +246,23 @@ class processDashboard(WorkerProcess):
         @self.app.route('/api/update/pull', methods=['POST'])
         def api_pull_updates():
             return self.updates.handle_pull()
+
+        @self.app.route('/api/update/force', methods=['POST'])
+        def api_force_update():
+            return self.updates.handle_force_pull()
+
+        @self.app.route('/api/update/adopt', methods=['POST'])
+        def api_adopt_update():
+            return self.updates.handle_adopt()
+
+        @self.app.route('/api/update/branches', methods=['GET'])
+        def api_update_branches():
+            return self.updates.handle_list_branches()
+
+        @self.app.route('/api/update/branch', methods=['POST'])
+        def api_set_update_branch():
+            data = flask_request.get_json() or {}
+            return self.updates.handle_set_branch(data.get('branch', ''))
         
         # Firmware Update Management
         @self.app.route('/api/firmware/check', methods=['GET'])

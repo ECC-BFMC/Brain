@@ -30,8 +30,16 @@ export interface SerialStatusResponse {
     connected: boolean;
 }
 
+export interface UpdateConflict {
+    files: string[];
+    raw: string;
+    diverged?: boolean;
+    message?: string;
+}
+
 export interface UpdateStatusResponse {
     success: boolean;
+    is_git_repo?: boolean;
     current_commit?: string;
     current_commit_short?: string;
     remote_commit?: string;
@@ -40,9 +48,11 @@ export interface UpdateStatusResponse {
     branch?: string;
     remote?: string;
     remote_branch?: string;
-    is_official_clone?: boolean;
-    valid_branch?: boolean;
-    validation_error?: string;
+    source?: string;
+    configured_branch?: string;
+    behind_by?: number;
+    deps_changed?: boolean;
+    via?: string;
     message?: string;
     error?: string;
 }
@@ -50,6 +60,17 @@ export interface UpdateStatusResponse {
 export interface UpdateActionResponse {
     success: boolean;
     message?: string;
+    deps_changed?: boolean;
+    conflict?: UpdateConflict;
+    is_git_repo?: boolean;
+    error?: string;
+}
+
+export interface UpdateBranchesResponse {
+    success: boolean;
+    branches?: string[];
+    default_branch?: string;
+    selected_branch?: string;
     error?: string;
 }
 
@@ -186,6 +207,22 @@ export class ApiService {
 
     performUpdate(): Observable<UpdateActionResponse> {
         return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/pull`, {});
+    }
+
+    forceUpdate(): Observable<UpdateActionResponse> {
+        return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/force`, {});
+    }
+
+    adoptRepo(): Observable<UpdateActionResponse> {
+        return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/adopt`, {});
+    }
+
+    listUpdateBranches(): Observable<UpdateBranchesResponse> {
+        return this.http.get<UpdateBranchesResponse>(`${this.baseUrl}/api/update/branches`);
+    }
+
+    setUpdateBranch(branch: string): Observable<UpdateBranchesResponse> {
+        return this.http.post<UpdateBranchesResponse>(`${this.baseUrl}/api/update/branch`, { branch });
     }
 
     // Firmware Update Management
