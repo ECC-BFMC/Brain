@@ -2,7 +2,6 @@ import json
 import os
 import shutil
 import subprocess
-import time
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
@@ -25,14 +24,9 @@ class UpdateManager:
     DEFAULT_REMOTE_NAME = 'bfmc-upstream'
     GITHUB_API_BASE = 'https://api.github.com'
     USER_AGENT = 'BFMC-Brain'
-    # GitHub allows 60 unauthenticated API requests/hr per public IP. Each car
-    # has its own IP, so it gets its own budget -- this short cache just avoids
-    # redundant calls from rapid or programmatic re-checks.
-    CHECK_CACHE_TTL = 60
 
     def __init__(self, repo_path):
         self.repo_path = repo_path
-        self._check_cache = None  # (timestamp, response_dict)
 
     # ----------------------------- config -----------------------------
 
@@ -282,11 +276,6 @@ class UpdateManager:
                     'configured_branch': cfg.get('branch') or '',
                 })
 
-            if self._check_cache:
-                ts, cached = self._check_cache
-                if time.time() - ts < self.CHECK_CACHE_TTL:
-                    return jsonify(cached)
-
             cfg = self._load_config()
             remote, err = self._ensure_configured_remote(cfg)
             if err:
@@ -311,7 +300,6 @@ class UpdateManager:
                 'remote': source,
                 'remote_branch': branch,
             })
-            self._check_cache = (time.time(), response)
             return jsonify(response)
         except subprocess.TimeoutExpired:
             return jsonify({'success': False, 'error': 'Command timed out'}), 500
@@ -373,7 +361,6 @@ class UpdateManager:
             merge = self._git('merge', '--ff-only', remote_branch, timeout=120)
             if merge.returncode != 0:
                 conflict = self._collect_conflict(head, remote_branch, merge)
-                self._check_cache = None
                 return jsonify({
                     'success': False,
                     'conflict': conflict,
@@ -382,7 +369,6 @@ class UpdateManager:
 
             self._git('submodule', 'update', '--init', '--recursive', timeout=180)
             deps_changed = self._deps_changed(self._changed_files(head, remote_commit))
-            self._check_cache = None
             return jsonify({
                 'success': True,
                 'deps_changed': deps_changed,
@@ -442,7 +428,6 @@ class UpdateManager:
 
             self._git('submodule', 'update', '--init', '--recursive', timeout=180)
             deps_changed = self._deps_changed(self._changed_files(head, remote_commit))
-            self._check_cache = None
             return jsonify({
                 'success': True,
                 'deps_changed': deps_changed,
@@ -522,7 +507,6 @@ class UpdateManager:
                     'error': f'Setup failed and was rolled back: {inner}'
                 }), 500
 
-            self._check_cache = None
             return jsonify({
                 'success': True,
                 'message': (f'Updates configured from {url} (branch {branch}). '
@@ -588,7 +572,6 @@ class UpdateManager:
             cfg = self._load_config()
             cfg['branch'] = branch
             self._save_config(cfg)
-            self._check_cache = None
 
             message = (f'Update branch set to "{branch}".' if branch
                        else 'Update branch reset to the repository default.')
