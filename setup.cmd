@@ -47,8 +47,12 @@ else
 fi
 
 # --- Python Virtual Environment (Cross-platform) ---
-echo "Setting up Python virtual environment..."
-$PYTHON_CMD -m venv .venv
+if [ -f "$PYTHON_ACTIVATE" ]; then
+  echo "Python virtual environment already exists, reusing it..."
+else
+  echo "Setting up Python virtual environment..."
+  $PYTHON_CMD -m venv .venv
+fi
 source "$PYTHON_ACTIVATE"
 
 echo "Upgrading pip, setuptools, wheel..."
@@ -69,7 +73,10 @@ fi
 echo "Installing frontend dependencies..."
 pushd src/dashboard/frontend >/dev/null
 
-if [ -f package-lock.json ]; then
+if [ -d node_modules ]; then
+  echo "node_modules already exists, syncing dependencies..."
+  npm install --legacy-peer-deps
+elif [ -f package-lock.json ]; then
   npm ci --legacy-peer-deps
 else
   npm install --legacy-peer-deps
@@ -94,7 +101,24 @@ if exist "C:\Program Files\Git\bin\bash.exe" (
     exit /b
 )
 
-echo Error: Git Bash was not found in PATH or at "C:\Program Files\Git\bin\bash.exe".
-echo Please install Git for Windows (https://git-scm.com/) and try again.
+rem --- Detect Git install path from the git command ---
+for /f "delims=" %%G in ('where git 2^>nul') do (
+    set "GIT_EXE=%%G"
+    goto :found_git
+)
+goto :no_git
+
+:found_git
+rem git.exe is typically at <install>\cmd\git.exe; bash is at <install>\bin\bash.exe
+for %%I in ("%GIT_EXE%") do set "GIT_DIR=%%~dpI"
+set "GIT_BASH=%GIT_DIR%..\bin\bash.exe"
+if exist "%GIT_BASH%" (
+    "%GIT_BASH%" "%~dp0setup.cmd"
+    exit /b
+)
+
+:no_git
+echo Error: Git Bash was not found. Please ensure Git for Windows is installed and in PATH.
+echo https://git-scm.com/
 pause
 exit /b 1
