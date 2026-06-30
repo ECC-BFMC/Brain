@@ -73,7 +73,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     fwIsChecking: boolean = false;
     fwIsDownloading: boolean = false;
     fwIsFlashing: boolean = false;
-    fwJustDownloaded: boolean = false;   // gate the Flash button behind a fresh pull
+    fwJustDownloaded: boolean = false;   // Flash only after a pull, and only while still current
     fwStatusMessage: string = '';
     fwStatusType: 'success' | 'error' | 'info' = 'info';
     fwHasChecked: boolean = false;
@@ -426,7 +426,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 if (response.success) {
                     this.showFwStatus(response.message || 'Firmware downloaded successfully!', 'success', 10000);
                     this.fwUpdateAvailable = false;
-                    this.fwJustDownloaded = true;   // now the Flash button may appear
+                    this.fwJustDownloaded = true;
                     this.checkFirmware();
                 } else if (!this.fwHandleAuthRequired(response)) {
                     this.showFwStatus(response.error || 'Download failed', 'error');

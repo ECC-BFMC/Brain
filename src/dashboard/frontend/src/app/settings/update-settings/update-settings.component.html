@@ -266,7 +266,7 @@
         <span>{{ fwIsChecking ? 'Checking...' : 'Check' }}</span>
       </button>
 
-      <button *ngIf="fwJustDownloaded" class="btn btn-flash"
+      <button *ngIf="fwJustDownloaded && !fwUpdateAvailable" class="btn btn-flash"
         (click)="flashFirmware()" [disabled]="fwIsFlashing || fwIsDownloading || fwIsChecking">
         <svg *ngIf="!fwIsFlashing" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M7 2v11h3v9l7-12h-4l4-8z"/>

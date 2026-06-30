@@ -32309,7 +32309,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275advance(2);
         \u0275\u0275textInterpolate(ctx.fwIsChecking ? "Checking..." : "Check");
         \u0275\u0275advance();
-        \u0275\u0275property("ngIf", ctx.fwJustDownloaded);
+        \u0275\u0275property("ngIf", ctx.fwJustDownloaded && !ctx.fwUpdateAvailable);
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.fwUpdateAvailable);
         \u0275\u0275advance();
