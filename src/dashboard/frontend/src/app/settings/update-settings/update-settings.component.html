@@ -4,7 +4,34 @@
   <div class="update-card">
     <div class="card-header">
       <span class="card-title">Brain Software</span>
-      <span class="card-source" [title]="source">{{ source || 'configured source' }}</span>
+      <button type="button" class="card-source card-source-btn" [title]="'Change repository'"
+        (click)="showSourceEditor = !showSourceEditor">
+        {{ sourceUrl || sourceOriginUrl || 'configured source' }}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Repository source editor (set your own fork / repo URL) -->
+    <div *ngIf="showSourceEditor" class="card-details source-editor">
+      <div class="detail-row">
+        <span class="detail-label">Repository</span>
+        <input class="source-input" type="text" [(ngModel)]="sourceUrl"
+          placeholder="https://github.com/your-user/your-fork.git"
+          [disabled]="isSavingSource" />
+      </div>
+      <span class="source-hint">
+        Paste your fork's URL to pull updates from it (https:// or git&#64; SSH).
+        Leave empty to update from the original repository
+        <span *ngIf="sourceOriginUrl">(<code>{{ sourceOriginUrl }}</code>)</span>.
+      </span>
+      <div class="confirm-actions">
+        <button class="btn btn-update" (click)="saveSource()" [disabled]="isSavingSource">
+          {{ isSavingSource ? 'Saving...' : 'Save repository' }}
+        </button>
+        <button class="btn btn-check" (click)="showSourceEditor = false" [disabled]="isSavingSource">Cancel</button>
+      </div>
     </div>
 
     <!-- Not git-tracked (e.g. ZIP install) -->
@@ -14,7 +41,7 @@
       </svg>
       <div class="alert-content">
         <span class="alert-title">Not git-tracked</span>
-        <span class="alert-text">This install wasn't cloned with git, so it can't be updated incrementally. Set a repository URL in <code>runtime/update_config.json</code>, then set it up. This fetches that repo and <strong>overwrites local file changes</strong>.</span>
+        <span class="alert-text">This install wasn't cloned with git, so it can't be updated incrementally. Set your repository URL above (the pencil next to the title), then set it up. This fetches that repo and <strong>overwrites local file changes</strong>.</span>
       </div>
     </div>
 
@@ -211,6 +238,62 @@
     </div>
 
     <div class="card-footer">robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.</div>
+  </div>
+
+  <!-- ==================== PRIVATE REPO AUTH HELP ==================== -->
+  <div *ngIf="showAuthHelp" class="modal-overlay" (click)="showAuthHelp = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">This repository is private</span>
+        <button type="button" class="modal-close" (click)="showAuthHelp = false" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-intro">
+          The car couldn't read <code>{{ sourceUrl || 'this repository' }}</code> because it has no
+          credentials for it. The dashboard never stores tokens &mdash; instead you give the Pi its
+          own read access, once. Pick whichever matches your repo URL:
+        </p>
+
+        <!-- SSH deploy key (recommended for private repos) -->
+        <div class="help-block" [class.help-recommended]="isSshSource">
+          <span class="help-block-title">
+            SSH deploy key <span class="help-badge" *ngIf="isSshSource">your URL</span>
+            <span class="help-badge muted" *ngIf="!isSshSource">for git&#64; / ssh:// URLs</span>
+          </span>
+          <p>On the Pi (over SSH), create a key and add it to your repo:</p>
+          <pre><code>ssh-keygen -t ed25519 -C "bfmc-car" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub</code></pre>
+          <p>
+            Copy that printed public key into your repo on GitHub under
+            <strong>Settings → Deploy keys → Add deploy key</strong> (read-only is enough), then test:
+          </p>
+          <pre><code>ssh -T git&#64;github.com</code></pre>
+          <p class="help-note">Make sure your repository URL above uses the SSH form, e.g.
+            <code>git&#64;github.com:your-user/your-fork.git</code>.</p>
+        </div>
+
+        <!-- HTTPS token -->
+        <div class="help-block" [class.help-recommended]="!isSshSource">
+          <span class="help-block-title">
+            HTTPS access token <span class="help-badge" *ngIf="!isSshSource">your URL</span>
+            <span class="help-badge muted" *ngIf="isSshSource">for https:// URLs</span>
+          </span>
+          <p>Create a fine-grained <strong>Personal Access Token</strong> with read access to the repo,
+            then store it on the Pi so git reuses it:</p>
+          <pre><code>git config --global credential.helper store
+git -C ~/Brain fetch   # paste username + token once when prompted</code></pre>
+          <p class="help-note">Adjust the path if your code isn't in <code>~/Brain</code>.</p>
+        </div>
+
+        <p class="modal-outro">Once access is set up, close this and press <strong>Check</strong> again.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-update" (click)="showAuthHelp = false; checkForUpdates()">Done, re-check</button>
+        <button class="btn btn-check" (click)="showAuthHelp = false">Close</button>
+      </div>
+    </div>
   </div>
 
 </div>

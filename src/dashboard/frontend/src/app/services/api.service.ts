@@ -54,6 +54,7 @@ export interface UpdateStatusResponse {
     deps_changed?: boolean;
     via?: string;
     message?: string;
+    auth_required?: boolean;
     error?: string;
 }
 
@@ -63,6 +64,7 @@ export interface UpdateActionResponse {
     deps_changed?: boolean;
     conflict?: UpdateConflict;
     is_git_repo?: boolean;
+    auth_required?: boolean;
     error?: string;
 }
 
@@ -71,6 +73,17 @@ export interface UpdateBranchesResponse {
     branches?: string[];
     default_branch?: string;
     selected_branch?: string;
+    error?: string;
+}
+
+export interface UpdateSourceResponse {
+    success: boolean;
+    url?: string;
+    branch?: string;
+    remote_name?: string;
+    origin_url?: string;
+    is_git_repo?: boolean;
+    message?: string;
     error?: string;
 }
 
@@ -223,6 +236,14 @@ export class ApiService {
 
     setUpdateBranch(branch: string): Observable<UpdateBranchesResponse> {
         return this.http.post<UpdateBranchesResponse>(`${this.baseUrl}/api/update/branch`, { branch });
+    }
+
+    getUpdateSource(): Observable<UpdateSourceResponse> {
+        return this.http.get<UpdateSourceResponse>(`${this.baseUrl}/api/update/source`);
+    }
+
+    setUpdateSource(url: string): Observable<UpdateSourceResponse> {
+        return this.http.post<UpdateSourceResponse>(`${this.baseUrl}/api/update/source`, { url });
     }
 
     // Firmware Update Management

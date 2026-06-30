@@ -37,6 +37,66 @@
   font-family: 'Courier New', monospace;
 }
 
+.card-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 60%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.card-source-btn:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.card-source-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ===== Repository source editor ===== */
+.source-editor .detail-row {
+  gap: 0.6rem;
+}
+
+.source-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+}
+
+.source-input:focus {
+  outline: none;
+  border-color: rgba(0, 123, 255, 0.5);
+}
+
+.source-input:disabled {
+  opacity: 0.5;
+}
+
+.source-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+}
+
 /* ===== Alert Messages ===== */
 .card-alert {
   padding: 0.5rem 0.7rem;
@@ -299,6 +359,152 @@
 .tag-warn {
   color: #ffb74d;
   background: rgba(255, 152, 0, 0.12);
+}
+
+/* ===== Private-repo auth help modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: min(560px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #1b2026;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.modal-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+
+.modal-close:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-body {
+  padding: 0.9rem 1rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.modal-body p {
+  margin: 0 0 0.6rem;
+}
+
+.modal-intro code,
+.help-note code,
+.modal-body p code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  word-break: break-all;
+}
+
+.help-block {
+  margin: 0.7rem 0;
+  padding: 0.7rem 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.help-block.help-recommended {
+  border-color: rgba(40, 167, 69, 0.4);
+  background: rgba(40, 167, 69, 0.06);
+}
+
+.help-block-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 0.45rem;
+}
+
+.help-badge {
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+  background: rgba(40, 167, 69, 0.2);
+  color: #6fcf7c;
+}
+
+.help-badge.muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.help-block pre {
+  margin: 0.4rem 0;
+  padding: 0.55rem 0.7rem;
+  background: #11151a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow-x: auto;
+}
+
+.help-block pre code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.76rem;
+  color: #9ad0ff;
+  white-space: pre;
+}
+
+.help-note {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-outro {
+  margin-top: 0.7rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ===== Card Footer ===== */

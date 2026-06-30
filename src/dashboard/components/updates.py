@@ -59,11 +59,51 @@ class UpdateManager:
     # ----------------------------- git helpers -----------------------------
 
     def _git(self, *args, timeout=30):
+        # Force git to fail fast instead of blocking on an interactive
+        # credential / passphrase prompt when a private repo has no auth set up
+        # on the Pi. Without these, an https private URL can hang until the
+        # subprocess timeout, and an ssh key with a passphrase can stall too.
+        env = dict(os.environ)
+        env['GIT_TERMINAL_PROMPT'] = '0'
+        env['GIT_ASKPASS'] = env.get('GIT_ASKPASS', '') or 'echo'
+        env.setdefault('GIT_SSH_COMMAND', 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new')
         return subprocess.run(
             ['git', *args],
             cwd=self.repo_path,
-            capture_output=True, text=True, timeout=timeout
+            capture_output=True, text=True, timeout=timeout, env=env
         )
+
+    # Markers git prints when a fetch/clone fails because of missing or rejected
+    # credentials (vs. a network/other error). Used to tell the student that the
+    # repo is private and how to grant the Pi access.
+    _AUTH_ERROR_MARKERS = (
+        'authentication failed',
+        'could not read username',
+        'could not read password',
+        'terminal prompts disabled',
+        'permission denied (publickey)',
+        'permission denied (publickey,password)',
+        'host key verification failed',
+        'invalid username or password',
+        'repository not found',          # GitHub's response for private repos you can't see
+        'remote: not found',
+        'access denied',
+        'fatal: authentication',
+        '403 forbidden',
+        'support for password authentication was removed',
+    )
+
+    AUTH_REQUIRED_MESSAGE = (
+        "Couldn't access this repository. It looks private, and the car has no "
+        "credentials for it yet. Grant the Pi read access, then try again."
+    )
+
+    @classmethod
+    def _is_auth_error(cls, text):
+        if not text:
+            return False
+        low = text.lower()
+        return any(marker in low for marker in cls._AUTH_ERROR_MARKERS)
 
     def _is_git_repo(self):
         result = self._git('rev-parse', '--is-inside-work-tree', timeout=10)
@@ -227,13 +267,16 @@ class UpdateManager:
         deploy key, and any provider)."""
         fetch = self._git('fetch', remote, timeout=60)
         if fetch.returncode != 0:
+            auth_required = self._is_auth_error(fetch.stderr or fetch.stdout)
             return {
                 'update_available': False,
                 'current_commit': head,
                 'current_commit_short': head[:7],
                 'remote_commit': '',
                 'remote_commit_short': '',
-                'message': 'Could not reach the configured repository.',
+                'auth_required': auth_required,
+                'message': (self.AUTH_REQUIRED_MESSAGE if auth_required
+                            else 'Could not reach the configured repository.'),
                 'via': 'git',
             }
         remote_branch = f'{remote}/{branch}'
@@ -330,6 +373,21 @@ class UpdateManager:
                        'below, or use "Discard local changes & update".')
         return {'files': files, 'raw': raw, 'diverged': diverged, 'message': message}
 
+    def _fetch_failure_response(self, fetch):
+        """Build the JSON response for a failed fetch, distinguishing a private
+        repo / auth problem (so the UI can show setup instructions) from a
+        generic network error."""
+        if self._is_auth_error(fetch.stderr or fetch.stdout):
+            return jsonify({
+                'success': False,
+                'auth_required': True,
+                'error': self.AUTH_REQUIRED_MESSAGE,
+            }), 401
+        return jsonify({
+            'success': False,
+            'error': f'Failed to fetch from the configured repository.\n{fetch.stderr.strip()}'
+        }), 500
+
     def handle_pull(self):
         """Fast-forward the codebase to the configured remote branch."""
         try:
@@ -350,10 +408,7 @@ class UpdateManager:
 
             fetch = self._git('fetch', remote, '--recurse-submodules', timeout=120)
             if fetch.returncode != 0:
-                return jsonify({
-                    'success': False,
-                    'error': f'Failed to fetch from the configured repository.\n{fetch.stderr.strip()}'
-                }), 500
+                return self._fetch_failure_response(fetch)
 
             remote_branch = f'{remote}/{branch}'
             remote_commit = self._git('rev-parse', remote_branch, timeout=10).stdout.strip()
@@ -411,10 +466,7 @@ class UpdateManager:
 
             fetch = self._git('fetch', remote, '--recurse-submodules', timeout=120)
             if fetch.returncode != 0:
-                return jsonify({
-                    'success': False,
-                    'error': f'Failed to fetch from the configured repository.\n{fetch.stderr.strip()}'
-                }), 500
+                return self._fetch_failure_response(fetch)
 
             remote_branch = f'{remote}/{branch}'
             remote_commit = self._git('rev-parse', remote_branch, timeout=10).stdout.strip()
@@ -492,6 +544,13 @@ class UpdateManager:
 
                 fetch = self._git('fetch', remote, '--recurse-submodules', timeout=300)
                 if fetch.returncode != 0:
+                    if self._is_auth_error(fetch.stderr or fetch.stdout):
+                        self._cleanup_git_dir()
+                        return jsonify({
+                            'success': False,
+                            'auth_required': True,
+                            'error': self.AUTH_REQUIRED_MESSAGE,
+                        }), 401
                     raise RuntimeError(fetch.stderr.strip() or 'failed to fetch repository')
 
                 branch = self._resolve_branch(cfg, remote)
@@ -559,6 +618,56 @@ class UpdateManager:
                 'default_branch': default_branch,
                 'selected_branch': cfg.get('branch') or default_branch,
             })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    # ----------------------------- source (repo URL) -----------------------------
+
+    def handle_get_source(self):
+        """Report the currently configured update source so the student can see
+        and change which repository the car pulls updates from (e.g. their own
+        fork). An empty url means updates come from ``origin`` (the repo that was
+        cloned), or that none is set yet for a ZIP install."""
+        try:
+            cfg = self._load_config()
+            origin = self._origin_url() if self._is_git_repo() else ''
+            return jsonify({
+                'success': True,
+                'url': cfg.get('url') or '',
+                'branch': cfg.get('branch') or '',
+                'remote_name': cfg.get('remote_name') or self.DEFAULT_REMOTE_NAME,
+                'origin_url': origin,
+                'is_git_repo': self._is_git_repo(),
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def handle_set_source(self, url):
+        """Persist the repository URL the student wants to pull updates from.
+
+        An empty url is allowed and resets the source back to ``origin`` (the
+        repo that was cloned). A non-empty url is validated the same way as the
+        adopt flow. Changing the url leaves the configured remote to be
+        re-pointed lazily on the next check via ``_ensure_configured_remote``."""
+        try:
+            url = (url or '').strip()
+            if url:
+                ok, err = self._validate_repo_url(url)
+                if not ok:
+                    return jsonify({'success': False, 'error': err}), 400
+
+            cfg = self._load_config()
+            cfg['url'] = url
+            self._save_config(cfg)
+
+            # Re-point the configured remote immediately when we can, so the next
+            # check/pull uses the new url even before a fetch happens.
+            if url and self._is_git_repo():
+                self._ensure_configured_remote(cfg)
+
+            message = (f'Update source set to {url}.' if url
+                       else 'Update source reset to the original repository (origin).')
+            return jsonify({'success': True, 'url': url, 'message': message})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 

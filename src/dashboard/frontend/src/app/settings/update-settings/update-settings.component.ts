@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, FirmwareCheckResponse, FirmwareActionResponse } from '../../services/api.service';
+import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, FirmwareCheckResponse, FirmwareActionResponse } from '../../services/api.service';
 
 @Component({
     selector: 'app-update-settings',
@@ -38,6 +38,16 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     showForceConfirm: boolean = false;
     showAdoptConfirm: boolean = false;
 
+    // Repository source (which repo to pull updates from, e.g. a student fork)
+    sourceUrl: string = '';
+    sourceOriginUrl: string = '';
+    showSourceEditor: boolean = false;
+    isSavingSource: boolean = false;
+    sourceLoaded: boolean = false;
+
+    // Private-repo auth help popup
+    showAuthHelp: boolean = false;
+
     // Branch selection
     branches: string[] = [];
     defaultBranch: string = '';
@@ -65,7 +75,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     constructor(private apiService: ApiService) { }
 
     ngOnInit(): void {
-        // Optionally auto-check on load
+        this.loadSource();
     }
 
     ngOnDestroy(): void {
@@ -110,6 +120,8 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 this.via = response.via || '';
                 this.updateAvailable = response.update_available || false;
                 this.lastChecked = new Date().toLocaleTimeString();
+
+                this.handleAuthRequired(response);
 
                 if (response.message) {
                     this.showStatus(response.message, 'info');
@@ -165,11 +177,13 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.conflict = null;
                     this.onUpdateApplied(response);
                 } else {
+                    this.handleAuthRequired(response);
                     this.showStatus(response.error || 'Force update failed', 'error');
                 }
                 this.isForcing = false;
             },
             error: (err) => {
+                this.handleAuthRequired(err?.error);
                 this.showStatus(err?.error?.error || 'Force update failed', 'error');
                 this.isForcing = false;
             }
@@ -189,13 +203,58 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.needsRestart = true;
                     this.checkForUpdates();
                 } else {
+                    this.handleAuthRequired(response);
                     this.showStatus(response.error || 'Setup failed', 'error', 12000);
                 }
                 this.isAdopting = false;
             },
             error: (err) => {
+                this.handleAuthRequired(err?.error);
                 this.showStatus(err?.error?.error || 'Setup failed', 'error', 12000);
                 this.isAdopting = false;
+            }
+        });
+    }
+
+    // ==================== Repository source ====================
+
+    loadSource(): void {
+        this.apiService.getUpdateSource().subscribe({
+            next: (response: UpdateSourceResponse) => {
+                if (response.success) {
+                    this.sourceUrl = response.url || '';
+                    this.sourceOriginUrl = response.origin_url || '';
+                    this.sourceLoaded = true;
+                }
+            },
+            error: () => { /* non-fatal; source section just stays hidden */ }
+        });
+    }
+
+    saveSource(): void {
+        const url = (this.sourceUrl || '').trim();
+        this.isSavingSource = true;
+
+        this.apiService.setUpdateSource(url).subscribe({
+            next: (response: UpdateSourceResponse) => {
+                if (response.success) {
+                    this.sourceUrl = response.url || '';
+                    this.showSourceEditor = false;
+                    this.showStatus(response.message || 'Update source saved.', 'success');
+                    // The tracked branch and any cached check results depend on the
+                    // source, so re-check against the new repo.
+                    this.branches = [];
+                    this.conflict = null;
+                    this.updateAvailable = false;
+                    this.checkForUpdates();
+                } else {
+                    this.showStatus(response.error || 'Failed to save update source', 'error');
+                }
+                this.isSavingSource = false;
+            },
+            error: (err) => {
+                this.showStatus(err?.error?.error || 'Failed to save update source', 'error');
+                this.isSavingSource = false;
             }
         });
     }
@@ -243,6 +302,10 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     }
 
     private handlePullFailure(body: any): void {
+        if (this.handleAuthRequired(body)) {
+            this.showStatus((body && body.error) || 'Update failed', 'error');
+            return;
+        }
         if (body && body.conflict) {
             this.conflict = body.conflict as UpdateConflict;
             this.showStatus(body.conflict.message || body.error || 'Update could not be applied.', 'error', 12000);
@@ -336,6 +399,23 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         } catch {
             return isoDate;
         }
+    }
+
+    /** True when the configured source is an SSH URL (git@... or ssh://...),
+     * which steers the help popup toward the deploy-key instructions. */
+    get isSshSource(): boolean {
+        const u = (this.sourceUrl || '').trim().toLowerCase();
+        return u.startsWith('git@') || u.startsWith('ssh://');
+    }
+
+    /** Pop the "how to grant the Pi access" help when the server reports a
+     * private repo it has no credentials for. Returns true when handled. */
+    private handleAuthRequired(body: any): boolean {
+        if (body && body.auth_required) {
+            this.showAuthHelp = true;
+            return true;
+        }
+        return false;
     }
 
     private showStatus(message: string, type: 'success' | 'error' | 'info', duration: number = 5000): void {

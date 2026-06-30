@@ -263,6 +263,15 @@ class processDashboard(WorkerProcess):
         def api_set_update_branch():
             data = flask_request.get_json() or {}
             return self.updates.handle_set_branch(data.get('branch', ''))
+
+        @self.app.route('/api/update/source', methods=['GET'])
+        def api_get_update_source():
+            return self.updates.handle_get_source()
+
+        @self.app.route('/api/update/source', methods=['POST'])
+        def api_set_update_source():
+            data = flask_request.get_json() or {}
+            return self.updates.handle_set_source(data.get('url', ''))
         
         # Firmware Update Management
         @self.app.route('/api/firmware/check', methods=['GET'])
