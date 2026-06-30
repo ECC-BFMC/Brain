@@ -26823,6 +26823,27 @@ var ApiService = class _ApiService {
   flashSelectedFirmware(filename) {
     return this.http.post(`${this.baseUrl}/api/firmware/flash-selected`, { filename });
   }
+  getFirmwareSource() {
+    return this.http.get(`${this.baseUrl}/api/firmware/source`);
+  }
+  setFirmwareSource(url2) {
+    return this.http.post(`${this.baseUrl}/api/firmware/source`, { url: url2 });
+  }
+  listFirmwareRepoBins() {
+    return this.http.get(`${this.baseUrl}/api/firmware/repo-files`);
+  }
+  setFirmwareFile(filePath) {
+    return this.http.post(`${this.baseUrl}/api/firmware/file`, { file_path: filePath });
+  }
+  getFirmwareToken() {
+    return this.http.get(`${this.baseUrl}/api/firmware/token`);
+  }
+  setFirmwareToken(token) {
+    return this.http.post(`${this.baseUrl}/api/firmware/token`, { token });
+  }
+  deleteFirmwareToken() {
+    return this.http.delete(`${this.baseUrl}/api/firmware/token`);
+  }
   static {
     this.\u0275fac = function ApiService_Factory(__ngFactoryType__) {
       return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
@@ -30211,10 +30232,10 @@ function UpdateSettingsComponent_div_9_span_7_Template(rf, ctx) {
 function UpdateSettingsComponent_div_9_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 26)(1, "div", 27)(2, "span", 28);
+    \u0275\u0275elementStart(0, "div", 32)(1, "div", 20)(2, "span", 21);
     \u0275\u0275text(3, "Repository");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "input", 29);
+    \u0275\u0275elementStart(4, "input", 33);
     \u0275\u0275twoWayListener("ngModelChange", function UpdateSettingsComponent_div_9_Template_input_ngModelChange_4_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30222,12 +30243,12 @@ function UpdateSettingsComponent_div_9_Template(rf, ctx) {
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "span", 30);
+    \u0275\u0275elementStart(5, "span", 34);
     \u0275\u0275text(6, " Paste your fork's URL to pull updates from it (https:// or git@ SSH). Leave empty to update from the original repository ");
-    \u0275\u0275template(7, UpdateSettingsComponent_div_9_span_7_Template, 5, 1, "span", 31);
+    \u0275\u0275template(7, UpdateSettingsComponent_div_9_span_7_Template, 5, 1, "span", 35);
     \u0275\u0275text(8, ". ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(9, "div", 32)(10, "button", 33);
+    \u0275\u0275elementStart(9, "div", 36)(10, "button", 37);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_9_Template_button_click_10_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30235,7 +30256,7 @@ function UpdateSettingsComponent_div_9_Template(rf, ctx) {
     });
     \u0275\u0275text(11);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(12, "button", 20);
+    \u0275\u0275elementStart(12, "button", 26);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_9_Template_button_click_12_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30243,7 +30264,7 @@ function UpdateSettingsComponent_div_9_Template(rf, ctx) {
     });
     \u0275\u0275text(13);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(14, "button", 20);
+    \u0275\u0275elementStart(14, "button", 26);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_9_Template_button_click_14_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30273,16 +30294,16 @@ function UpdateSettingsComponent_div_9_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 34);
+    \u0275\u0275elementStart(0, "div", 38);
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 35);
-    \u0275\u0275element(2, "path", 36);
+    \u0275\u0275elementStart(1, "svg", 39);
+    \u0275\u0275element(2, "path", 40);
     \u0275\u0275elementEnd();
     \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(3, "div", 37)(4, "span", 38);
+    \u0275\u0275elementStart(3, "div", 41)(4, "span", 42);
     \u0275\u0275text(5, "Not git-tracked");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "span", 39);
+    \u0275\u0275elementStart(6, "span", 43);
     \u0275\u0275text(7, "This install wasn't cloned with git, so it can't be updated incrementally. Set your repository URL above (the pencil next to the title), then set it up. This fetches that repo and ");
     \u0275\u0275elementStart(8, "strong");
     \u0275\u0275text(9, "overwrites local file changes");
@@ -30293,7 +30314,7 @@ function UpdateSettingsComponent_div_10_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_11_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 40);
+    \u0275\u0275elementStart(0, "div", 44);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -30321,12 +30342,12 @@ function UpdateSettingsComponent_div_12_span_6_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_12_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 41)(1, "div", 37)(2, "span", 38);
+    \u0275\u0275elementStart(0, "div", 45)(1, "div", 41)(2, "span", 42);
     \u0275\u0275text(3, "Restart Required");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "span", 39);
+    \u0275\u0275elementStart(4, "span", 43);
     \u0275\u0275text(5, "The car must be restarted for the update to take effect.");
-    \u0275\u0275template(6, UpdateSettingsComponent_div_12_span_6_Template, 8, 0, "span", 31);
+    \u0275\u0275template(6, UpdateSettingsComponent_div_12_span_6_Template, 8, 0, "span", 35);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -30349,8 +30370,8 @@ function UpdateSettingsComponent_div_13_ul_6_li_1_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_13_ul_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "ul", 44);
-    \u0275\u0275template(1, UpdateSettingsComponent_div_13_ul_6_li_1_Template, 2, 1, "li", 45);
+    \u0275\u0275elementStart(0, "ul", 48);
+    \u0275\u0275template(1, UpdateSettingsComponent_div_13_ul_6_li_1_Template, 2, 1, "li", 49);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -30361,13 +30382,13 @@ function UpdateSettingsComponent_div_13_ul_6_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_13_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 42)(1, "div", 37)(2, "span", 38);
+    \u0275\u0275elementStart(0, "div", 46)(1, "div", 41)(2, "span", 42);
     \u0275\u0275text(3);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "span", 39);
+    \u0275\u0275elementStart(4, "span", 43);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(6, UpdateSettingsComponent_div_13_ul_6_Template, 2, 1, "ul", 43);
+    \u0275\u0275template(6, UpdateSettingsComponent_div_13_ul_6_Template, 2, 1, "ul", 47);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -30382,7 +30403,7 @@ function UpdateSettingsComponent_div_13_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_14_option_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "option", 49);
+    \u0275\u0275elementStart(0, "option", 52);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -30397,16 +30418,16 @@ function UpdateSettingsComponent_div_14_option_5_Template(rf, ctx) {
 function UpdateSettingsComponent_div_14_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 46)(1, "div", 27)(2, "span", 28);
+    \u0275\u0275elementStart(0, "div", 19)(1, "div", 20)(2, "span", 21);
     \u0275\u0275text(3, "Track branch");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "select", 47);
+    \u0275\u0275elementStart(4, "select", 50);
     \u0275\u0275listener("ngModelChange", function UpdateSettingsComponent_div_14_Template_select_ngModelChange_4_listener($event) {
       \u0275\u0275restoreView(_r4);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onBranchChange($event));
     });
-    \u0275\u0275template(5, UpdateSettingsComponent_div_14_option_5_Template, 2, 3, "option", 48);
+    \u0275\u0275template(5, UpdateSettingsComponent_div_14_option_5_Template, 2, 3, "option", 51);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -30420,7 +30441,7 @@ function UpdateSettingsComponent_div_14_Template(rf, ctx) {
 function UpdateSettingsComponent_button_16_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 33);
+    \u0275\u0275elementStart(0, "button", 37);
     \u0275\u0275listener("click", function UpdateSettingsComponent_button_16_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r6);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30440,29 +30461,29 @@ function UpdateSettingsComponent_button_16_Template(rf, ctx) {
 function UpdateSettingsComponent_button_17__svg_svg_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 50);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 53);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
 function UpdateSettingsComponent_button_17__svg_svg_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 52);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 55);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
 function UpdateSettingsComponent_button_17_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 20);
+    \u0275\u0275elementStart(0, "button", 26);
     \u0275\u0275listener("click", function UpdateSettingsComponent_button_17_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.checkForUpdates());
     });
-    \u0275\u0275template(1, UpdateSettingsComponent_button_17__svg_svg_1_Template, 2, 0, "svg", 21)(2, UpdateSettingsComponent_button_17__svg_svg_2_Template, 2, 0, "svg", 22);
+    \u0275\u0275template(1, UpdateSettingsComponent_button_17__svg_svg_1_Template, 2, 0, "svg", 27)(2, UpdateSettingsComponent_button_17__svg_svg_2_Template, 2, 0, "svg", 28);
     \u0275\u0275elementStart(3, "span");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
@@ -30481,29 +30502,29 @@ function UpdateSettingsComponent_button_17_Template(rf, ctx) {
 function UpdateSettingsComponent_button_18__svg_svg_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 50);
-    \u0275\u0275element(1, "path", 53);
+    \u0275\u0275elementStart(0, "svg", 53);
+    \u0275\u0275element(1, "path", 56);
     \u0275\u0275elementEnd();
   }
 }
 function UpdateSettingsComponent_button_18__svg_svg_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 52);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 55);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
 function UpdateSettingsComponent_button_18_Template(rf, ctx) {
   if (rf & 1) {
     const _r8 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 33);
+    \u0275\u0275elementStart(0, "button", 37);
     \u0275\u0275listener("click", function UpdateSettingsComponent_button_18_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r8);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.performUpdate());
     });
-    \u0275\u0275template(1, UpdateSettingsComponent_button_18__svg_svg_1_Template, 2, 0, "svg", 21)(2, UpdateSettingsComponent_button_18__svg_svg_2_Template, 2, 0, "svg", 22);
+    \u0275\u0275template(1, UpdateSettingsComponent_button_18__svg_svg_1_Template, 2, 0, "svg", 27)(2, UpdateSettingsComponent_button_18__svg_svg_2_Template, 2, 0, "svg", 28);
     \u0275\u0275elementStart(3, "span");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
@@ -30522,7 +30543,7 @@ function UpdateSettingsComponent_button_18_Template(rf, ctx) {
 function UpdateSettingsComponent_button_19_Template(rf, ctx) {
   if (rf & 1) {
     const _r9 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 54);
+    \u0275\u0275elementStart(0, "button", 57);
     \u0275\u0275listener("click", function UpdateSettingsComponent_button_19_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r9);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30541,7 +30562,7 @@ function UpdateSettingsComponent_button_19_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_span_20_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 55);
+    \u0275\u0275elementStart(0, "span", 58);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -30553,10 +30574,10 @@ function UpdateSettingsComponent_span_20_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_21_div_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 27)(1, "span", 28);
+    \u0275\u0275elementStart(0, "div", 20)(1, "span", 21);
     \u0275\u0275text(2, "Branch");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 58);
+    \u0275\u0275elementStart(3, "span", 61);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -30568,10 +30589,10 @@ function UpdateSettingsComponent_div_21_div_1_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_21_div_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 27)(1, "span", 28);
+    \u0275\u0275elementStart(0, "div", 20)(1, "span", 21);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 59);
+    \u0275\u0275elementStart(3, "span", 62);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -30587,10 +30608,10 @@ function UpdateSettingsComponent_div_21_div_7_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_21_div_8_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 27)(1, "span", 28);
+    \u0275\u0275elementStart(0, "div", 20)(1, "span", 21);
     \u0275\u0275text(2, "Behind by");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 60);
+    \u0275\u0275elementStart(3, "span", 63);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -30602,15 +30623,15 @@ function UpdateSettingsComponent_div_21_div_8_Template(rf, ctx) {
 }
 function UpdateSettingsComponent_div_21_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 46);
-    \u0275\u0275template(1, UpdateSettingsComponent_div_21_div_1_Template, 5, 1, "div", 56);
-    \u0275\u0275elementStart(2, "div", 27)(3, "span", 28);
+    \u0275\u0275elementStart(0, "div", 19);
+    \u0275\u0275template(1, UpdateSettingsComponent_div_21_div_1_Template, 5, 1, "div", 59);
+    \u0275\u0275elementStart(2, "div", 20)(3, "span", 21);
     \u0275\u0275text(4, "Local");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "span", 57);
+    \u0275\u0275elementStart(5, "span", 60);
     \u0275\u0275text(6);
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(7, UpdateSettingsComponent_div_21_div_7_Template, 5, 3, "div", 56)(8, UpdateSettingsComponent_div_21_div_8_Template, 5, 2, "div", 56);
+    \u0275\u0275template(7, UpdateSettingsComponent_div_21_div_7_Template, 5, 3, "div", 59)(8, UpdateSettingsComponent_div_21_div_8_Template, 5, 2, "div", 59);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -30630,23 +30651,23 @@ function UpdateSettingsComponent_div_21_Template(rf, ctx) {
 function UpdateSettingsComponent_div_22_Template(rf, ctx) {
   if (rf & 1) {
     const _r10 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 34);
+    \u0275\u0275elementStart(0, "div", 38);
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 35);
-    \u0275\u0275element(2, "path", 36);
+    \u0275\u0275elementStart(1, "svg", 39);
+    \u0275\u0275element(2, "path", 40);
     \u0275\u0275elementEnd();
     \u0275\u0275namespaceHTML();
-    \u0275\u0275elementStart(3, "div", 37)(4, "span", 38);
+    \u0275\u0275elementStart(3, "div", 41)(4, "span", 42);
     \u0275\u0275text(5, "Set up updates?");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "span", 39);
+    \u0275\u0275elementStart(6, "span", 43);
     \u0275\u0275text(7, "This turns this folder into a git clone of the configured repo and ");
     \u0275\u0275elementStart(8, "strong");
     \u0275\u0275text(9, "overwrites any local edits");
     \u0275\u0275elementEnd();
     \u0275\u0275text(10, ". Continue?");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "div", 32)(12, "button", 61);
+    \u0275\u0275elementStart(11, "div", 36)(12, "button", 64);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_22_Template_button_click_12_listener() {
       \u0275\u0275restoreView(_r10);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30654,7 +30675,7 @@ function UpdateSettingsComponent_div_22_Template(rf, ctx) {
     });
     \u0275\u0275text(13, "Yes, set up");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(14, "button", 62);
+    \u0275\u0275elementStart(14, "button", 65);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_22_Template_button_click_14_listener() {
       \u0275\u0275restoreView(_r10);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30667,17 +30688,17 @@ function UpdateSettingsComponent_div_22_Template(rf, ctx) {
 function UpdateSettingsComponent_div_23_Template(rf, ctx) {
   if (rf & 1) {
     const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 42)(1, "div", 37)(2, "span", 38);
+    \u0275\u0275elementStart(0, "div", 46)(1, "div", 41)(2, "span", 42);
     \u0275\u0275text(3, "Discard local changes?");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "span", 39);
+    \u0275\u0275elementStart(4, "span", 43);
     \u0275\u0275text(5, "This resets the codebase to the update and ");
     \u0275\u0275elementStart(6, "strong");
     \u0275\u0275text(7, "permanently discards local changes");
     \u0275\u0275elementEnd();
     \u0275\u0275text(8, " to tracked files (including any committed firmware/calibration that was modified locally). Continue?");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(9, "div", 32)(10, "button", 61);
+    \u0275\u0275elementStart(9, "div", 36)(10, "button", 64);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_23_Template_button_click_10_listener() {
       \u0275\u0275restoreView(_r11);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30685,7 +30706,7 @@ function UpdateSettingsComponent_div_23_Template(rf, ctx) {
     });
     \u0275\u0275text(11, "Yes, discard & update");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(12, "button", 62);
+    \u0275\u0275elementStart(12, "button", 65);
     \u0275\u0275listener("click", function UpdateSettingsComponent_div_23_Template_button_click_12_listener() {
       \u0275\u0275restoreView(_r11);
       const ctx_r1 = \u0275\u0275nextContext();
@@ -30695,9 +30716,146 @@ function UpdateSettingsComponent_div_23_Template(rf, ctx) {
     \u0275\u0275elementEnd()()()();
   }
 }
-function UpdateSettingsComponent_div_32_Template(rf, ctx) {
+function UpdateSettingsComponent_div_34_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 40);
+    const _r12 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 32)(1, "div", 20)(2, "span", 21);
+    \u0275\u0275text(3, "Repository");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "input", 66);
+    \u0275\u0275twoWayListener("ngModelChange", function UpdateSettingsComponent_div_34_Template_input_ngModelChange_4_listener($event) {
+      \u0275\u0275restoreView(_r12);
+      const ctx_r1 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r1.fwSourceUrl, $event) || (ctx_r1.fwSourceUrl = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(5, "span", 34);
+    \u0275\u0275text(6, " Public GitHub repo to pull firmware from. Leave empty for the default (");
+    \u0275\u0275elementStart(7, "code");
+    \u0275\u0275text(8);
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(9, "). The repo is only read over HTTP, it is never cloned. ");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(10, "div", 36)(11, "button", 37);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_34_Template_button_click_11_listener() {
+      \u0275\u0275restoreView(_r12);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.saveFirmwareSource());
+    });
+    \u0275\u0275text(12);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(13, "button", 26);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_34_Template_button_click_13_listener() {
+      \u0275\u0275restoreView(_r12);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.openFirmwareTokenModal());
+    });
+    \u0275\u0275text(14);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(15, "button", 26);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_34_Template_button_click_15_listener() {
+      \u0275\u0275restoreView(_r12);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.fwShowSourceEditor = false);
+    });
+    \u0275\u0275text(16, "Cancel");
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance(4);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r1.fwSourceUrl);
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingSource);
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(ctx_r1.fwDefaultRepo);
+    \u0275\u0275advance(3);
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingSource);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r1.fwIsSavingSource ? "Saving..." : "Save repository", " ");
+    \u0275\u0275advance();
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingSource);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r1.fwHasToken ? "Access token \u2713" : "Private repo? Add token", " ");
+    \u0275\u0275advance();
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingSource);
+  }
+}
+function UpdateSettingsComponent_div_43_div_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 70);
+    \u0275\u0275text(1, "Scanning repository for .bin files...");
+    \u0275\u0275elementEnd();
+  }
+}
+function UpdateSettingsComponent_div_43_div_2_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 70);
+    \u0275\u0275text(1, "No .bin files found in this repository.");
+    \u0275\u0275elementEnd();
+  }
+}
+function UpdateSettingsComponent_div_43_ul_3_li_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r13 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "li")(1, "button", 72);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_43_ul_3_li_1_Template_button_click_1_listener() {
+      const b_r14 = \u0275\u0275restoreView(_r13).$implicit;
+      const ctx_r1 = \u0275\u0275nextContext(3);
+      return \u0275\u0275resetView(ctx_r1.selectFirmwareFile(b_r14));
+    });
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const b_r14 = ctx.$implicit;
+    const ctx_r1 = \u0275\u0275nextContext(3);
+    \u0275\u0275advance();
+    \u0275\u0275classProp("bin-selected", b_r14 === ctx_r1.fwFilePath);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", b_r14, " ");
+  }
+}
+function UpdateSettingsComponent_div_43_ul_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "ul", 71);
+    \u0275\u0275template(1, UpdateSettingsComponent_div_43_ul_3_li_1_Template, 3, 3, "li", 49);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx_r1.fwRepoBins);
+  }
+}
+function UpdateSettingsComponent_div_43_div_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 70);
+    \u0275\u0275text(1, "Repository is large; some files may be omitted.");
+    \u0275\u0275elementEnd();
+  }
+}
+function UpdateSettingsComponent_div_43_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 67);
+    \u0275\u0275template(1, UpdateSettingsComponent_div_43_div_1_Template, 2, 0, "div", 68)(2, UpdateSettingsComponent_div_43_div_2_Template, 2, 0, "div", 68)(3, UpdateSettingsComponent_div_43_ul_3_Template, 2, 1, "ul", 69)(4, UpdateSettingsComponent_div_43_div_4_Template, 2, 0, "div", 68);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.fwBinsLoading);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx_r1.fwBinsLoading && !ctx_r1.fwRepoBins.length);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx_r1.fwBinsLoading && ctx_r1.fwRepoBins.length);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.fwBinsTruncated);
+  }
+}
+function UpdateSettingsComponent_div_44_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 44);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -30708,48 +30866,48 @@ function UpdateSettingsComponent_div_32_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", ctx_r1.fwStatusMessage, " ");
   }
 }
-function UpdateSettingsComponent__svg_svg_35_Template(rf, ctx) {
+function UpdateSettingsComponent__svg_svg_47_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 50);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 53);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
-function UpdateSettingsComponent__svg_svg_36_Template(rf, ctx) {
+function UpdateSettingsComponent__svg_svg_48_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 52);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 55);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
-function UpdateSettingsComponent_button_39__svg_svg_1_Template(rf, ctx) {
+function UpdateSettingsComponent_button_51__svg_svg_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 50);
-    \u0275\u0275element(1, "path", 64);
+    \u0275\u0275elementStart(0, "svg", 53);
+    \u0275\u0275element(1, "path", 74);
     \u0275\u0275elementEnd();
   }
 }
-function UpdateSettingsComponent_button_39__svg_svg_2_Template(rf, ctx) {
+function UpdateSettingsComponent_button_51__svg_svg_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 52);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 55);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
-function UpdateSettingsComponent_button_39_Template(rf, ctx) {
+function UpdateSettingsComponent_button_51_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 63);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_button_39_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r12);
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 73);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_button_51_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r15);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.flashFirmware());
     });
-    \u0275\u0275template(1, UpdateSettingsComponent_button_39__svg_svg_1_Template, 2, 0, "svg", 21)(2, UpdateSettingsComponent_button_39__svg_svg_2_Template, 2, 0, "svg", 22);
+    \u0275\u0275template(1, UpdateSettingsComponent_button_51__svg_svg_1_Template, 2, 0, "svg", 27)(2, UpdateSettingsComponent_button_51__svg_svg_2_Template, 2, 0, "svg", 28);
     \u0275\u0275elementStart(3, "span");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
@@ -30765,32 +30923,32 @@ function UpdateSettingsComponent_button_39_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.fwIsFlashing ? "Flashing..." : "Flash to Nucleo");
   }
 }
-function UpdateSettingsComponent_button_40__svg_svg_1_Template(rf, ctx) {
+function UpdateSettingsComponent_button_52__svg_svg_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 50);
-    \u0275\u0275element(1, "path", 53);
+    \u0275\u0275elementStart(0, "svg", 53);
+    \u0275\u0275element(1, "path", 56);
     \u0275\u0275elementEnd();
   }
 }
-function UpdateSettingsComponent_button_40__svg_svg_2_Template(rf, ctx) {
+function UpdateSettingsComponent_button_52__svg_svg_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(0, "svg", 52);
-    \u0275\u0275element(1, "path", 51);
+    \u0275\u0275elementStart(0, "svg", 55);
+    \u0275\u0275element(1, "path", 54);
     \u0275\u0275elementEnd();
   }
 }
-function UpdateSettingsComponent_button_40_Template(rf, ctx) {
+function UpdateSettingsComponent_button_52_Template(rf, ctx) {
   if (rf & 1) {
-    const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 65);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_button_40_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r13);
+    const _r16 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 75);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_button_52_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r16);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.downloadFirmware());
     });
-    \u0275\u0275template(1, UpdateSettingsComponent_button_40__svg_svg_1_Template, 2, 0, "svg", 21)(2, UpdateSettingsComponent_button_40__svg_svg_2_Template, 2, 0, "svg", 22);
+    \u0275\u0275template(1, UpdateSettingsComponent_button_52__svg_svg_1_Template, 2, 0, "svg", 27)(2, UpdateSettingsComponent_button_52__svg_svg_2_Template, 2, 0, "svg", 28);
     \u0275\u0275elementStart(3, "span");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
@@ -30806,12 +30964,12 @@ function UpdateSettingsComponent_button_40_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.fwIsDownloading ? "Downloading..." : ctx_r1.fwHasLocalFile ? "Download Update" : "Download");
   }
 }
-function UpdateSettingsComponent_div_41_div_6_Template(rf, ctx) {
+function UpdateSettingsComponent_div_53_div_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 27)(1, "span", 28);
+    \u0275\u0275elementStart(0, "div", 20)(1, "span", 21);
     \u0275\u0275text(2, "Released");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 67);
+    \u0275\u0275elementStart(3, "span", 77);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -30821,12 +30979,12 @@ function UpdateSettingsComponent_div_41_div_6_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.formatDate(ctx_r1.fwRemoteDate));
   }
 }
-function UpdateSettingsComponent_div_41_div_7_Template(rf, ctx) {
+function UpdateSettingsComponent_div_53_div_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 27)(1, "span", 28);
+    \u0275\u0275elementStart(0, "div", 20)(1, "span", 21);
     \u0275\u0275text(2, "Local");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 66);
+    \u0275\u0275elementStart(3, "span", 76);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -30836,15 +30994,15 @@ function UpdateSettingsComponent_div_41_div_7_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.fwLocalSha);
   }
 }
-function UpdateSettingsComponent_div_41_Template(rf, ctx) {
+function UpdateSettingsComponent_div_53_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 46)(1, "div", 27)(2, "span", 28);
+    \u0275\u0275elementStart(0, "div", 19)(1, "div", 20)(2, "span", 21);
     \u0275\u0275text(3, "Latest");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "span", 66);
+    \u0275\u0275elementStart(4, "span", 76);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(6, UpdateSettingsComponent_div_41_div_6_Template, 5, 1, "div", 56)(7, UpdateSettingsComponent_div_41_div_7_Template, 5, 1, "div", 56);
+    \u0275\u0275template(6, UpdateSettingsComponent_div_53_div_6_Template, 5, 1, "div", 59)(7, UpdateSettingsComponent_div_53_div_7_Template, 5, 1, "div", 59);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -30859,12 +31017,12 @@ function UpdateSettingsComponent_div_41_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r1.fwLocalSha);
   }
 }
-function UpdateSettingsComponent_div_44_button_19_Template(rf, ctx) {
+function UpdateSettingsComponent_div_56_button_19_Template(rf, ctx) {
   if (rf & 1) {
-    const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 54);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_button_19_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r15);
+    const _r18 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 57);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_button_19_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r18);
       const ctx_r1 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r1.removeKey());
     });
@@ -30876,12 +31034,12 @@ function UpdateSettingsComponent_div_44_button_19_Template(rf, ctx) {
     \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
   }
 }
-function UpdateSettingsComponent_div_44_div_20_Template(rf, ctx) {
+function UpdateSettingsComponent_div_56_div_20_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 83);
+    \u0275\u0275elementStart(0, "div", 93);
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 84);
-    \u0275\u0275element(2, "path", 85);
+    \u0275\u0275elementStart(1, "svg", 94);
+    \u0275\u0275element(2, "path", 95);
     \u0275\u0275elementEnd();
     \u0275\u0275text(3, " Key installed on the car, ");
     \u0275\u0275namespaceHTML();
@@ -30895,9 +31053,9 @@ function UpdateSettingsComponent_div_44_div_20_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.keyFingerprint);
   }
 }
-function UpdateSettingsComponent_div_44_div_21_Template(rf, ctx) {
+function UpdateSettingsComponent_div_56_div_21_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 86);
+    \u0275\u0275elementStart(0, "div", 96);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -30907,10 +31065,10 @@ function UpdateSettingsComponent_div_44_div_21_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.keyError);
   }
 }
-function UpdateSettingsComponent_div_44_div_22_Template(rf, ctx) {
+function UpdateSettingsComponent_div_56_div_22_Template(rf, ctx) {
   if (rf & 1) {
-    const _r16 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 75)(1, "span", 76);
+    const _r19 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 85)(1, "span", 86);
     \u0275\u0275text(2, "2. Add this public key to your repo");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(3, "p");
@@ -30920,12 +31078,12 @@ function UpdateSettingsComponent_div_44_div_22_Template(rf, ctx) {
     \u0275\u0275elementEnd();
     \u0275\u0275text(7, ' (leave "Allow write access" off). Paste the key below:');
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "pre", 87)(9, "code");
+    \u0275\u0275elementStart(8, "pre", 97)(9, "code");
     \u0275\u0275text(10);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(11, "button", 62);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_div_22_Template_button_click_11_listener() {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275elementStart(11, "button", 65);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_div_22_Template_button_click_11_listener() {
+      \u0275\u0275restoreView(_r19);
       const ctx_r1 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r1.copyPublicKey());
     });
@@ -30940,9 +31098,9 @@ function UpdateSettingsComponent_div_44_div_22_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.keyCopied ? "Copied!" : "Copy public key");
   }
 }
-function UpdateSettingsComponent_div_44_a_29_Template(rf, ctx) {
+function UpdateSettingsComponent_div_56_a_29_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "a", 88);
+    \u0275\u0275elementStart(0, "a", 98);
     \u0275\u0275text(1, "Open deploy keys");
     \u0275\u0275elementEnd();
   }
@@ -30951,79 +31109,71 @@ function UpdateSettingsComponent_div_44_a_29_Template(rf, ctx) {
     \u0275\u0275property("href", ctx_r1.deployKeysUrl, \u0275\u0275sanitizeUrl);
   }
 }
-function UpdateSettingsComponent_div_44_Template(rf, ctx) {
+function UpdateSettingsComponent_div_56_Template(rf, ctx) {
   if (rf & 1) {
-    const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 68);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r14);
+    const _r17 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 78);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r17);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.showKeyModal = false);
     });
-    \u0275\u0275elementStart(1, "div", 69);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_div_click_1_listener($event) {
-      \u0275\u0275restoreView(_r14);
+    \u0275\u0275elementStart(1, "div", 79);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_Template_div_click_1_listener($event) {
+      \u0275\u0275restoreView(_r17);
       return \u0275\u0275resetView($event.stopPropagation());
     });
-    \u0275\u0275elementStart(2, "div", 70)(3, "span", 71);
+    \u0275\u0275elementStart(2, "div", 80)(3, "span", 81);
     \u0275\u0275text(4, "Deploy key for private repos");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "button", 72);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_5_listener() {
-      \u0275\u0275restoreView(_r14);
+    \u0275\u0275elementStart(5, "button", 82);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_Template_button_click_5_listener() {
+      \u0275\u0275restoreView(_r17);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.showKeyModal = false);
     });
     \u0275\u0275text(6, "\xD7");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(7, "div", 73)(8, "p", 74);
+    \u0275\u0275elementStart(7, "div", 83)(8, "p", 84);
     \u0275\u0275text(9, " To pull updates from a private repository, the car needs a read-only SSH ");
     \u0275\u0275elementStart(10, "strong");
     \u0275\u0275text(11, "deploy key");
     \u0275\u0275elementEnd();
     \u0275\u0275text(12, ". The car makes the key itself, the secret half never leaves the device. You only copy the public half into your repo. ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "div", 75)(14, "span", 76);
+    \u0275\u0275elementStart(13, "div", 85)(14, "span", 86);
     \u0275\u0275text(15, "Create the key on the car");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "div", 32)(17, "button", 33);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_17_listener() {
-      \u0275\u0275restoreView(_r14);
+    \u0275\u0275elementStart(16, "div", 36)(17, "button", 37);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_Template_button_click_17_listener() {
+      \u0275\u0275restoreView(_r17);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.generateKey());
     });
     \u0275\u0275text(18);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(19, UpdateSettingsComponent_div_44_button_19_Template, 2, 1, "button", 16);
+    \u0275\u0275template(19, UpdateSettingsComponent_div_56_button_19_Template, 2, 1, "button", 16);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(20, UpdateSettingsComponent_div_44_div_20_Template, 6, 1, "div", 77)(21, UpdateSettingsComponent_div_44_div_21_Template, 2, 1, "div", 78);
+    \u0275\u0275template(20, UpdateSettingsComponent_div_56_div_20_Template, 6, 1, "div", 87)(21, UpdateSettingsComponent_div_56_div_21_Template, 2, 1, "div", 88);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(22, UpdateSettingsComponent_div_44_div_22_Template, 13, 2, "div", 79);
-    \u0275\u0275elementStart(23, "p", 80);
+    \u0275\u0275template(22, UpdateSettingsComponent_div_56_div_22_Template, 13, 2, "div", 89);
+    \u0275\u0275elementStart(23, "p", 90);
     \u0275\u0275text(24, " Your ");
     \u0275\u0275elementStart(25, "code");
     \u0275\u0275text(26, "https://");
     \u0275\u0275elementEnd();
     \u0275\u0275text(27, " repo URL is used automatically over SSH once a key is set, no need to change it. ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(28, "div", 81);
-    \u0275\u0275template(29, UpdateSettingsComponent_div_44_a_29_Template, 2, 1, "a", 82);
-    \u0275\u0275elementStart(30, "button", 33);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_30_listener() {
-      \u0275\u0275restoreView(_r14);
+    \u0275\u0275elementStart(28, "div", 91);
+    \u0275\u0275template(29, UpdateSettingsComponent_div_56_a_29_Template, 2, 1, "a", 92);
+    \u0275\u0275elementStart(30, "button", 37);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_56_Template_button_click_30_listener() {
+      \u0275\u0275restoreView(_r17);
       const ctx_r1 = \u0275\u0275nextContext();
       ctx_r1.showKeyModal = false;
       return \u0275\u0275resetView(ctx_r1.checkForUpdates());
     });
-    \u0275\u0275text(31, "Done, re-check");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(32, "button", 20);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_32_listener() {
-      \u0275\u0275restoreView(_r14);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.showKeyModal = false);
-    });
-    \u0275\u0275text(33, "Close");
+    \u0275\u0275text(31, "Done");
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -31044,8 +31194,147 @@ function UpdateSettingsComponent_div_44_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r1.deployKeysUrl);
     \u0275\u0275advance();
     \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
+  }
+}
+function UpdateSettingsComponent_div_57_div_28_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 96);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(ctx_r1.fwTokenError);
+  }
+}
+function UpdateSettingsComponent_div_57_button_32_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r21 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 57);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_57_button_32_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r21);
+      const ctx_r1 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r1.removeFirmwareToken());
+    });
+    \u0275\u0275text(1, "Remove token");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingToken);
+  }
+}
+function UpdateSettingsComponent_div_57_div_33_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 93);
+    \u0275\u0275namespaceSVG();
+    \u0275\u0275elementStart(1, "svg", 94);
+    \u0275\u0275element(2, "path", 95);
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(3, " A token is stored on the car. ");
+    \u0275\u0275elementEnd();
+  }
+}
+function UpdateSettingsComponent_div_57_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r20 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 78);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_57_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r20);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.fwShowTokenModal = false);
+    });
+    \u0275\u0275elementStart(1, "div", 79);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_57_Template_div_click_1_listener($event) {
+      \u0275\u0275restoreView(_r20);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275elementStart(2, "div", 80)(3, "span", 81);
+    \u0275\u0275text(4, "Access token for private firmware");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(5, "button", 82);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_57_Template_button_click_5_listener() {
+      \u0275\u0275restoreView(_r20);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.fwShowTokenModal = false);
+    });
+    \u0275\u0275text(6, "\xD7");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(7, "div", 83)(8, "p", 84);
+    \u0275\u0275text(9, " The firmware repo is read over HTTP (never cloned), so a private one needs a read-only ");
+    \u0275\u0275elementStart(10, "strong");
+    \u0275\u0275text(11, "access token");
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(12, ". It's stored only on the car and sent straight to GitHub. ");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(13, "div", 85)(14, "span", 86);
+    \u0275\u0275text(15, "1. Create a fine-grained token");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(16, "p");
+    \u0275\u0275text(17, "Create a token, then give it access to your firmware repo with ");
+    \u0275\u0275elementStart(18, "strong");
+    \u0275\u0275text(19, "Repository permissions \u2192 Contents: Read-only");
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(20, ".");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(21, "div", 36)(22, "a", 99);
+    \u0275\u0275text(23, "Create token");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(24, "div", 85)(25, "span", 86);
+    \u0275\u0275text(26, "2. Paste it here");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(27, "input", 100);
+    \u0275\u0275twoWayListener("ngModelChange", function UpdateSettingsComponent_div_57_Template_input_ngModelChange_27_listener($event) {
+      \u0275\u0275restoreView(_r20);
+      const ctx_r1 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r1.fwTokenInput, $event) || (ctx_r1.fwTokenInput = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(28, UpdateSettingsComponent_div_57_div_28_Template, 2, 1, "div", 88);
+    \u0275\u0275elementStart(29, "div", 36)(30, "button", 37);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_57_Template_button_click_30_listener() {
+      \u0275\u0275restoreView(_r20);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.saveFirmwareToken());
+    });
+    \u0275\u0275text(31);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(32, UpdateSettingsComponent_div_57_button_32_Template, 2, 1, "button", 16);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(33, UpdateSettingsComponent_div_57_div_33_Template, 4, 0, "div", 87);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(34, "p", 90);
+    \u0275\u0275text(35, "It's verified against the configured repo before being saved.");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(36, "div", 91)(37, "button", 37);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_57_Template_button_click_37_listener() {
+      \u0275\u0275restoreView(_r20);
+      const ctx_r1 = \u0275\u0275nextContext();
+      ctx_r1.fwShowTokenModal = false;
+      return \u0275\u0275resetView(ctx_r1.checkFirmware());
+    });
+    \u0275\u0275text(38, "Done");
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance(27);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r1.fwTokenInput);
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingToken);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.fwTokenError);
     \u0275\u0275advance(2);
-    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingToken);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r1.fwIsSavingToken ? "Verifying..." : ctx_r1.fwHasToken ? "Replace token" : "Save token", " ");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.fwHasToken);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.fwHasToken);
+    \u0275\u0275advance(4);
+    \u0275\u0275property("disabled", ctx_r1.fwIsSavingToken);
   }
 }
 var UpdateSettingsComponent = class _UpdateSettingsComponent {
@@ -31104,10 +31393,29 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     this.fwStatusMessage = "";
     this.fwStatusType = "info";
     this.fwHasChecked = false;
+    this.fwRepo = "";
+    this.fwBranch = "";
+    this.fwDefaultRepo = "";
+    this.fwSourceUrl = "";
+    this.fwFilePath = "";
+    this.fwFileName = "";
+    this.fwShowSourceEditor = false;
+    this.fwIsSavingSource = false;
+    this.fwRepoBins = [];
+    this.fwBinsLoading = false;
+    this.fwBinsTruncated = false;
+    this.fwShowFilePicker = false;
+    this.fwHasToken = false;
+    this.fwShowTokenModal = false;
+    this.fwTokenInput = "";
+    this.fwIsSavingToken = false;
+    this.fwTokenError = "";
   }
   ngOnInit() {
     this.loadSource();
     this.loadKey();
+    this.loadFirmwareSource();
+    this.loadFirmwareToken();
   }
   ngOnDestroy() {
     if (this.statusTimeout)
@@ -31347,19 +31655,31 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
           this.fwRemoteMessage = response.remote_message || "";
           this.fwLocalSha = response.local_sha || "";
           this.fwLocalDate = response.local_date || "";
+          if (response.source)
+            this.fwRepo = response.source;
+          if (response.branch)
+            this.fwBranch = response.branch;
+          if (response.file_path)
+            this.fwFilePath = response.file_path;
+          if (response.file_name)
+            this.fwFileName = response.file_name;
           if (this.fwUpdateAvailable) {
             this.showFwStatus(this.fwHasLocalFile ? "New firmware version available!" : "Firmware not yet downloaded.", "info");
           } else {
             this.showFwStatus("Firmware is up to date.", "success");
           }
         } else {
-          this.showFwStatus(response.error || "Failed to check firmware", "error");
+          if (!this.fwHandleAuthRequired(response)) {
+            this.showFwStatus(response.error || "Failed to check firmware", "error");
+          }
         }
         this.fwIsChecking = false;
       },
-      error: () => {
+      error: (err) => {
         this.fwHasChecked = true;
-        this.showFwStatus("Failed to connect to server", "error");
+        if (!this.fwHandleAuthRequired(err?.error)) {
+          this.showFwStatus(err?.error?.error || "Failed to connect to server", "error");
+        }
         this.fwIsChecking = false;
       }
     });
@@ -31373,13 +31693,15 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
           this.showFwStatus(response.message || "Firmware downloaded successfully!", "success", 1e4);
           this.fwUpdateAvailable = false;
           this.checkFirmware();
-        } else {
+        } else if (!this.fwHandleAuthRequired(response)) {
           this.showFwStatus(response.error || "Download failed", "error");
         }
         this.fwIsDownloading = false;
       },
-      error: () => {
-        this.showFwStatus("Failed to connect to server", "error");
+      error: (err) => {
+        if (!this.fwHandleAuthRequired(err?.error)) {
+          this.showFwStatus(err?.error?.error || "Failed to connect to server", "error");
+        }
         this.fwIsDownloading = false;
       }
     });
@@ -31402,6 +31724,156 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
       }
     });
   }
+  // ==================== Firmware source / file selection ====================
+  loadFirmwareSource() {
+    this.apiService.getFirmwareSource().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.fwSourceUrl = response.url || "";
+          this.fwRepo = response.repo || "";
+          this.fwBranch = response.branch || "";
+          this.fwDefaultRepo = response.default_repo || "";
+          this.fwFilePath = response.file_path || "";
+          this.fwFileName = this.fwFilePath ? this.fwFilePath.split("/").pop() || "" : "";
+        }
+      },
+      error: () => {
+      }
+    });
+  }
+  saveFirmwareSource() {
+    const url2 = (this.fwSourceUrl || "").trim();
+    this.fwIsSavingSource = true;
+    this.apiService.setFirmwareSource(url2).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.fwSourceUrl = response.url || "";
+          this.fwShowSourceEditor = false;
+          this.fwRepoBins = [];
+          this.fwHasChecked = false;
+          this.showFwStatus(response.message || "Firmware source saved.", "success");
+          this.loadFirmwareSource();
+          this.openFirmwareFilePicker();
+        } else {
+          this.showFwStatus(response.error || "Failed to save firmware source", "error");
+        }
+        this.fwIsSavingSource = false;
+      },
+      error: (err) => {
+        this.showFwStatus(err?.error?.error || "Failed to save firmware source", "error");
+        this.fwIsSavingSource = false;
+      }
+    });
+  }
+  openFirmwareFilePicker() {
+    this.fwShowFilePicker = true;
+    this.loadFirmwareRepoBins();
+  }
+  loadFirmwareRepoBins() {
+    this.fwBinsLoading = true;
+    this.apiService.listFirmwareRepoBins().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.fwRepoBins = response.files || [];
+          this.fwBinsTruncated = response.truncated || false;
+          if (response.selected_file)
+            this.fwFilePath = response.selected_file;
+        } else if (!this.fwHandleAuthRequired(response)) {
+          this.showFwStatus(response.error || "Failed to list .bin files", "error");
+        }
+        this.fwBinsLoading = false;
+      },
+      error: (err) => {
+        this.fwShowFilePicker = false;
+        if (!this.fwHandleAuthRequired(err?.error)) {
+          this.showFwStatus(err?.error?.error || "Failed to list .bin files", "error");
+        }
+        this.fwBinsLoading = false;
+      }
+    });
+  }
+  selectFirmwareFile(filePath) {
+    this.apiService.setFirmwareFile(filePath).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.fwFilePath = response.file_path || filePath;
+          this.fwFileName = this.fwFilePath.split("/").pop() || "";
+          this.fwShowFilePicker = false;
+          this.fwHasChecked = false;
+          this.showFwStatus(`Selected ${this.fwFileName}.`, "info");
+        } else {
+          this.showFwStatus(response.error || "Failed to set firmware file", "error");
+        }
+      },
+      error: (err) => this.showFwStatus(err?.error?.error || "Failed to set firmware file", "error")
+    });
+  }
+  // ==================== Firmware access token (private repos) ====================
+  loadFirmwareToken() {
+    this.apiService.getFirmwareToken().subscribe({
+      next: (response) => {
+        if (response.success)
+          this.fwHasToken = response.has_token || false;
+      },
+      error: () => {
+      }
+    });
+  }
+  openFirmwareTokenModal() {
+    this.fwTokenError = "";
+    this.fwTokenInput = "";
+    this.fwShowTokenModal = true;
+  }
+  saveFirmwareToken() {
+    const tok = (this.fwTokenInput || "").trim();
+    if (!tok) {
+      this.fwTokenError = "Paste an access token first.";
+      return;
+    }
+    this.fwIsSavingToken = true;
+    this.fwTokenError = "";
+    this.apiService.setFirmwareToken(tok).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.fwHasToken = true;
+          this.fwTokenInput = "";
+          this.fwShowTokenModal = false;
+          this.showFwStatus(response.message || "Access token saved.", "success", 8e3);
+        } else {
+          this.fwTokenError = response.error || "Failed to save the token.";
+        }
+        this.fwIsSavingToken = false;
+      },
+      error: (err) => {
+        this.fwTokenError = err?.error?.error || "Failed to save the token.";
+        this.fwIsSavingToken = false;
+      }
+    });
+  }
+  removeFirmwareToken() {
+    this.apiService.deleteFirmwareToken().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.fwHasToken = false;
+          this.showFwStatus(response.message || "Access token removed.", "info");
+        } else {
+          this.fwTokenError = response.error || "Failed to remove the token.";
+        }
+      },
+      error: (err) => {
+        this.fwTokenError = err?.error?.error || "Failed to remove the token.";
+      }
+    });
+  }
+  /** Open the token modal when the server reports a private repo it can't read.
+   * Returns true when handled. */
+  fwHandleAuthRequired(body) {
+    if (body && body.auth_required) {
+      this.openFirmwareTokenModal();
+      return true;
+    }
+    return false;
+  }
   formatDate(isoDate) {
     if (!isoDate)
       return "";
@@ -31410,6 +31882,27 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     } catch {
       return isoDate;
     }
+  }
+  /** Short "owner/repo" label for the configured Brain source, matching how
+   * the firmware card shows its repo (instead of the full git URL). */
+  get sourceRepoLabel() {
+    const raw = (this.sourceUrl || this.sourceOriginUrl || "").trim();
+    if (!raw)
+      return "configured source";
+    let path = "";
+    const scp = raw.match(/^[^@/]+@[^:]+:(.+)$/);
+    if (scp) {
+      path = scp[1];
+    } else {
+      try {
+        path = new URL(raw).pathname;
+      } catch {
+        return raw;
+      }
+    }
+    path = path.replace(/^\/+/, "").replace(/\.git$/i, "");
+    const parts2 = path.split("/").filter(Boolean);
+    return parts2.length >= 2 ? `${parts2[0]}/${parts2[1]}` : path || raw;
   }
   // ==================== Deploy key (private repos) ====================
   /** Direct link to the "Add deploy key" page of the configured GitHub repo,
@@ -31541,7 +32034,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     };
   }
   static {
-    this.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _UpdateSettingsComponent, selectors: [["app-update-settings"]], standalone: true, features: [\u0275\u0275StandaloneFeature], decls: 45, vars: 25, consts: [[1, "update-manager"], [1, "update-card"], [1, "card-header"], [1, "card-title"], ["type", "button", 1, "card-source", "card-source-btn", 3, "click", "title"], ["width", "13", "height", "13", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"], ["class", "card-details source-editor", 4, "ngIf"], ["class", "card-alert warning", 4, "ngIf"], ["class", "card-alert", 3, "success", "error", "info", 4, "ngIf"], ["class", "card-alert restart", 4, "ngIf"], ["class", "card-alert error", 4, "ngIf"], ["class", "card-details", 4, "ngIf"], [1, "card-actions"], ["class", "btn btn-update", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-check", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-danger", 3, "disabled", "click", 4, "ngIf"], ["class", "meta-text", 4, "ngIf"], [1, "card-footer"], [1, "card-source"], [1, "btn", "btn-check", 3, "click", "disabled"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 4, "ngIf"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", "class", "spinning", 4, "ngIf"], ["class", "btn btn-flash", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-download", 3, "disabled", "click", 4, "ngIf"], ["class", "modal-overlay", 3, "click", 4, "ngIf"], [1, "card-details", "source-editor"], [1, "detail-row"], [1, "detail-label"], ["type", "text", "placeholder", "https://github.com/your-user/your-fork.git", 1, "source-input", 3, "ngModelChange", "ngModel", "disabled"], [1, "source-hint"], [4, "ngIf"], [1, "confirm-actions"], [1, "btn", "btn-update", 3, "click", "disabled"], [1, "card-alert", "warning"], ["width", "18", "height", "18", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"], [1, "alert-content"], [1, "alert-title"], [1, "alert-text"], [1, "card-alert"], [1, "card-alert", "restart"], [1, "card-alert", "error"], ["class", "conflict-files", 4, "ngIf"], [1, "conflict-files"], [4, "ngFor", "ngForOf"], [1, "card-details"], [1, "branch-select", 3, "ngModelChange", "ngModel", "disabled"], [3, "value", 4, "ngFor", "ngForOf"], [3, "value"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 1, "spinning"], ["d", "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"], [1, "btn", "btn-danger", 3, "click", "disabled"], [1, "meta-text"], ["class", "detail-row", 4, "ngIf"], [1, "detail-value", "tag", 3, "title"], [1, "detail-value", "tag", "tag-blue"], [1, "detail-value", "tag", "tag-green", 3, "title"], [1, "detail-value", "tag", "tag-warn"], [1, "btn", "btn-danger", 3, "click"], [1, "btn", "btn-check", 3, "click"], [1, "btn", "btn-flash", 3, "click", "disabled"], ["d", "M7 2v11h3v9l7-12h-4l4-8z"], [1, "btn", "btn-download", 3, "click", "disabled"], [1, "detail-value", "tag"], [1, "detail-value"], [1, "modal-overlay", 3, "click"], [1, "modal", 3, "click"], [1, "modal-header"], [1, "modal-title"], ["type", "button", "aria-label", "Close", 1, "modal-close", 3, "click"], [1, "modal-body"], [1, "modal-intro"], [1, "help-block"], [1, "help-block-title"], ["class", "key-status", 4, "ngIf"], ["class", "key-error", 4, "ngIf"], ["class", "help-block", 4, "ngIf"], [1, "modal-outro"], [1, "modal-footer"], ["class", "btn btn-check footer-link", "target", "_blank", "rel", "noopener", 3, "href", 4, "ngIf"], [1, "key-status"], ["width", "14", "height", "14", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"], [1, "key-error"], [1, "pubkey"], ["target", "_blank", "rel", "noopener", 1, "btn", "btn-check", "footer-link", 3, "href"]], template: function UpdateSettingsComponent_Template(rf, ctx) {
+    this.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _UpdateSettingsComponent, selectors: [["app-update-settings"]], standalone: true, features: [\u0275\u0275StandaloneFeature], decls: 58, vars: 32, consts: [[1, "update-manager"], [1, "update-card"], [1, "card-header"], [1, "card-title"], ["type", "button", 1, "card-source", "card-source-btn", 3, "click", "title"], ["width", "13", "height", "13", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"], ["class", "card-details source-editor", 4, "ngIf"], ["class", "card-alert warning", 4, "ngIf"], ["class", "card-alert", 3, "success", "error", "info", 4, "ngIf"], ["class", "card-alert restart", 4, "ngIf"], ["class", "card-alert error", 4, "ngIf"], ["class", "card-details", 4, "ngIf"], [1, "card-actions"], ["class", "btn btn-update", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-check", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-danger", 3, "disabled", "click", 4, "ngIf"], ["class", "meta-text", 4, "ngIf"], [1, "card-footer"], [1, "card-details"], [1, "detail-row"], [1, "detail-label"], ["type", "button", 1, "file-pick-btn", 3, "click", "title"], ["width", "12", "height", "12", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M7 10l5 5 5-5z"], ["class", "bin-picker", 4, "ngIf"], [1, "btn", "btn-check", 3, "click", "disabled"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 4, "ngIf"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", "class", "spinning", 4, "ngIf"], ["class", "btn btn-flash", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-download", 3, "disabled", "click", 4, "ngIf"], ["class", "modal-overlay", 3, "click", 4, "ngIf"], [1, "card-details", "source-editor"], ["type", "text", "placeholder", "https://github.com/your-user/your-fork.git", 1, "source-input", 3, "ngModelChange", "ngModel", "disabled"], [1, "source-hint"], [4, "ngIf"], [1, "confirm-actions"], [1, "btn", "btn-update", 3, "click", "disabled"], [1, "card-alert", "warning"], ["width", "18", "height", "18", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"], [1, "alert-content"], [1, "alert-title"], [1, "alert-text"], [1, "card-alert"], [1, "card-alert", "restart"], [1, "card-alert", "error"], ["class", "conflict-files", 4, "ngIf"], [1, "conflict-files"], [4, "ngFor", "ngForOf"], [1, "branch-select", 3, "ngModelChange", "ngModel", "disabled"], [3, "value", 4, "ngFor", "ngForOf"], [3, "value"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 1, "spinning"], ["d", "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"], [1, "btn", "btn-danger", 3, "click", "disabled"], [1, "meta-text"], ["class", "detail-row", 4, "ngIf"], [1, "detail-value", "tag", 3, "title"], [1, "detail-value", "tag", "tag-blue"], [1, "detail-value", "tag", "tag-green", 3, "title"], [1, "detail-value", "tag", "tag-warn"], [1, "btn", "btn-danger", 3, "click"], [1, "btn", "btn-check", 3, "click"], ["type", "text", "placeholder", "https://github.com/owner/firmware-repo", 1, "source-input", 3, "ngModelChange", "ngModel", "disabled"], [1, "bin-picker"], ["class", "bin-hint", 4, "ngIf"], ["class", "bin-list", 4, "ngIf"], [1, "bin-hint"], [1, "bin-list"], ["type", "button", 1, "bin-item", 3, "click"], [1, "btn", "btn-flash", 3, "click", "disabled"], ["d", "M7 2v11h3v9l7-12h-4l4-8z"], [1, "btn", "btn-download", 3, "click", "disabled"], [1, "detail-value", "tag"], [1, "detail-value"], [1, "modal-overlay", 3, "click"], [1, "modal", 3, "click"], [1, "modal-header"], [1, "modal-title"], ["type", "button", "aria-label", "Close", 1, "modal-close", 3, "click"], [1, "modal-body"], [1, "modal-intro"], [1, "help-block"], [1, "help-block-title"], ["class", "key-status", 4, "ngIf"], ["class", "key-error", 4, "ngIf"], ["class", "help-block", 4, "ngIf"], [1, "modal-outro"], [1, "modal-footer"], ["class", "btn btn-check footer-link", "target", "_blank", "rel", "noopener", 3, "href", 4, "ngIf"], [1, "key-status"], ["width", "14", "height", "14", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"], [1, "key-error"], [1, "pubkey"], ["target", "_blank", "rel", "noopener", 1, "btn", "btn-check", "footer-link", 3, "href"], ["href", "https://github.com/settings/personal-access-tokens/new", "target", "_blank", "rel", "noopener", 1, "btn", "btn-check", "footer-link"], ["type", "password", "placeholder", "github_pat_...", "spellcheck", "false", "autocomplete", "off", 1, "source-input", "token-input", 3, "ngModelChange", "ngModel", "disabled"]], template: function UpdateSettingsComponent_Template(rf, ctx) {
       if (rf & 1) {
         \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2)(3, "span", 3);
         \u0275\u0275text(4, "Brain Software");
@@ -31567,32 +32060,55 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275elementStart(26, "div", 1)(27, "div", 2)(28, "span", 3);
         \u0275\u0275text(29, "Nucleo Firmware");
         \u0275\u0275elementEnd();
-        \u0275\u0275elementStart(30, "span", 19);
-        \u0275\u0275text(31, "ECC-BFMC/Embedded_Platform");
-        \u0275\u0275elementEnd()();
-        \u0275\u0275template(32, UpdateSettingsComponent_div_32_Template, 2, 7, "div", 9);
-        \u0275\u0275elementStart(33, "div", 13)(34, "button", 20);
-        \u0275\u0275listener("click", function UpdateSettingsComponent_Template_button_click_34_listener() {
+        \u0275\u0275elementStart(30, "button", 4);
+        \u0275\u0275listener("click", function UpdateSettingsComponent_Template_button_click_30_listener() {
+          return ctx.fwShowSourceEditor = !ctx.fwShowSourceEditor;
+        });
+        \u0275\u0275text(31);
+        \u0275\u0275namespaceSVG();
+        \u0275\u0275elementStart(32, "svg", 5);
+        \u0275\u0275element(33, "path", 6);
+        \u0275\u0275elementEnd()()();
+        \u0275\u0275template(34, UpdateSettingsComponent_div_34_Template, 17, 8, "div", 7);
+        \u0275\u0275namespaceHTML();
+        \u0275\u0275elementStart(35, "div", 19)(36, "div", 20)(37, "span", 21);
+        \u0275\u0275text(38, "Firmware file");
+        \u0275\u0275elementEnd();
+        \u0275\u0275elementStart(39, "button", 22);
+        \u0275\u0275listener("click", function UpdateSettingsComponent_Template_button_click_39_listener() {
+          return ctx.openFirmwareFilePicker();
+        });
+        \u0275\u0275text(40);
+        \u0275\u0275namespaceSVG();
+        \u0275\u0275elementStart(41, "svg", 23);
+        \u0275\u0275element(42, "path", 24);
+        \u0275\u0275elementEnd()()();
+        \u0275\u0275template(43, UpdateSettingsComponent_div_43_Template, 5, 4, "div", 25);
+        \u0275\u0275elementEnd();
+        \u0275\u0275template(44, UpdateSettingsComponent_div_44_Template, 2, 7, "div", 9);
+        \u0275\u0275namespaceHTML();
+        \u0275\u0275elementStart(45, "div", 13)(46, "button", 26);
+        \u0275\u0275listener("click", function UpdateSettingsComponent_Template_button_click_46_listener() {
           return ctx.checkFirmware();
         });
-        \u0275\u0275template(35, UpdateSettingsComponent__svg_svg_35_Template, 2, 0, "svg", 21)(36, UpdateSettingsComponent__svg_svg_36_Template, 2, 0, "svg", 22);
-        \u0275\u0275elementStart(37, "span");
-        \u0275\u0275text(38);
+        \u0275\u0275template(47, UpdateSettingsComponent__svg_svg_47_Template, 2, 0, "svg", 27)(48, UpdateSettingsComponent__svg_svg_48_Template, 2, 0, "svg", 28);
+        \u0275\u0275elementStart(49, "span");
+        \u0275\u0275text(50);
         \u0275\u0275elementEnd()();
-        \u0275\u0275template(39, UpdateSettingsComponent_button_39_Template, 5, 4, "button", 23)(40, UpdateSettingsComponent_button_40_Template, 5, 4, "button", 24);
+        \u0275\u0275template(51, UpdateSettingsComponent_button_51_Template, 5, 4, "button", 29)(52, UpdateSettingsComponent_button_52_Template, 5, 4, "button", 30);
         \u0275\u0275elementEnd();
-        \u0275\u0275template(41, UpdateSettingsComponent_div_41_Template, 8, 5, "div", 12);
-        \u0275\u0275elementStart(42, "div", 18);
-        \u0275\u0275text(43, "robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.");
+        \u0275\u0275template(53, UpdateSettingsComponent_div_53_Template, 8, 5, "div", 12);
+        \u0275\u0275elementStart(54, "div", 18);
+        \u0275\u0275text(55, "Downloads the selected .bin from your configured repo.");
         \u0275\u0275elementEnd()();
-        \u0275\u0275template(44, UpdateSettingsComponent_div_44_Template, 34, 9, "div", 25);
+        \u0275\u0275template(56, UpdateSettingsComponent_div_56_Template, 32, 8, "div", 31)(57, UpdateSettingsComponent_div_57_Template, 39, 8, "div", 31);
         \u0275\u0275elementEnd();
       }
       if (rf & 2) {
         \u0275\u0275advance(5);
-        \u0275\u0275property("title", "Change repository");
+        \u0275\u0275property("title", ctx.sourceUrl || ctx.sourceOriginUrl || "Change repository");
         \u0275\u0275advance();
-        \u0275\u0275textInterpolate1(" ", ctx.sourceUrl || ctx.sourceOriginUrl || "configured source", " ");
+        \u0275\u0275textInterpolate1(" ", ctx.sourceRepoLabel, " ");
         \u0275\u0275advance(3);
         \u0275\u0275property("ngIf", ctx.showSourceEditor);
         \u0275\u0275advance();
@@ -31621,7 +32137,19 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275property("ngIf", ctx.showAdoptConfirm);
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.showForceConfirm);
-        \u0275\u0275advance(9);
+        \u0275\u0275advance(7);
+        \u0275\u0275property("title", "Change firmware repository");
+        \u0275\u0275advance();
+        \u0275\u0275textInterpolate1(" ", ctx.fwRepo || ctx.fwDefaultRepo || "firmware source", " ");
+        \u0275\u0275advance(3);
+        \u0275\u0275property("ngIf", ctx.fwShowSourceEditor);
+        \u0275\u0275advance(5);
+        \u0275\u0275property("title", ctx.fwFilePath);
+        \u0275\u0275advance();
+        \u0275\u0275textInterpolate1(" ", ctx.fwFileName || (ctx.fwFilePath ? ctx.fwFilePath.split("/").pop() : "choose .bin"), " ");
+        \u0275\u0275advance(3);
+        \u0275\u0275property("ngIf", ctx.fwShowFilePicker);
+        \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.fwStatusMessage);
         \u0275\u0275advance(2);
         \u0275\u0275property("disabled", ctx.fwIsChecking || ctx.fwIsDownloading || ctx.fwIsFlashing);
@@ -31639,8 +32167,10 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275property("ngIf", ctx.fwHasChecked && ctx.fwRemoteSha);
         \u0275\u0275advance(3);
         \u0275\u0275property("ngIf", ctx.showKeyModal);
+        \u0275\u0275advance();
+        \u0275\u0275property("ngIf", ctx.fwShowTokenModal);
       }
-    }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, NgSelectOption, \u0275NgSelectMultipleOption, DefaultValueAccessor, SelectControlValueAccessor, NgControlStatus, NgModel], styles: ['\n\n.update-manager[_ngcontent-%COMP%] {\n  padding: 0.25rem;\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n  height: 100%;\n}\n.update-card[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.6rem;\n  padding: 0.8rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 8px;\n}\n.card-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.6rem;\n}\n.card-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.95rem;\n  color: rgba(255, 255, 255, 0.95);\n}\n.card-source[_ngcontent-%COMP%] {\n  margin-left: auto;\n  font-size: 0.75rem;\n  color: rgba(255, 255, 255, 0.35);\n  font-family: "Courier New", monospace;\n}\n.card-source-btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.3rem;\n  max-width: 60%;\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.1rem 0.2rem;\n  border-radius: 4px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  transition: color 0.15s ease, background 0.15s ease;\n}\n.card-source-btn[_ngcontent-%COMP%]:hover {\n  color: rgba(255, 255, 255, 0.75);\n  background: rgba(255, 255, 255, 0.06);\n}\n.card-source-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  opacity: 0.7;\n}\n.source-editor[_ngcontent-%COMP%]   .detail-row[_ngcontent-%COMP%] {\n  gap: 0.6rem;\n}\n.source-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 4px;\n  padding: 0.3rem 0.45rem;\n  font-size: 0.8rem;\n  font-family: "Courier New", monospace;\n}\n.source-input[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: rgba(0, 123, 255, 0.5);\n}\n.source-input[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n}\n.source-hint[_ngcontent-%COMP%] {\n  display: block;\n  margin-top: 0.4rem;\n  font-size: 0.74rem;\n  color: rgba(255, 255, 255, 0.45);\n  line-height: 1.4;\n}\n.card-alert[_ngcontent-%COMP%] {\n  padding: 0.5rem 0.7rem;\n  border-radius: 5px;\n  font-size: 0.82rem;\n  line-height: 1.4;\n}\n.card-alert.success[_ngcontent-%COMP%] {\n  background: rgba(40, 167, 69, 0.15);\n  border: 1px solid rgba(40, 167, 69, 0.3);\n  color: #6fcf7c;\n}\n.card-alert.error[_ngcontent-%COMP%] {\n  background: rgba(220, 53, 69, 0.15);\n  border: 1px solid rgba(220, 53, 69, 0.3);\n  color: #f5747f;\n}\n.card-alert.info[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.15);\n  border: 1px solid rgba(0, 123, 255, 0.3);\n  color: #6cb2ff;\n}\n.card-alert.warning[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 152, 0, 0.1);\n  border: 1px solid rgba(255, 152, 0, 0.3);\n  color: #ffb74d;\n}\n.card-alert.warning[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.card-alert.restart[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 193, 7, 0.12);\n  border: 1px solid rgba(255, 193, 7, 0.35);\n  color: #ffd54f;\n}\n.card-alert.restart[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.alert-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.15rem;\n}\n.alert-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.85rem;\n}\n.alert-text[_ngcontent-%COMP%] {\n  font-size: 0.8rem;\n  opacity: 0.85;\n}\n.card-actions[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.5rem;\n  flex-wrap: wrap;\n}\n.btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.35rem;\n  padding: 0.4rem 0.8rem;\n  border: none;\n  border-radius: 5px;\n  cursor: pointer;\n  font-size: 0.82rem;\n  font-weight: 500;\n  transition: all 0.15s ease;\n  white-space: nowrap;\n}\n.btn[_ngcontent-%COMP%]:disabled {\n  background: #495057;\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-check[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  color: rgba(255, 255, 255, 0.85);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n}\n.btn-check[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: rgba(255, 255, 255, 0.14);\n}\n.btn-update[_ngcontent-%COMP%] {\n  background: #28a745;\n  color: white;\n}\n.btn-update[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #1e7e34;\n}\n.btn-download[_ngcontent-%COMP%] {\n  background: #007bff;\n  color: white;\n}\n.btn-download[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #0056b3;\n}\n.btn-flash[_ngcontent-%COMP%] {\n  background: #e65100;\n  color: white;\n}\n.btn-flash[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #bf360c;\n}\n.btn-danger[_ngcontent-%COMP%] {\n  background: #dc3545;\n  color: white;\n}\n.btn-danger[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #b02a37;\n}\n.branch-select[_ngcontent-%COMP%] {\n  width: min(280px, 100%);\n  height: 28px;\n  min-height: 28px;\n  padding: 2px 8px;\n  border-radius: 5px;\n  border: 1px solid rgba(255, 255, 255, 0.14);\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  font-size: 10.5px;\n  line-height: 1;\n  cursor: pointer;\n}\n.branch-select[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: #007bff;\n  background: rgba(255, 255, 255, 0.08);\n}\n.branch-select[_ngcontent-%COMP%]:disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.branch-select[_ngcontent-%COMP%]   option[_ngcontent-%COMP%] {\n  background: #1f252b;\n  color: rgba(255, 255, 255, 0.95);\n}\n.conflict-files[_ngcontent-%COMP%] {\n  margin: 0.35rem 0 0;\n  padding-left: 1.1rem;\n  max-height: 8rem;\n  overflow-y: auto;\n  font-family: "Courier New", monospace;\n  font-size: 0.76rem;\n  opacity: 0.9;\n}\n.conflict-files[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  margin: 0.1rem 0;\n  word-break: break-all;\n}\n.confirm-actions[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.5rem;\n  margin-top: 0.5rem;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.35);\n  margin-left: auto;\n}\n.spinning[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_spin 1s linear infinite;\n}\n@keyframes _ngcontent-%COMP%_spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n.card-details[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.35rem;\n  padding: 0.55rem 0.7rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.06);\n  border-radius: 5px;\n}\n.detail-row[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.detail-label[_ngcontent-%COMP%] {\n  font-size: 0.78rem;\n  color: rgba(255, 255, 255, 0.5);\n}\n.detail-value[_ngcontent-%COMP%] {\n  font-size: 0.82rem;\n  color: rgba(255, 255, 255, 0.85);\n}\n.tag[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 0.8rem;\n  padding: 0.1rem 0.45rem;\n  border-radius: 3px;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.8);\n}\n.tag-blue[_ngcontent-%COMP%] {\n  color: #6cb2ff;\n  background: rgba(0, 123, 255, 0.12);\n}\n.tag-green[_ngcontent-%COMP%] {\n  color: #6fcf7c;\n  background: rgba(40, 167, 69, 0.12);\n}\n.tag-warn[_ngcontent-%COMP%] {\n  color: #ffb74d;\n  background: rgba(255, 152, 0, 0.12);\n}\n.modal-overlay[_ngcontent-%COMP%] {\n  position: fixed;\n  inset: 0;\n  z-index: 10001;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 16px;\n  background: rgba(0, 0, 0, 0.6);\n}\n.modal[_ngcontent-%COMP%] {\n  width: min(560px, 95vw);\n  max-height: 90vh;\n  overflow-y: auto;\n  background: rgb(45, 54, 58);\n  color: white;\n  border-radius: 10px;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);\n  display: flex;\n  flex-direction: column;\n}\n.modal-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 30px;\n  padding: 12px 14px;\n  border-bottom: 1px solid rgba(255, 255, 255, 0.14);\n}\n.modal-title[_ngcontent-%COMP%] {\n  font-size: 15px;\n  font-weight: 560;\n  letter-spacing: -0.01em;\n  color: #fff;\n}\n.modal-close[_ngcontent-%COMP%] {\n  background: transparent;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  cursor: pointer;\n  color: rgba(255, 255, 255, 0.72);\n  width: 26px;\n  min-width: 26px;\n  height: 28px;\n  padding: 0;\n  border-radius: 6px;\n  font-size: 16px;\n  line-height: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition:\n    background-color 0.18s ease,\n    border-color 0.18s ease,\n    color 0.18s ease;\n}\n.modal-close[_ngcontent-%COMP%]:hover {\n  background-color: rgba(255, 255, 255, 0.05);\n  border-color: rgba(255, 255, 255, 0.16);\n  color: #fff;\n}\n.modal-body[_ngcontent-%COMP%] {\n  padding: 14px;\n  font-size: 10.5px;\n  color: rgba(255, 255, 255, 0.78);\n  line-height: 1.45;\n}\n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px;\n}\n.modal-intro[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.help-note[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 10px;\n  background: rgba(255, 255, 255, 0.08);\n  padding: 1px 4px;\n  border-radius: 3px;\n  word-break: break-all;\n}\n.help-block[_ngcontent-%COMP%] {\n  margin: 9px 0;\n  padding: 9px;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 7px;\n}\n.help-block-title[_ngcontent-%COMP%] {\n  display: block;\n  font-weight: 600;\n  font-size: 12px;\n  color: rgba(255, 255, 255, 0.92);\n  margin-bottom: 6px;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  margin: 6px 0;\n  padding: 8px 9px;\n  background: rgba(0, 0, 0, 0.25);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 6px;\n  overflow-x: auto;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 10.5px;\n  color: #7df9ff;\n  white-space: pre;\n}\n.help-note[_ngcontent-%COMP%] {\n  font-size: 10px;\n  color: rgba(255, 255, 255, 0.5);\n}\n.modal-outro[_ngcontent-%COMP%] {\n  margin-top: 9px;\n  color: rgba(255, 255, 255, 0.6);\n}\n.key-status[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 5px;\n  margin-top: 8px;\n  font-size: 10.5px;\n  color: #52d273;\n}\n.key-status[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.key-status[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  min-width: 0;\n  max-width: 100%;\n  background: rgba(82, 210, 115, 0.12);\n  color: #52d273;\n  white-space: normal;\n  word-break: break-all;\n}\n.key-error[_ngcontent-%COMP%] {\n  margin-top: 6px;\n  font-size: 10.5px;\n  color: #f5747f;\n}\n.footer-link[_ngcontent-%COMP%] {\n  margin-right: auto;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 28px;\n  padding: 0 8px;\n  border-radius: 6px;\n  border: 1px solid rgba(125, 249, 255, 0.22);\n  background: rgba(125, 249, 255, 0.04);\n  color: #7df9ff;\n  font-size: 10.5px;\n  line-height: 1;\n  font-weight: 500;\n  letter-spacing: 0.02em;\n  white-space: nowrap;\n  text-decoration: none;\n  transition:\n    background-color 0.18s ease,\n    border-color 0.18s ease,\n    color 0.18s ease;\n}\n.footer-link[_ngcontent-%COMP%]:hover {\n  color: #b9fdff;\n  border-color: rgba(125, 249, 255, 0.34);\n  background: rgba(125, 249, 255, 0.07);\n}\n.pubkey[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n}\n.pubkey[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n  word-break: break-all;\n}\n.modal-footer[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 8px;\n  justify-content: flex-end;\n  padding: 12px 14px;\n  border-top: 1px solid rgba(255, 255, 255, 0.14);\n}\n.card-footer[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.3);\n  padding-top: 0.25rem;\n  border-top: 1px solid rgba(255, 255, 255, 0.05);\n}\n/*# sourceMappingURL=update-settings.component.css.map */'] });
+    }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, NgSelectOption, \u0275NgSelectMultipleOption, DefaultValueAccessor, SelectControlValueAccessor, NgControlStatus, NgModel], styles: ['\n\n.update-manager[_ngcontent-%COMP%] {\n  padding: 0.25rem;\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n  height: 100%;\n}\n.update-card[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.6rem;\n  padding: 0.8rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 8px;\n}\n.card-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.6rem;\n}\n.card-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.95rem;\n  color: rgba(255, 255, 255, 0.95);\n}\n.card-source[_ngcontent-%COMP%] {\n  margin-left: auto;\n  font-size: 0.75rem;\n  color: rgba(255, 255, 255, 0.35);\n  font-family: "Courier New", monospace;\n}\n.card-source-btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.3rem;\n  max-width: 60%;\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.1rem 0.2rem;\n  border-radius: 4px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  transition: color 0.15s ease, background 0.15s ease;\n}\n.card-source-btn[_ngcontent-%COMP%]:hover {\n  color: rgba(255, 255, 255, 0.75);\n  background: rgba(255, 255, 255, 0.06);\n}\n.card-source-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  opacity: 0.7;\n}\n.source-editor[_ngcontent-%COMP%]   .detail-row[_ngcontent-%COMP%] {\n  gap: 0.6rem;\n}\n.source-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 4px;\n  padding: 0.3rem 0.45rem;\n  font-size: 0.8rem;\n  font-family: "Courier New", monospace;\n}\n.source-input[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: rgba(0, 123, 255, 0.5);\n}\n.source-input[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n}\n.source-hint[_ngcontent-%COMP%] {\n  display: block;\n  margin-top: 0.4rem;\n  font-size: 0.74rem;\n  color: rgba(255, 255, 255, 0.45);\n  line-height: 1.4;\n}\n.file-pick-btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.3rem;\n  max-width: 70%;\n  background: rgba(255, 255, 255, 0.06);\n  border: 1px solid rgba(255, 255, 255, 0.14);\n  color: rgba(255, 255, 255, 0.9);\n  border-radius: 5px;\n  padding: 0.25rem 0.45rem;\n  font-size: 0.78rem;\n  font-family: "Courier New", monospace;\n  cursor: pointer;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.file-pick-btn[_ngcontent-%COMP%]:hover {\n  background: rgba(255, 255, 255, 0.1);\n}\n.file-pick-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  opacity: 0.7;\n}\n.bin-picker[_ngcontent-%COMP%] {\n  margin-top: 0.45rem;\n}\n.bin-hint[_ngcontent-%COMP%] {\n  font-size: 0.74rem;\n  color: rgba(255, 255, 255, 0.45);\n  padding: 0.2rem 0;\n}\n.bin-list[_ngcontent-%COMP%] {\n  list-style: none;\n  margin: 0;\n  padding: 0;\n  max-height: 9rem;\n  overflow-y: auto;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 5px;\n}\n.bin-item[_ngcontent-%COMP%] {\n  display: block;\n  width: 100%;\n  text-align: left;\n  background: none;\n  border: none;\n  border-bottom: 1px solid rgba(255, 255, 255, 0.05);\n  color: rgba(255, 255, 255, 0.82);\n  padding: 0.35rem 0.5rem;\n  font-size: 0.74rem;\n  font-family: "Courier New", monospace;\n  cursor: pointer;\n  word-break: break-all;\n}\n.bin-item[_ngcontent-%COMP%]:hover {\n  background: rgba(125, 249, 255, 0.06);\n}\n.bin-item.bin-selected[_ngcontent-%COMP%] {\n  color: #7df9ff;\n  background: rgba(125, 249, 255, 0.08);\n}\n.card-alert[_ngcontent-%COMP%] {\n  padding: 0.5rem 0.7rem;\n  border-radius: 5px;\n  font-size: 0.82rem;\n  line-height: 1.4;\n}\n.card-alert.success[_ngcontent-%COMP%] {\n  background: rgba(40, 167, 69, 0.15);\n  border: 1px solid rgba(40, 167, 69, 0.3);\n  color: #6fcf7c;\n}\n.card-alert.error[_ngcontent-%COMP%] {\n  background: rgba(220, 53, 69, 0.15);\n  border: 1px solid rgba(220, 53, 69, 0.3);\n  color: #f5747f;\n}\n.card-alert.info[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.15);\n  border: 1px solid rgba(0, 123, 255, 0.3);\n  color: #6cb2ff;\n}\n.card-alert.warning[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 152, 0, 0.1);\n  border: 1px solid rgba(255, 152, 0, 0.3);\n  color: #ffb74d;\n}\n.card-alert.warning[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.card-alert.restart[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 193, 7, 0.12);\n  border: 1px solid rgba(255, 193, 7, 0.35);\n  color: #ffd54f;\n}\n.card-alert.restart[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.alert-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.15rem;\n}\n.alert-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.85rem;\n}\n.alert-text[_ngcontent-%COMP%] {\n  font-size: 0.8rem;\n  opacity: 0.85;\n}\n.card-actions[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.5rem;\n  flex-wrap: wrap;\n}\n.btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.35rem;\n  padding: 0.4rem 0.8rem;\n  border: none;\n  border-radius: 5px;\n  cursor: pointer;\n  font-size: 0.82rem;\n  font-weight: 500;\n  transition: all 0.15s ease;\n  white-space: nowrap;\n}\n.btn[_ngcontent-%COMP%]:disabled {\n  background: #495057;\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-check[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  color: rgba(255, 255, 255, 0.85);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n}\n.btn-check[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: rgba(255, 255, 255, 0.14);\n}\n.btn-update[_ngcontent-%COMP%] {\n  background: #28a745;\n  color: white;\n}\n.btn-update[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #1e7e34;\n}\n.btn-download[_ngcontent-%COMP%] {\n  background: #007bff;\n  color: white;\n}\n.btn-download[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #0056b3;\n}\n.btn-flash[_ngcontent-%COMP%] {\n  background: #e65100;\n  color: white;\n}\n.btn-flash[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #bf360c;\n}\n.btn-danger[_ngcontent-%COMP%] {\n  background: #dc3545;\n  color: white;\n}\n.btn-danger[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #b02a37;\n}\n.branch-select[_ngcontent-%COMP%] {\n  width: min(280px, 100%);\n  height: 28px;\n  min-height: 28px;\n  padding: 2px 8px;\n  border-radius: 5px;\n  border: 1px solid rgba(255, 255, 255, 0.14);\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  font-size: 10.5px;\n  line-height: 1;\n  cursor: pointer;\n}\n.branch-select[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: #007bff;\n  background: rgba(255, 255, 255, 0.08);\n}\n.branch-select[_ngcontent-%COMP%]:disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.branch-select[_ngcontent-%COMP%]   option[_ngcontent-%COMP%] {\n  background: #1f252b;\n  color: rgba(255, 255, 255, 0.95);\n}\n.conflict-files[_ngcontent-%COMP%] {\n  margin: 0.35rem 0 0;\n  padding-left: 1.1rem;\n  max-height: 8rem;\n  overflow-y: auto;\n  font-family: "Courier New", monospace;\n  font-size: 0.76rem;\n  opacity: 0.9;\n}\n.conflict-files[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  margin: 0.1rem 0;\n  word-break: break-all;\n}\n.confirm-actions[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.5rem;\n  margin-top: 0.5rem;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.35);\n  margin-left: auto;\n}\n.spinning[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_spin 1s linear infinite;\n}\n@keyframes _ngcontent-%COMP%_spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n.card-details[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.35rem;\n  padding: 0.55rem 0.7rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.06);\n  border-radius: 5px;\n}\n.detail-row[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.detail-label[_ngcontent-%COMP%] {\n  font-size: 0.78rem;\n  color: rgba(255, 255, 255, 0.5);\n}\n.detail-value[_ngcontent-%COMP%] {\n  font-size: 0.82rem;\n  color: rgba(255, 255, 255, 0.85);\n}\n.tag[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 0.8rem;\n  padding: 0.1rem 0.45rem;\n  border-radius: 3px;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.8);\n}\n.tag-blue[_ngcontent-%COMP%] {\n  color: #6cb2ff;\n  background: rgba(0, 123, 255, 0.12);\n}\n.tag-green[_ngcontent-%COMP%] {\n  color: #6fcf7c;\n  background: rgba(40, 167, 69, 0.12);\n}\n.tag-warn[_ngcontent-%COMP%] {\n  color: #ffb74d;\n  background: rgba(255, 152, 0, 0.12);\n}\n.modal-overlay[_ngcontent-%COMP%] {\n  position: fixed;\n  inset: 0;\n  z-index: 10001;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 16px;\n  background: rgba(0, 0, 0, 0.6);\n}\n.modal[_ngcontent-%COMP%] {\n  width: min(560px, 95vw);\n  max-height: 90vh;\n  overflow-y: auto;\n  background: rgb(45, 54, 58);\n  color: white;\n  border-radius: 10px;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);\n  display: flex;\n  flex-direction: column;\n}\n.modal-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 30px;\n  padding: 12px 14px;\n  border-bottom: 1px solid rgba(255, 255, 255, 0.14);\n}\n.modal-title[_ngcontent-%COMP%] {\n  font-size: 15px;\n  font-weight: 560;\n  letter-spacing: -0.01em;\n  color: #fff;\n}\n.modal-close[_ngcontent-%COMP%] {\n  background: transparent;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  cursor: pointer;\n  color: rgba(255, 255, 255, 0.72);\n  width: 26px;\n  min-width: 26px;\n  height: 28px;\n  padding: 0;\n  border-radius: 6px;\n  font-size: 16px;\n  line-height: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition:\n    background-color 0.18s ease,\n    border-color 0.18s ease,\n    color 0.18s ease;\n}\n.modal-close[_ngcontent-%COMP%]:hover {\n  background-color: rgba(255, 255, 255, 0.05);\n  border-color: rgba(255, 255, 255, 0.16);\n  color: #fff;\n}\n.modal-body[_ngcontent-%COMP%] {\n  padding: 14px;\n  font-size: 10.5px;\n  color: rgba(255, 255, 255, 0.78);\n  line-height: 1.45;\n}\n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px;\n}\n.modal-intro[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.help-note[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 10px;\n  background: rgba(255, 255, 255, 0.08);\n  padding: 1px 4px;\n  border-radius: 3px;\n  word-break: break-all;\n}\n.help-block[_ngcontent-%COMP%] {\n  margin: 9px 0;\n  padding: 9px;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 7px;\n}\n.help-block-title[_ngcontent-%COMP%] {\n  display: block;\n  font-weight: 600;\n  font-size: 12px;\n  color: rgba(255, 255, 255, 0.92);\n  margin-bottom: 6px;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  margin: 6px 0;\n  padding: 8px 9px;\n  background: rgba(0, 0, 0, 0.25);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 6px;\n  overflow-x: auto;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 10.5px;\n  color: #7df9ff;\n  white-space: pre;\n}\n.help-note[_ngcontent-%COMP%] {\n  font-size: 10px;\n  color: rgba(255, 255, 255, 0.5);\n}\n.modal-outro[_ngcontent-%COMP%] {\n  margin-top: 9px;\n  color: rgba(255, 255, 255, 0.6);\n}\n.key-status[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 5px;\n  margin-top: 8px;\n  font-size: 10.5px;\n  color: #52d273;\n}\n.key-status[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.key-status[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  min-width: 0;\n  max-width: 100%;\n  background: rgba(82, 210, 115, 0.12);\n  color: #52d273;\n  white-space: normal;\n  word-break: break-all;\n}\n.key-error[_ngcontent-%COMP%] {\n  margin-top: 6px;\n  font-size: 10.5px;\n  color: #f5747f;\n}\n.footer-link[_ngcontent-%COMP%] {\n  margin-right: auto;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 28px;\n  padding: 0 8px;\n  border-radius: 6px;\n  border: 1px solid rgba(125, 249, 255, 0.22);\n  background: rgba(125, 249, 255, 0.04);\n  color: #7df9ff;\n  font-size: 10.5px;\n  line-height: 1;\n  font-weight: 500;\n  letter-spacing: 0.02em;\n  white-space: nowrap;\n  text-decoration: none;\n  transition:\n    background-color 0.18s ease,\n    border-color 0.18s ease,\n    color 0.18s ease;\n}\n.footer-link[_ngcontent-%COMP%]:hover {\n  color: #b9fdff;\n  border-color: rgba(125, 249, 255, 0.34);\n  background: rgba(125, 249, 255, 0.07);\n}\n.token-input[_ngcontent-%COMP%] {\n  display: block;\n  width: 100%;\n  margin-bottom: 0.5rem;\n}\n.pubkey[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n}\n.pubkey[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n  word-break: break-all;\n}\n.modal-footer[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 8px;\n  justify-content: flex-end;\n  padding: 12px 14px;\n  border-top: 1px solid rgba(255, 255, 255, 0.14);\n}\n.card-footer[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.3);\n  padding-top: 0.25rem;\n  border-top: 1px solid rgba(255, 255, 255, 0.05);\n}\n/*# sourceMappingURL=update-settings.component.css.map */'] });
   }
 };
 (() => {

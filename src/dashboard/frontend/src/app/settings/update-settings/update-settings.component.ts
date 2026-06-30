@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateKeyResponse, FirmwareCheckResponse, FirmwareActionResponse } from '../../services/api.service';
+import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateKeyResponse, FirmwareCheckResponse, FirmwareActionResponse, FirmwareSourceResponse, FirmwareRepoBinsResponse, FirmwareTokenResponse } from '../../services/api.service';
 
 @Component({
     selector: 'app-update-settings',
@@ -76,6 +76,27 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     fwStatusType: 'success' | 'error' | 'info' = 'info';
     fwHasChecked: boolean = false;
 
+    // Firmware source / file selection
+    fwRepo: string = '';
+    fwBranch: string = '';
+    fwDefaultRepo: string = '';
+    fwSourceUrl: string = '';
+    fwFilePath: string = '';
+    fwFileName: string = '';
+    fwShowSourceEditor: boolean = false;
+    fwIsSavingSource: boolean = false;
+    fwRepoBins: string[] = [];
+    fwBinsLoading: boolean = false;
+    fwBinsTruncated: boolean = false;
+    fwShowFilePicker: boolean = false;
+
+    // Firmware private-repo token
+    fwHasToken: boolean = false;
+    fwShowTokenModal: boolean = false;
+    fwTokenInput: string = '';
+    fwIsSavingToken: boolean = false;
+    fwTokenError: string = '';
+
     private statusTimeout: any;
     private fwStatusTimeout: any;
 
@@ -84,6 +105,8 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loadSource();
         this.loadKey();
+        this.loadFirmwareSource();
+        this.loadFirmwareToken();
     }
 
     ngOnDestroy(): void {
@@ -354,6 +377,10 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.fwRemoteMessage = response.remote_message || '';
                     this.fwLocalSha = response.local_sha || '';
                     this.fwLocalDate = response.local_date || '';
+                    if (response.source) this.fwRepo = response.source;
+                    if (response.branch) this.fwBranch = response.branch;
+                    if (response.file_path) this.fwFilePath = response.file_path;
+                    if (response.file_name) this.fwFileName = response.file_name;
 
                     if (this.fwUpdateAvailable) {
                         this.showFwStatus(this.fwHasLocalFile ? 'New firmware version available!' : 'Firmware not yet downloaded.', 'info');
@@ -361,13 +388,17 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                         this.showFwStatus('Firmware is up to date.', 'success');
                     }
                 } else {
-                    this.showFwStatus(response.error || 'Failed to check firmware', 'error');
+                    if (!this.fwHandleAuthRequired(response)) {
+                        this.showFwStatus(response.error || 'Failed to check firmware', 'error');
+                    }
                 }
                 this.fwIsChecking = false;
             },
-            error: () => {
+            error: (err) => {
                 this.fwHasChecked = true;
-                this.showFwStatus('Failed to connect to server', 'error');
+                if (!this.fwHandleAuthRequired(err?.error)) {
+                    this.showFwStatus(err?.error?.error || 'Failed to connect to server', 'error');
+                }
                 this.fwIsChecking = false;
             }
         });
@@ -383,13 +414,15 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.showFwStatus(response.message || 'Firmware downloaded successfully!', 'success', 10000);
                     this.fwUpdateAvailable = false;
                     this.checkFirmware();
-                } else {
+                } else if (!this.fwHandleAuthRequired(response)) {
                     this.showFwStatus(response.error || 'Download failed', 'error');
                 }
                 this.fwIsDownloading = false;
             },
-            error: () => {
-                this.showFwStatus('Failed to connect to server', 'error');
+            error: (err) => {
+                if (!this.fwHandleAuthRequired(err?.error)) {
+                    this.showFwStatus(err?.error?.error || 'Failed to connect to server', 'error');
+                }
                 this.fwIsDownloading = false;
             }
         });
@@ -415,6 +448,166 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         });
     }
 
+    // ==================== Firmware source / file selection ====================
+
+    loadFirmwareSource(): void {
+        this.apiService.getFirmwareSource().subscribe({
+            next: (response: FirmwareSourceResponse) => {
+                if (response.success) {
+                    this.fwSourceUrl = response.url || '';
+                    this.fwRepo = response.repo || '';
+                    this.fwBranch = response.branch || '';
+                    this.fwDefaultRepo = response.default_repo || '';
+                    this.fwFilePath = response.file_path || '';
+                    this.fwFileName = this.fwFilePath ? this.fwFilePath.split('/').pop() || '' : '';
+                }
+            },
+            error: () => { /* non-fatal */ }
+        });
+    }
+
+    saveFirmwareSource(): void {
+        const url = (this.fwSourceUrl || '').trim();
+        this.fwIsSavingSource = true;
+
+        this.apiService.setFirmwareSource(url).subscribe({
+            next: (response: FirmwareSourceResponse) => {
+                if (response.success) {
+                    this.fwSourceUrl = response.url || '';
+                    this.fwShowSourceEditor = false;
+                    // Changing the repo clears the selected file server-side; reflect that
+                    // and reopen the picker so the student chooses a .bin from the new repo.
+                    this.fwRepoBins = [];
+                    this.fwHasChecked = false;
+                    this.showFwStatus(response.message || 'Firmware source saved.', 'success');
+                    this.loadFirmwareSource();
+                    this.openFirmwareFilePicker();
+                } else {
+                    this.showFwStatus(response.error || 'Failed to save firmware source', 'error');
+                }
+                this.fwIsSavingSource = false;
+            },
+            error: (err) => {
+                this.showFwStatus(err?.error?.error || 'Failed to save firmware source', 'error');
+                this.fwIsSavingSource = false;
+            }
+        });
+    }
+
+    openFirmwareFilePicker(): void {
+        this.fwShowFilePicker = true;
+        this.loadFirmwareRepoBins();
+    }
+
+    loadFirmwareRepoBins(): void {
+        this.fwBinsLoading = true;
+        this.apiService.listFirmwareRepoBins().subscribe({
+            next: (response: FirmwareRepoBinsResponse) => {
+                if (response.success) {
+                    this.fwRepoBins = response.files || [];
+                    this.fwBinsTruncated = response.truncated || false;
+                    if (response.selected_file) this.fwFilePath = response.selected_file;
+                } else if (!this.fwHandleAuthRequired(response)) {
+                    this.showFwStatus(response.error || 'Failed to list .bin files', 'error');
+                }
+                this.fwBinsLoading = false;
+            },
+            error: (err) => {
+                this.fwShowFilePicker = false;
+                if (!this.fwHandleAuthRequired(err?.error)) {
+                    this.showFwStatus(err?.error?.error || 'Failed to list .bin files', 'error');
+                }
+                this.fwBinsLoading = false;
+            }
+        });
+    }
+
+    selectFirmwareFile(filePath: string): void {
+        this.apiService.setFirmwareFile(filePath).subscribe({
+            next: (response: FirmwareSourceResponse) => {
+                if (response.success) {
+                    this.fwFilePath = response.file_path || filePath;
+                    this.fwFileName = this.fwFilePath.split('/').pop() || '';
+                    this.fwShowFilePicker = false;
+                    this.fwHasChecked = false;
+                    this.showFwStatus(`Selected ${this.fwFileName}.`, 'info');
+                } else {
+                    this.showFwStatus(response.error || 'Failed to set firmware file', 'error');
+                }
+            },
+            error: (err) => this.showFwStatus(err?.error?.error || 'Failed to set firmware file', 'error')
+        });
+    }
+
+    // ==================== Firmware access token (private repos) ====================
+
+    loadFirmwareToken(): void {
+        this.apiService.getFirmwareToken().subscribe({
+            next: (response: FirmwareTokenResponse) => {
+                if (response.success) this.fwHasToken = response.has_token || false;
+            },
+            error: () => { /* non-fatal */ }
+        });
+    }
+
+    openFirmwareTokenModal(): void {
+        this.fwTokenError = '';
+        this.fwTokenInput = '';
+        this.fwShowTokenModal = true;
+    }
+
+    saveFirmwareToken(): void {
+        const tok = (this.fwTokenInput || '').trim();
+        if (!tok) {
+            this.fwTokenError = 'Paste an access token first.';
+            return;
+        }
+        this.fwIsSavingToken = true;
+        this.fwTokenError = '';
+
+        this.apiService.setFirmwareToken(tok).subscribe({
+            next: (response: FirmwareTokenResponse) => {
+                if (response.success) {
+                    this.fwHasToken = true;
+                    this.fwTokenInput = '';          // don't keep the secret in the DOM
+                    this.fwShowTokenModal = false;
+                    this.showFwStatus(response.message || 'Access token saved.', 'success', 8000);
+                } else {
+                    this.fwTokenError = response.error || 'Failed to save the token.';
+                }
+                this.fwIsSavingToken = false;
+            },
+            error: (err) => {
+                this.fwTokenError = err?.error?.error || 'Failed to save the token.';
+                this.fwIsSavingToken = false;
+            }
+        });
+    }
+
+    removeFirmwareToken(): void {
+        this.apiService.deleteFirmwareToken().subscribe({
+            next: (response: FirmwareTokenResponse) => {
+                if (response.success) {
+                    this.fwHasToken = false;
+                    this.showFwStatus(response.message || 'Access token removed.', 'info');
+                } else {
+                    this.fwTokenError = response.error || 'Failed to remove the token.';
+                }
+            },
+            error: (err) => { this.fwTokenError = err?.error?.error || 'Failed to remove the token.'; }
+        });
+    }
+
+    /** Open the token modal when the server reports a private repo it can't read.
+     * Returns true when handled. */
+    private fwHandleAuthRequired(body: any): boolean {
+        if (body && body.auth_required) {
+            this.openFirmwareTokenModal();
+            return true;
+        }
+        return false;
+    }
+
     formatDate(isoDate: string): string {
         if (!isoDate) return '';
         try {
@@ -422,6 +615,27 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         } catch {
             return isoDate;
         }
+    }
+
+    /** Short "owner/repo" label for the configured Brain source, matching how
+     * the firmware card shows its repo (instead of the full git URL). */
+    get sourceRepoLabel(): string {
+        const raw = (this.sourceUrl || this.sourceOriginUrl || '').trim();
+        if (!raw) return 'configured source';
+        let path = '';
+        const scp = raw.match(/^[^@/]+@[^:]+:(.+)$/);   // git@host:owner/repo.git
+        if (scp) {
+            path = scp[1];
+        } else {
+            try {
+                path = new URL(raw).pathname;
+            } catch {
+                return raw;
+            }
+        }
+        path = path.replace(/^\/+/, '').replace(/\.git$/i, '');
+        const parts = path.split('/').filter(Boolean);
+        return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : (path || raw);
     }
 
     // ==================== Deploy key (private repos) ====================

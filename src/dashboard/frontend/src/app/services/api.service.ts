@@ -146,11 +146,45 @@ export interface FirmwareCheckResponse {
     remote_message?: string;
     local_sha?: string;
     local_date?: string;
+    source?: string;
+    branch?: string;
+    file_path?: string;
+    file_name?: string;
     error?: string;
 }
 
 export interface FirmwareActionResponse {
     success: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareSourceResponse {
+    success: boolean;
+    url?: string;
+    branch?: string;
+    file_path?: string;
+    repo?: string;
+    default_repo?: string;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareRepoBinsResponse {
+    success: boolean;
+    files?: string[];
+    selected_file?: string;
+    repo?: string;
+    branch?: string;
+    truncated?: boolean;
+    auth_required?: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareTokenResponse {
+    success: boolean;
+    has_token?: boolean;
     message?: string;
     error?: string;
 }
@@ -287,5 +321,33 @@ export class ApiService {
 
     flashSelectedFirmware(filename: string): Observable<FirmwareActionResponse> {
         return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/flash-selected`, { filename });
+    }
+
+    getFirmwareSource(): Observable<FirmwareSourceResponse> {
+        return this.http.get<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/source`);
+    }
+
+    setFirmwareSource(url: string): Observable<FirmwareSourceResponse> {
+        return this.http.post<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/source`, { url });
+    }
+
+    listFirmwareRepoBins(): Observable<FirmwareRepoBinsResponse> {
+        return this.http.get<FirmwareRepoBinsResponse>(`${this.baseUrl}/api/firmware/repo-files`);
+    }
+
+    setFirmwareFile(filePath: string): Observable<FirmwareSourceResponse> {
+        return this.http.post<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/file`, { file_path: filePath });
+    }
+
+    getFirmwareToken(): Observable<FirmwareTokenResponse> {
+        return this.http.get<FirmwareTokenResponse>(`${this.baseUrl}/api/firmware/token`);
+    }
+
+    setFirmwareToken(token: string): Observable<FirmwareTokenResponse> {
+        return this.http.post<FirmwareTokenResponse>(`${this.baseUrl}/api/firmware/token`, { token });
+    }
+
+    deleteFirmwareToken(): Observable<FirmwareTokenResponse> {
+        return this.http.delete<FirmwareTokenResponse>(`${this.baseUrl}/api/firmware/token`);
     }
 }

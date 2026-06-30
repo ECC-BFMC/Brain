@@ -307,6 +307,37 @@ class processDashboard(WorkerProcess):
             data = flask_request.get_json() or {}
             return self.firmware.handle_flash_selected(data.get('filename', ''))
 
+        @self.app.route('/api/firmware/source', methods=['GET'])
+        def api_get_firmware_source():
+            return self.firmware.handle_get_source()
+
+        @self.app.route('/api/firmware/source', methods=['POST'])
+        def api_set_firmware_source():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_source(data.get('url', ''))
+
+        @self.app.route('/api/firmware/repo-files', methods=['GET'])
+        def api_list_firmware_repo_bins():
+            return self.firmware.handle_list_repo_bins()
+
+        @self.app.route('/api/firmware/file', methods=['POST'])
+        def api_set_firmware_file():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_file(data.get('file_path', ''))
+
+        @self.app.route('/api/firmware/token', methods=['GET'])
+        def api_get_firmware_token():
+            return self.firmware.handle_get_token()
+
+        @self.app.route('/api/firmware/token', methods=['POST'])
+        def api_set_firmware_token():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_token(data.get('token', ''))
+
+        @self.app.route('/api/firmware/token', methods=['DELETE'])
+        def api_delete_firmware_token():
+            return self.firmware.handle_delete_token()
+
 
     def _start_background_tasks(self):
         """Start background monitoring tasks."""

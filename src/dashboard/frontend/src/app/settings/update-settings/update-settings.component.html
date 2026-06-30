@@ -4,9 +4,9 @@
   <div class="update-card">
     <div class="card-header">
       <span class="card-title">Brain Software</span>
-      <button type="button" class="card-source card-source-btn" [title]="'Change repository'"
+      <button type="button" class="card-source card-source-btn" [title]="sourceUrl || sourceOriginUrl || 'Change repository'"
         (click)="showSourceEditor = !showSourceEditor">
-        {{ sourceUrl || sourceOriginUrl || 'configured source' }}
+        {{ sourceRepoLabel }}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
           <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
         </svg>
@@ -179,7 +179,61 @@
   <div class="update-card">
     <div class="card-header">
       <span class="card-title">Nucleo Firmware</span>
-      <span class="card-source">ECC-BFMC/Embedded_Platform</span>
+      <button type="button" class="card-source card-source-btn" [title]="'Change firmware repository'"
+        (click)="fwShowSourceEditor = !fwShowSourceEditor">
+        {{ fwRepo || fwDefaultRepo || 'firmware source' }}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Firmware repository editor -->
+    <div *ngIf="fwShowSourceEditor" class="card-details source-editor">
+      <div class="detail-row">
+        <span class="detail-label">Repository</span>
+        <input class="source-input" type="text" [(ngModel)]="fwSourceUrl"
+          placeholder="https://github.com/owner/firmware-repo"
+          [disabled]="fwIsSavingSource" />
+      </div>
+      <span class="source-hint">
+        Public GitHub repo to pull firmware from. Leave empty for the default
+        (<code>{{ fwDefaultRepo }}</code>). The repo is only read over HTTP, it is never cloned.
+      </span>
+      <div class="confirm-actions">
+        <button class="btn btn-update" (click)="saveFirmwareSource()" [disabled]="fwIsSavingSource">
+          {{ fwIsSavingSource ? 'Saving...' : 'Save repository' }}
+        </button>
+        <button class="btn btn-check" (click)="openFirmwareTokenModal()" [disabled]="fwIsSavingSource">
+          {{ fwHasToken ? 'Access token ✓' : 'Private repo? Add token' }}
+        </button>
+        <button class="btn btn-check" (click)="fwShowSourceEditor = false" [disabled]="fwIsSavingSource">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Selected .bin file -->
+    <div class="card-details">
+      <div class="detail-row">
+        <span class="detail-label">Firmware file</span>
+        <button type="button" class="file-pick-btn" (click)="openFirmwareFilePicker()" [title]="fwFilePath">
+          {{ fwFileName || (fwFilePath ? (fwFilePath.split('/').pop()) : 'choose .bin') }}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+      </div>
+
+      <!-- .bin picker -->
+      <div *ngIf="fwShowFilePicker" class="bin-picker">
+        <div *ngIf="fwBinsLoading" class="bin-hint">Scanning repository for .bin files...</div>
+        <div *ngIf="!fwBinsLoading && !fwRepoBins.length" class="bin-hint">No .bin files found in this repository.</div>
+        <ul *ngIf="!fwBinsLoading && fwRepoBins.length" class="bin-list">
+          <li *ngFor="let b of fwRepoBins">
+            <button type="button" class="bin-item" [class.bin-selected]="b === fwFilePath" (click)="selectFirmwareFile(b)">
+              {{ b }}
+            </button>
+          </li>
+        </ul>
+        <div *ngIf="fwBinsTruncated" class="bin-hint">Repository is large; some files may be omitted.</div>
+      </div>
     </div>
 
     <!-- Firmware Status Message -->
@@ -240,7 +294,7 @@
       </div>
     </div>
 
-    <div class="card-footer">robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.</div>
+    <div class="card-footer">Downloads the selected .bin from your configured repo.</div>
   </div>
 
   <!-- ==================== DEPLOY KEY (private repos) ==================== -->
@@ -291,8 +345,57 @@
 
       <div class="modal-footer">
         <a *ngIf="deployKeysUrl" class="btn btn-check footer-link" [href]="deployKeysUrl" target="_blank" rel="noopener">Open deploy keys</a>
-        <button class="btn btn-update" (click)="showKeyModal = false; checkForUpdates()" [disabled]="isGeneratingKey">Done, re-check</button>
-        <button class="btn btn-check" (click)="showKeyModal = false" [disabled]="isGeneratingKey">Close</button>
+        <button class="btn btn-update" (click)="showKeyModal = false; checkForUpdates()" [disabled]="isGeneratingKey">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIRMWARE ACCESS TOKEN (private repos) ==================== -->
+  <div *ngIf="fwShowTokenModal" class="modal-overlay" (click)="fwShowTokenModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Access token for private firmware</span>
+        <button type="button" class="modal-close" (click)="fwShowTokenModal = false" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-intro">
+          The firmware repo is read over HTTP (never cloned), so a private one needs a read-only
+          <strong>access token</strong>. It's stored only on the car and sent straight to GitHub.
+        </p>
+
+        <div class="help-block">
+          <span class="help-block-title">1. Create a fine-grained token</span>
+          <p>Create a token, then give it access to your firmware repo
+            with <strong>Repository permissions → Contents: Read-only</strong>.</p>
+          <div class="confirm-actions">
+            <a class="btn btn-check footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create token</a>
+          </div>
+        </div>
+
+        <div class="help-block">
+          <span class="help-block-title">2. Paste it here</span>
+          <input class="source-input token-input" type="password" [(ngModel)]="fwTokenInput"
+            placeholder="github_pat_..." [disabled]="fwIsSavingToken" spellcheck="false"
+            autocomplete="off" />
+          <div *ngIf="fwTokenError" class="key-error">{{ fwTokenError }}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-update" (click)="saveFirmwareToken()" [disabled]="fwIsSavingToken">
+              {{ fwIsSavingToken ? 'Verifying...' : (fwHasToken ? 'Replace token' : 'Save token') }}
+            </button>
+            <button *ngIf="fwHasToken" class="btn btn-danger" (click)="removeFirmwareToken()" [disabled]="fwIsSavingToken">Remove token</button>
+          </div>
+          <div *ngIf="fwHasToken" class="key-status">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            A token is stored on the car.
+          </div>
+        </div>
+
+        <p class="modal-outro">It's verified against the configured repo before being saved.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-update" (click)="fwShowTokenModal = false; checkFirmware()" [disabled]="fwIsSavingToken">Done</button>
       </div>
     </div>
   </div>
