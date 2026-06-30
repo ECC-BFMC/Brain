@@ -499,6 +499,79 @@
   margin-top: 0.7rem;
 }
 
+.key-input {
+  width: 100%;
+  min-height: 7rem;
+  resize: vertical;
+  background: #11151a;
+  color: #9ad0ff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  padding: 0.5rem 0.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  white-space: pre;
+}
+
+.key-input:focus {
+  outline: none;
+  border-color: rgba(0, 123, 255, 0.5);
+}
+
+.key-input:disabled {
+  opacity: 0.5;
+}
+
+.key-error {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: #f5747f;
+}
+
+.key-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: #6fcf7c;
+}
+
+.key-status code {
+  background: rgba(40, 167, 69, 0.12);
+  color: #6fcf7c;
+}
+
+.paste-fallback {
+  margin-top: 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.link-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #6cb2ff;
+  text-decoration: underline;
+}
+
+.link-toggle:hover {
+  color: #9ad0ff;
+}
+
+.pubkey {
+  white-space: pre-wrap !important;
+}
+
+.pubkey code {
+  white-space: pre-wrap !important;
+  word-break: break-all;
+}
+
 .modal-footer {
   display: flex;
   gap: 0.5rem;

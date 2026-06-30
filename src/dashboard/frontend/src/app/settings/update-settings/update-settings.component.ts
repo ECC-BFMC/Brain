@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, FirmwareCheckResponse, FirmwareActionResponse } from '../../services/api.service';
+import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateKeyResponse, FirmwareCheckResponse, FirmwareActionResponse } from '../../services/api.service';
 
 @Component({
     selector: 'app-update-settings',
@@ -45,8 +45,17 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     isSavingSource: boolean = false;
     sourceLoaded: boolean = false;
 
-    // Private-repo auth help popup
-    showAuthHelp: boolean = false;
+    // Deploy-key popup (private-repo access)
+    showKeyModal: boolean = false;
+    hasKey: boolean = false;
+    publicKey: string = '';
+    keyFingerprint: string = '';
+    privateKeyInput: string = '';
+    isSavingKey: boolean = false;
+    isGeneratingKey: boolean = false;
+    showPasteFallback: boolean = false;
+    keyError: string = '';
+    keyCopied: boolean = false;
 
     // Branch selection
     branches: string[] = [];
@@ -76,6 +85,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.loadSource();
+        this.loadKey();
     }
 
     ngOnDestroy(): void {
@@ -401,18 +411,111 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         }
     }
 
-    /** True when the configured source is an SSH URL (git@... or ssh://...),
-     * which steers the help popup toward the deploy-key instructions. */
-    get isSshSource(): boolean {
-        const u = (this.sourceUrl || '').trim().toLowerCase();
-        return u.startsWith('git@') || u.startsWith('ssh://');
+    // ==================== Deploy key (private repos) ====================
+
+    openKeyModal(): void {
+        this.keyError = '';
+        this.keyCopied = false;
+        this.showPasteFallback = false;
+        this.showKeyModal = true;
+        this.loadKey();
     }
 
-    /** Pop the "how to grant the Pi access" help when the server reports a
-     * private repo it has no credentials for. Returns true when handled. */
+    generateKey(): void {
+        this.isGeneratingKey = true;
+        this.keyError = '';
+
+        this.apiService.generateUpdateKey().subscribe({
+            next: (response: UpdateKeyResponse) => {
+                if (response.success) {
+                    this.hasKey = true;
+                    this.publicKey = response.public_key || '';
+                    this.keyFingerprint = response.fingerprint || '';
+                    this.showPasteFallback = false;
+                    this.showStatus(response.message || 'Deploy key generated.', 'success', 10000);
+                } else {
+                    this.keyError = response.error || 'Failed to generate a key.';
+                }
+                this.isGeneratingKey = false;
+            },
+            error: (err) => {
+                this.keyError = err?.error?.error || 'Failed to generate a key.';
+                this.isGeneratingKey = false;
+            }
+        });
+    }
+
+    loadKey(): void {
+        this.apiService.getUpdateKey().subscribe({
+            next: (response: UpdateKeyResponse) => {
+                if (response.success) {
+                    this.hasKey = response.has_key || false;
+                    this.publicKey = response.public_key || '';
+                    this.keyFingerprint = response.fingerprint || '';
+                }
+            },
+            error: () => { /* non-fatal */ }
+        });
+    }
+
+    saveKey(): void {
+        const pk = (this.privateKeyInput || '').trim();
+        if (!pk) {
+            this.keyError = 'Paste your private key first.';
+            return;
+        }
+        this.isSavingKey = true;
+        this.keyError = '';
+
+        this.apiService.setUpdateKey(pk).subscribe({
+            next: (response: UpdateKeyResponse) => {
+                if (response.success) {
+                    this.hasKey = true;
+                    this.publicKey = response.public_key || '';
+                    this.keyFingerprint = response.fingerprint || '';
+                    this.privateKeyInput = '';   // don't keep the secret in the DOM
+                    this.showStatus(response.message || 'Deploy key saved.', 'success', 10000);
+                } else {
+                    this.keyError = response.error || 'Failed to save the key.';
+                }
+                this.isSavingKey = false;
+            },
+            error: (err) => {
+                this.keyError = err?.error?.error || 'Failed to save the key.';
+                this.isSavingKey = false;
+            }
+        });
+    }
+
+    removeKey(): void {
+        this.apiService.deleteUpdateKey().subscribe({
+            next: (response: UpdateKeyResponse) => {
+                if (response.success) {
+                    this.hasKey = false;
+                    this.publicKey = '';
+                    this.keyFingerprint = '';
+                    this.showStatus(response.message || 'Deploy key removed.', 'info');
+                } else {
+                    this.keyError = response.error || 'Failed to remove the key.';
+                }
+            },
+            error: (err) => { this.keyError = err?.error?.error || 'Failed to remove the key.'; }
+        });
+    }
+
+    copyPublicKey(): void {
+        if (!this.publicKey) return;
+        navigator.clipboard?.writeText(this.publicKey).then(() => {
+            this.keyCopied = true;
+            setTimeout(() => { this.keyCopied = false; }, 2000);
+        }).catch(() => { /* clipboard unavailable; user can select manually */ });
+    }
+
+    /** Open the deploy-key popup when the server reports a private repo it can't
+     * reach. Returns true when handled. */
     private handleAuthRequired(body: any): boolean {
         if (body && body.auth_required) {
-            this.showAuthHelp = true;
+            this.openKeyModal();
             return true;
         }
         return false;

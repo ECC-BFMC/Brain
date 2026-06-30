@@ -56,6 +56,32 @@ class UpdateManager:
         with open(path, 'w') as f:
             json.dump(cfg, f, indent=2)
 
+    # ----------------------------- deploy key -----------------------------
+
+    def _ssh_dir(self):
+        # git-ignored, untracked -> survives `git reset --hard` during updates.
+        return os.path.join(self.repo_path, 'runtime', 'ssh')
+
+    def _key_path(self):
+        return os.path.join(self._ssh_dir(), 'deploy_key')
+
+    def _pub_key_path(self):
+        return self._key_path() + '.pub'
+
+    def _has_deploy_key(self):
+        return os.path.exists(self._key_path())
+
+    def _ssh_command(self):
+        """The ssh command git should use. When a dashboard-managed deploy key
+        exists, pin git to exactly that key; otherwise fall back to the agent /
+        default keys. BatchMode keeps git from ever blocking on a prompt."""
+        base = 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new'
+        if self._has_deploy_key():
+            # Quote the path (Windows dev paths contain spaces); IdentitiesOnly
+            # stops ssh from offering other keys first and tripping MaxAuthTries.
+            return f'{base} -o IdentitiesOnly=yes -i "{self._key_path()}"'
+        return base
+
     # ----------------------------- git helpers -----------------------------
 
     def _git(self, *args, timeout=30):
@@ -66,12 +92,35 @@ class UpdateManager:
         env = dict(os.environ)
         env['GIT_TERMINAL_PROMPT'] = '0'
         env['GIT_ASKPASS'] = env.get('GIT_ASKPASS', '') or 'echo'
-        env.setdefault('GIT_SSH_COMMAND', 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new')
+        env['GIT_SSH_COMMAND'] = self._ssh_command()
         return subprocess.run(
             ['git', *args],
             cwd=self.repo_path,
             capture_output=True, text=True, timeout=timeout, env=env
         )
+
+    @staticmethod
+    def _to_ssh_url(url):
+        """Convert an http(s) git URL to its scp-style SSH form so a deploy key
+        can be used (keys only authenticate over SSH). Non-http URLs and ones we
+        can't parse are returned unchanged."""
+        u = (url or '').strip()
+        if u.startswith('http://') or u.startswith('https://'):
+            parsed = urlparse(u)
+            host = parsed.hostname or ''
+            path = parsed.path.lstrip('/')
+            if host and path:
+                if not path.endswith('.git'):
+                    path += '.git'
+                return f'git@{host}:{path}'
+        return u
+
+    def _effective_url(self, url):
+        """The URL git should actually use: rewritten to SSH when a deploy key is
+        configured, otherwise as the student entered it."""
+        if url and self._has_deploy_key():
+            return self._to_ssh_url(url)
+        return url
 
     # Markers git prints when a fetch/clone fails because of missing or rejected
     # credentials (vs. a network/other error). Used to tell the student that the
@@ -146,6 +195,10 @@ class UpdateManager:
         ok, err = self._validate_repo_url(url)
         if not ok:
             return None, err
+
+        # Use the SSH form when a deploy key is configured so the key is actually
+        # used for auth (keys don't work over https).
+        url = self._effective_url(url)
 
         remote = cfg['remote_name']
         existing = self._git('remote', 'get-url', remote, timeout=10)
@@ -538,7 +591,7 @@ class UpdateManager:
                 if init.returncode != 0:
                     raise RuntimeError(init.stderr.strip() or 'git init failed')
 
-                add = self._git('remote', 'add', remote, url, timeout=10)
+                add = self._git('remote', 'add', remote, self._effective_url(url), timeout=10)
                 if add.returncode != 0:
                     raise RuntimeError(add.stderr.strip() or 'failed to add remote')
 
@@ -668,6 +721,178 @@ class UpdateManager:
             message = (f'Update source set to {url}.' if url
                        else 'Update source reset to the original repository (origin).')
             return jsonify({'success': True, 'url': url, 'message': message})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    # ----------------------------- deploy key (private repos) -----------------------------
+
+    def _ssh_keygen_pub(self, key_path):
+        """Derive the public key from a private key file. Returns (pubkey, error).
+        Also validates the key: a malformed or passphrase-protected key fails
+        here (a passphrased key can't be used non-interactively anyway)."""
+        try:
+            res = subprocess.run(
+                ['ssh-keygen', '-y', '-f', key_path],
+                capture_output=True, text=True, timeout=15,
+                stdin=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            return '', 'ssh-keygen is not installed on this device.'
+        except subprocess.TimeoutExpired:
+            return '', 'Reading the key timed out.'
+        if res.returncode != 0:
+            return '', ('Could not read that private key. Make sure it is complete '
+                        'and has no passphrase.')
+        return res.stdout.strip(), ''
+
+    def _key_fingerprint(self):
+        pub = self._pub_key_path()
+        if not os.path.exists(pub):
+            return ''
+        try:
+            res = subprocess.run(['ssh-keygen', '-lf', pub],
+                                 capture_output=True, text=True, timeout=10,
+                                 stdin=subprocess.DEVNULL)
+            return res.stdout.strip() if res.returncode == 0 else ''
+        except Exception:
+            return ''
+
+    def handle_get_key(self):
+        """Report whether a deploy key is configured and, if so, the matching
+        public key (so the student can add it to their repo's Deploy Keys). The
+        private key is never returned."""
+        try:
+            has_key = self._has_deploy_key()
+            public_key = ''
+            if os.path.exists(self._pub_key_path()):
+                with open(self._pub_key_path(), 'r') as f:
+                    public_key = f.read().strip()
+            return jsonify({
+                'success': True,
+                'has_key': has_key,
+                'public_key': public_key,
+                'fingerprint': self._key_fingerprint() if has_key else '',
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def handle_set_key(self, private_key):
+        """Store a student-provided SSH private key as the deploy key used for
+        pulling updates from a private repo. Validates by deriving the public key
+        and returns it so it can be added to the repo's Deploy Keys."""
+        try:
+            pk = (private_key or '').strip()
+            if not pk:
+                return jsonify({'success': False, 'error': 'Paste a private key first.'}), 400
+            if 'PRIVATE KEY' not in pk:
+                return jsonify({
+                    'success': False,
+                    'error': ("That doesn't look like an SSH private key. Paste the whole "
+                              "file, including the BEGIN/END lines.")
+                }), 400
+
+            os.makedirs(self._ssh_dir(), exist_ok=True)
+            key_path = self._key_path()
+            # ssh refuses keys that are group/world readable; write 0600.
+            content = pk if pk.endswith('\n') else pk + '\n'
+            fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            try:
+                os.write(fd, content.encode())
+            finally:
+                os.close(fd)
+            try:
+                os.chmod(key_path, 0o600)
+            except OSError:
+                pass
+
+            pub, err = self._ssh_keygen_pub(key_path)
+            if err:
+                # Don't keep an unusable key around.
+                try:
+                    os.remove(key_path)
+                except OSError:
+                    pass
+                return jsonify({'success': False, 'error': err}), 400
+
+            with open(self._pub_key_path(), 'w') as f:
+                f.write(pub + '\n')
+
+            # Re-point the remote to the SSH form now that a key exists.
+            cfg = self._load_config()
+            if cfg.get('url') and self._is_git_repo():
+                self._ensure_configured_remote(cfg)
+
+            return jsonify({
+                'success': True,
+                'has_key': True,
+                'public_key': pub,
+                'fingerprint': self._key_fingerprint(),
+                'message': ('Deploy key saved. Add the public key below to your repository '
+                            '(Settings -> Deploy keys), then check for updates.'),
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def handle_generate_key(self):
+        """Generate a fresh SSH deploy key directly on the car. The private key
+        never leaves the device; the caller gets back only the public key to add
+        to the repo's Deploy Keys. This is the preferred flow (more secure than
+        pasting a key generated elsewhere)."""
+        try:
+            os.makedirs(self._ssh_dir(), exist_ok=True)
+            key_path = self._key_path()
+            # Remove any existing key first so ssh-keygen doesn't block on an
+            # interactive "overwrite?" prompt.
+            for p in (key_path, self._pub_key_path()):
+                if os.path.exists(p):
+                    os.remove(p)
+            try:
+                res = subprocess.run(
+                    ['ssh-keygen', '-t', 'ed25519', '-f', key_path,
+                     '-N', '', '-C', 'bfmc-deploy', '-q'],
+                    capture_output=True, text=True, timeout=30,
+                    stdin=subprocess.DEVNULL,
+                )
+            except FileNotFoundError:
+                return jsonify({'success': False, 'error': 'ssh-keygen is not installed on this device.'}), 500
+            except subprocess.TimeoutExpired:
+                return jsonify({'success': False, 'error': 'Key generation timed out.'}), 500
+            if res.returncode != 0:
+                return jsonify({'success': False, 'error': res.stderr.strip() or 'Key generation failed.'}), 500
+
+            try:
+                os.chmod(key_path, 0o600)
+            except OSError:
+                pass
+
+            pub = ''
+            if os.path.exists(self._pub_key_path()):
+                with open(self._pub_key_path(), 'r') as f:
+                    pub = f.read().strip()
+
+            # Re-point the remote to the SSH form now that a key exists.
+            cfg = self._load_config()
+            if cfg.get('url') and self._is_git_repo():
+                self._ensure_configured_remote(cfg)
+
+            return jsonify({
+                'success': True,
+                'has_key': True,
+                'public_key': pub,
+                'fingerprint': self._key_fingerprint(),
+                'message': ('Deploy key generated on the car. Add the public key below to your '
+                            'repository (Settings -> Deploy keys), then check for updates.'),
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def handle_delete_key(self):
+        """Remove the configured deploy key (revert to default/agent auth)."""
+        try:
+            for path in (self._key_path(), self._pub_key_path()):
+                if os.path.exists(path):
+                    os.remove(path)
+            return jsonify({'success': True, 'has_key': False, 'message': 'Deploy key removed.'})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 

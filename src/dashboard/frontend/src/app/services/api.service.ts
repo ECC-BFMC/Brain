@@ -87,6 +87,15 @@ export interface UpdateSourceResponse {
     error?: string;
 }
 
+export interface UpdateKeyResponse {
+    success: boolean;
+    has_key?: boolean;
+    public_key?: string;
+    fingerprint?: string;
+    message?: string;
+    error?: string;
+}
+
 export interface CalibrationMeasurementSummary {
     id: string;
     name: string;
@@ -244,6 +253,22 @@ export class ApiService {
 
     setUpdateSource(url: string): Observable<UpdateSourceResponse> {
         return this.http.post<UpdateSourceResponse>(`${this.baseUrl}/api/update/source`, { url });
+    }
+
+    getUpdateKey(): Observable<UpdateKeyResponse> {
+        return this.http.get<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`);
+    }
+
+    setUpdateKey(privateKey: string): Observable<UpdateKeyResponse> {
+        return this.http.post<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`, { private_key: privateKey });
+    }
+
+    generateUpdateKey(): Observable<UpdateKeyResponse> {
+        return this.http.post<UpdateKeyResponse>(`${this.baseUrl}/api/update/key/generate`, {});
+    }
+
+    deleteUpdateKey(): Observable<UpdateKeyResponse> {
+        return this.http.delete<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`);
     }
 
     // Firmware Update Management

@@ -30,6 +30,9 @@
         <button class="btn btn-update" (click)="saveSource()" [disabled]="isSavingSource">
           {{ isSavingSource ? 'Saving...' : 'Save repository' }}
         </button>
+        <button class="btn btn-check" (click)="openKeyModal()" [disabled]="isSavingSource">
+          {{ hasKey ? 'Deploy key ✓' : 'Private repo? Add deploy key' }}
+        </button>
         <button class="btn btn-check" (click)="showSourceEditor = false" [disabled]="isSavingSource">Cancel</button>
       </div>
     </div>
@@ -169,7 +172,7 @@
       </div>
     </div>
 
-    <div class="card-footer">Updates from your configured repository. Private repos use the Pi's own git credentials &mdash; no token is stored here.</div>
+    <div class="card-footer">Updates from your configured repository. For a private repo, add a read-only SSH deploy key (the pencil &rarr; "Add deploy key") &mdash; no passwords or tokens are stored.</div>
   </div>
 
   <!-- ==================== NUCLEO FIRMWARE ==================== -->
@@ -240,58 +243,73 @@
     <div class="card-footer">robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.</div>
   </div>
 
-  <!-- ==================== PRIVATE REPO AUTH HELP ==================== -->
-  <div *ngIf="showAuthHelp" class="modal-overlay" (click)="showAuthHelp = false">
+  <!-- ==================== DEPLOY KEY (private repos) ==================== -->
+  <div *ngIf="showKeyModal" class="modal-overlay" (click)="showKeyModal = false">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <span class="modal-title">This repository is private</span>
-        <button type="button" class="modal-close" (click)="showAuthHelp = false" aria-label="Close">&times;</button>
+        <span class="modal-title">Deploy key for private repos</span>
+        <button type="button" class="modal-close" (click)="showKeyModal = false" aria-label="Close">&times;</button>
       </div>
 
       <div class="modal-body">
         <p class="modal-intro">
-          The car couldn't read <code>{{ sourceUrl || 'this repository' }}</code> because it has no
-          credentials for it. The dashboard never stores tokens &mdash; instead you give the Pi its
-          own read access, once. Pick whichever matches your repo URL:
+          To pull updates from a private repository, the car needs a read-only SSH <strong>deploy key</strong>.
+          The car makes the key itself &mdash; the secret half never leaves the device. You only copy the
+          public half into your repo.
         </p>
 
-        <!-- SSH deploy key (recommended for private repos) -->
-        <div class="help-block" [class.help-recommended]="isSshSource">
-          <span class="help-block-title">
-            SSH deploy key <span class="help-badge" *ngIf="isSshSource">your URL</span>
-            <span class="help-badge muted" *ngIf="!isSshSource">for git&#64; / ssh:// URLs</span>
-          </span>
-          <p>On the Pi (over SSH), create a key and add it to your repo:</p>
-          <pre><code>ssh-keygen -t ed25519 -C "bfmc-car" -f ~/.ssh/id_ed25519 -N ""
-cat ~/.ssh/id_ed25519.pub</code></pre>
-          <p>
-            Copy that printed public key into your repo on GitHub under
-            <strong>Settings → Deploy keys → Add deploy key</strong> (read-only is enough), then test:
-          </p>
-          <pre><code>ssh -T git&#64;github.com</code></pre>
-          <p class="help-note">Make sure your repository URL above uses the SSH form, e.g.
-            <code>git&#64;github.com:your-user/your-fork.git</code>.</p>
+        <!-- Step 1: generate the key on the car -->
+        <div class="help-block">
+          <span class="help-block-title">1. Create the key on the car</span>
+          <p>The car generates an SSH keypair and keeps the private half. Nothing is uploaded anywhere.</p>
+          <div class="confirm-actions">
+            <button class="btn btn-update" (click)="generateKey()" [disabled]="isGeneratingKey || isSavingKey">
+              {{ isGeneratingKey ? 'Generating...' : (hasKey ? 'Regenerate key' : 'Generate deploy key') }}
+            </button>
+            <button *ngIf="hasKey" class="btn btn-danger" (click)="removeKey()" [disabled]="isGeneratingKey || isSavingKey">Remove key</button>
+          </div>
+          <div *ngIf="hasKey && keyFingerprint" class="key-status">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Key installed on the car &mdash; <code>{{ keyFingerprint }}</code>
+          </div>
+          <div *ngIf="keyError" class="key-error">{{ keyError }}</div>
         </div>
 
-        <!-- HTTPS token -->
-        <div class="help-block" [class.help-recommended]="!isSshSource">
-          <span class="help-block-title">
-            HTTPS access token <span class="help-badge" *ngIf="!isSshSource">your URL</span>
-            <span class="help-badge muted" *ngIf="isSshSource">for https:// URLs</span>
-          </span>
-          <p>Create a fine-grained <strong>Personal Access Token</strong> with read access to the repo,
-            then store it on the Pi so git reuses it:</p>
-          <pre><code>git config --global credential.helper store
-git -C ~/Brain fetch   # paste username + token once when prompted</code></pre>
-          <p class="help-note">Adjust the path if your code isn't in <code>~/Brain</code>.</p>
+        <!-- Step 2: add the public key as a deploy key -->
+        <div class="help-block" *ngIf="hasKey && publicKey">
+          <span class="help-block-title">2. Add this public key to your repo</span>
+          <p>In your repository on GitHub: <strong>Settings → Deploy keys → Add deploy key</strong>
+            (leave "Allow write access" off). Paste the key below:</p>
+          <pre class="pubkey"><code>{{ publicKey }}</code></pre>
+          <button class="btn btn-check" (click)="copyPublicKey()">{{ keyCopied ? 'Copied!' : 'Copy public key' }}</button>
         </div>
 
-        <p class="modal-outro">Once access is set up, close this and press <strong>Check</strong> again.</p>
+        <p class="modal-outro">
+          Your <code>https://</code> repo URL is used automatically over SSH once a key is set &mdash; no need to change it.
+        </p>
+
+        <!-- Fallback: paste an existing private key -->
+        <div class="paste-fallback">
+          <button type="button" class="link-toggle" (click)="showPasteFallback = !showPasteFallback">
+            {{ showPasteFallback ? 'Hide' : 'Already have a key? Paste it instead' }}
+          </button>
+          <div *ngIf="showPasteFallback" class="help-block">
+            <p class="help-note">Paste an existing private key (no passphrase). It will be stored on the car as its deploy key.</p>
+            <textarea class="key-input" [(ngModel)]="privateKeyInput"
+              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"
+              [disabled]="isSavingKey" spellcheck="false"></textarea>
+            <div class="confirm-actions">
+              <button class="btn btn-update" (click)="saveKey()" [disabled]="isSavingKey || isGeneratingKey">
+                {{ isSavingKey ? 'Saving...' : 'Use pasted key' }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-update" (click)="showAuthHelp = false; checkForUpdates()">Done, re-check</button>
-        <button class="btn btn-check" (click)="showAuthHelp = false">Close</button>
+        <button class="btn btn-update" (click)="showKeyModal = false; checkForUpdates()" [disabled]="isSavingKey || isGeneratingKey">Done, re-check</button>
+        <button class="btn btn-check" (click)="showKeyModal = false" [disabled]="isSavingKey || isGeneratingKey">Close</button>
       </div>
     </div>
   </div>
