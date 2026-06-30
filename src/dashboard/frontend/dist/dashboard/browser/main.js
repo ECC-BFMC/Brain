@@ -30666,7 +30666,7 @@ function UpdateSettingsComponent_div_21_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r1.behindBy > 0);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r1.remoteDate && (ctx_r1.updateAvailable || ctx_r1.canSwitchBranch));
+    \u0275\u0275property("ngIf", ctx_r1.remoteDate);
   }
 }
 function UpdateSettingsComponent_div_22_Template(rf, ctx) {
@@ -31052,7 +31052,24 @@ function UpdateSettingsComponent_div_54_div_2_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.fwLocalSha);
   }
 }
-function UpdateSettingsComponent_div_54_div_8_Template(rf, ctx) {
+function UpdateSettingsComponent_div_54_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 21)(1, "span", 22);
+    \u0275\u0275text(2, "Latest");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "span", 62);
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance(3);
+    \u0275\u0275property("title", ctx_r1.fwRemoteMessage);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(ctx_r1.fwRemoteSha);
+  }
+}
+function UpdateSettingsComponent_div_54_div_4_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 21)(1, "span", 22);
     \u0275\u0275text(2, "Released");
@@ -31070,14 +31087,7 @@ function UpdateSettingsComponent_div_54_div_8_Template(rf, ctx) {
 function UpdateSettingsComponent_div_54_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 19);
-    \u0275\u0275template(1, UpdateSettingsComponent_div_54_div_1_Template, 5, 1, "div", 20)(2, UpdateSettingsComponent_div_54_div_2_Template, 5, 1, "div", 20);
-    \u0275\u0275elementStart(3, "div", 21)(4, "span", 22);
-    \u0275\u0275text(5, "Latest");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "span", 60);
-    \u0275\u0275text(7);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275template(8, UpdateSettingsComponent_div_54_div_8_Template, 5, 1, "div", 20);
+    \u0275\u0275template(1, UpdateSettingsComponent_div_54_div_1_Template, 5, 1, "div", 20)(2, UpdateSettingsComponent_div_54_div_2_Template, 5, 1, "div", 20)(3, UpdateSettingsComponent_div_54_div_3_Template, 5, 2, "div", 20)(4, UpdateSettingsComponent_div_54_div_4_Template, 5, 1, "div", 20);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -31086,11 +31096,8 @@ function UpdateSettingsComponent_div_54_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r1.fwBranch);
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r1.fwLocalSha);
-    \u0275\u0275advance(4);
-    \u0275\u0275classProp("tag-green", ctx_r1.fwUpdateAvailable);
-    \u0275\u0275property("title", ctx_r1.fwRemoteMessage);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(ctx_r1.fwRemoteSha);
+    \u0275\u0275property("ngIf", ctx_r1.fwUpdateAvailable);
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r1.fwRemoteDate);
   }
@@ -32237,7 +32244,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275elementEnd()();
         \u0275\u0275template(52, UpdateSettingsComponent_button_52_Template, 5, 4, "button", 30)(53, UpdateSettingsComponent_button_53_Template, 5, 4, "button", 31);
         \u0275\u0275elementEnd();
-        \u0275\u0275template(54, UpdateSettingsComponent_div_54_Template, 9, 7, "div", 12);
+        \u0275\u0275template(54, UpdateSettingsComponent_div_54_Template, 5, 4, "div", 12);
         \u0275\u0275elementStart(55, "div", 18);
         \u0275\u0275text(56, "Downloads the selected .bin from your configured repo.");
         \u0275\u0275elementEnd()();

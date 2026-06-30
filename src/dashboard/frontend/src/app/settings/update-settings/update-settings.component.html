@@ -143,7 +143,7 @@
         <span class="detail-label">Behind by</span>
         <span class="detail-value tag tag-warn">{{ behindBy }} commit{{ behindBy === 1 ? '' : 's' }}</span>
       </div>
-      <div *ngIf="remoteDate && (updateAvailable || canSwitchBranch)" class="detail-row">
+      <div *ngIf="remoteDate" class="detail-row">
         <span class="detail-label">Released</span>
         <span class="detail-value">{{ formatDate(remoteDate) }}</span>
       </div>
@@ -299,9 +299,9 @@
         <span class="detail-label">Local</span>
         <span class="detail-value tag">{{ fwLocalSha }}</span>
       </div>
-      <div class="detail-row">
+      <div *ngIf="fwUpdateAvailable" class="detail-row">
         <span class="detail-label">Latest</span>
-        <span class="detail-value tag" [class.tag-green]="fwUpdateAvailable" [title]="fwRemoteMessage">{{ fwRemoteSha }}</span>
+        <span class="detail-value tag tag-green" [title]="fwRemoteMessage">{{ fwRemoteSha }}</span>
       </div>
       <div *ngIf="fwRemoteDate" class="detail-row">
         <span class="detail-label">Released</span>
