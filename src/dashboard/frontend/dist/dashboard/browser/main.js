@@ -31059,6 +31059,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     this.behindBy = 0;
     this.via = "";
     this.updateAvailable = false;
+    this.diverged = false;
     this.depsChanged = false;
     this.isChecking = false;
     this.isUpdating = false;
@@ -31117,6 +31118,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     this.isChecking = true;
     this.statusMessage = "";
     this.conflict = null;
+    this.diverged = false;
     this.apiService.checkForUpdates().subscribe({
       next: (response) => {
         this.hasChecked = true;
@@ -31142,6 +31144,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         this.depsChanged = response.deps_changed || false;
         this.via = response.via || "";
         this.updateAvailable = response.update_available || false;
+        this.diverged = response.diverged || false;
         this.lastChecked = (/* @__PURE__ */ new Date()).toLocaleTimeString();
         this.handleAuthRequired(response);
         if (response.message) {
@@ -31547,7 +31550,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275elementEnd();
         \u0275\u0275template(21, UpdateSettingsComponent_div_21_Template, 9, 5, "div", 12)(22, UpdateSettingsComponent_div_22_Template, 16, 0, "div", 8)(23, UpdateSettingsComponent_div_23_Template, 14, 0, "div", 11);
         \u0275\u0275elementStart(24, "div", 18);
-        \u0275\u0275text(25, 'Updates from your configured repository. For a private repo, add a read-only SSH deploy key (the pencil \u2192 "Add deploy key"), no passwords or tokens are stored.');
+        \u0275\u0275text(25, "Updates from your configured repository.");
         \u0275\u0275elementEnd()();
         \u0275\u0275elementStart(26, "div", 1)(27, "div", 2)(28, "span", 3);
         \u0275\u0275text(29, "Nucleo Firmware");
@@ -31597,7 +31600,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.isGitRepo && ctx.updateAvailable && !ctx.conflict);
         \u0275\u0275advance();
-        \u0275\u0275property("ngIf", ctx.isGitRepo && ctx.conflict);
+        \u0275\u0275property("ngIf", ctx.isGitRepo && (ctx.conflict || ctx.diverged));
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.lastChecked);
         \u0275\u0275advance();

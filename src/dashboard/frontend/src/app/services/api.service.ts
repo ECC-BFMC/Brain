@@ -45,6 +45,7 @@ export interface UpdateStatusResponse {
     remote_commit?: string;
     remote_commit_short?: string;
     update_available?: boolean;
+    diverged?: boolean;
     branch?: string;
     remote?: string;
     remote_branch?: string;

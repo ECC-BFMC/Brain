@@ -116,8 +116,8 @@
         <span>{{ isUpdating ? 'Updating...' : 'Pull Update' }}</span>
       </button>
 
-      <!-- Force update (offered when a conflict blocks the fast-forward) -->
-      <button *ngIf="isGitRepo && conflict" class="btn btn-danger"
+      <!-- Force update (offered when a conflict or divergence blocks the fast-forward) -->
+      <button *ngIf="isGitRepo && (conflict || diverged)" class="btn btn-danger"
         (click)="showForceConfirm = true" [disabled]="isForcing || isUpdating">
         <span>{{ isForcing ? 'Updating...' : 'Discard local changes & update' }}</span>
       </button>
@@ -172,7 +172,7 @@
       </div>
     </div>
 
-    <div class="card-footer">Updates from your configured repository. For a private repo, add a read-only SSH deploy key (the pencil &rarr; "Add deploy key"), no passwords or tokens are stored.</div>
+    <div class="card-footer">Updates from your configured repository.</div>
   </div>
 
   <!-- ==================== NUCLEO FIRMWARE ==================== -->

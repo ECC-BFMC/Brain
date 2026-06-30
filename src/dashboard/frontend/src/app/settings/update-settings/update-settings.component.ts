@@ -22,6 +22,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     behindBy: number = 0;
     via: string = '';
     updateAvailable: boolean = false;
+    diverged: boolean = false;
     depsChanged: boolean = false;
     isChecking: boolean = false;
     isUpdating: boolean = false;
@@ -96,6 +97,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         this.isChecking = true;
         this.statusMessage = '';
         this.conflict = null;
+        this.diverged = false;
 
         this.apiService.checkForUpdates().subscribe({
             next: (response: UpdateStatusResponse) => {
@@ -126,6 +128,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 this.depsChanged = response.deps_changed || false;
                 this.via = response.via || '';
                 this.updateAvailable = response.update_available || false;
+                this.diverged = response.diverged || false;
                 this.lastChecked = new Date().toLocaleTimeString();
 
                 this.handleAuthRequired(response);

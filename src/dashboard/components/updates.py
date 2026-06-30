@@ -147,6 +147,12 @@ class UpdateManager:
         "credentials for it yet. Grant the Pi read access, then try again."
     )
 
+    DIVERGED_MESSAGE = (
+        "The update source has a different history than this car's copy (common "
+        "when switching to a fork). Use \"Discard local changes & update\" to "
+        "switch to it -- this overwrites local changes to tracked files."
+    )
+
     @classmethod
     def _is_auth_error(cls, text):
         if not text:
@@ -298,20 +304,27 @@ class UpdateManager:
         if not isinstance(data, dict) or 'status' not in data:
             return None
 
-        # base...head with base=local HEAD, head=remote branch:
-        #   ahead_by  -> commits the remote branch has that we don't (updates)
+        # base...head with base=local HEAD, head=remote branch. GitHub reports a
+        # status of identical / ahead / behind / diverged:
+        #   ahead    -> remote has commits we don't, fast-forwardable (an update)
+        #   diverged -> both sides have unique commits (needs a force reset)
+        status = data.get('status', '')
         ahead_by = data.get('ahead_by', 0)
         commits = data.get('commits') or []
         remote_commit = commits[-1].get('sha', '') if commits else head
         files = [f.get('filename', '') for f in (data.get('files') or [])]
+        diverged = status == 'diverged'
+        update_available = status == 'ahead' and ahead_by > 0
         return {
-            'update_available': ahead_by > 0,
+            'update_available': update_available,
+            'diverged': diverged,
             'current_commit': head,
             'current_commit_short': head[:7],
             'remote_commit': remote_commit,
             'remote_commit_short': remote_commit[:7] if remote_commit else '',
             'behind_by': ahead_by,
             'deps_changed': self._deps_changed(files),
+            'message': self.DIVERGED_MESSAGE if diverged else '',
             'via': 'github',
         }
 
@@ -335,7 +348,13 @@ class UpdateManager:
         remote_branch = f'{remote}/{branch}'
         remote_commit = self._git('rev-parse', remote_branch, timeout=10).stdout.strip()
         merge_base = self._git('merge-base', 'HEAD', remote_branch, timeout=10).stdout.strip()
+        # Fast-forwardable: remote is strictly ahead of local (merge-base == HEAD).
         update_available = bool(remote_commit) and merge_base == head and remote_commit != head
+        # Diverged: both sides have unique commits (merge-base is neither tip).
+        # Common when switching the source to a fork with its own history -- a
+        # plain pull can't fast-forward, so the force reset is the way across.
+        diverged = (bool(remote_commit) and remote_commit != head
+                    and merge_base != head and merge_base != remote_commit)
 
         files = self._changed_files(head, remote_commit) if update_available else []
         behind_by = 0
@@ -348,12 +367,14 @@ class UpdateManager:
                     behind_by = int(parts[1])
         return {
             'update_available': update_available,
+            'diverged': diverged,
             'current_commit': head,
             'current_commit_short': head[:7],
             'remote_commit': remote_commit,
             'remote_commit_short': remote_commit[:7] if remote_commit else '',
             'behind_by': behind_by,
             'deps_changed': self._deps_changed(files),
+            'message': self.DIVERGED_MESSAGE if diverged else '',
             'via': 'git',
         }
 
