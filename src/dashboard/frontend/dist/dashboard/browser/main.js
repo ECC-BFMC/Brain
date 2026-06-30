@@ -26801,9 +26801,6 @@ var ApiService = class _ApiService {
   getUpdateKey() {
     return this.http.get(`${this.baseUrl}/api/update/key`);
   }
-  setUpdateKey(privateKey) {
-    return this.http.post(`${this.baseUrl}/api/update/key`, { private_key: privateKey });
-  }
   generateUpdateKey() {
     return this.http.post(`${this.baseUrl}/api/update/key/generate`, {});
   }
@@ -30310,7 +30307,7 @@ function UpdateSettingsComponent_div_11_Template(rf, ctx) {
 function UpdateSettingsComponent_div_12_span_6_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span");
-    \u0275\u0275text(1, " Dependencies changed \u2014 reinstall them first (");
+    \u0275\u0275text(1, " Dependencies changed, reinstall them first (");
     \u0275\u0275elementStart(2, "code");
     \u0275\u0275text(3, "pip install -r requirements.txt");
     \u0275\u0275elementEnd();
@@ -30860,11 +30857,11 @@ function UpdateSettingsComponent_div_41_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r1.fwLocalSha);
   }
 }
-function UpdateSettingsComponent_div_44_button_21_Template(rf, ctx) {
+function UpdateSettingsComponent_div_44_button_19_Template(rf, ctx) {
   if (rf & 1) {
     const _r15 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 54);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_button_21_Template_button_click_0_listener() {
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_button_19_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r15);
       const ctx_r1 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r1.removeKey());
@@ -30874,17 +30871,17 @@ function UpdateSettingsComponent_div_44_button_21_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext(2);
-    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey || ctx_r1.isSavingKey);
+    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
   }
 }
-function UpdateSettingsComponent_div_44_div_22_Template(rf, ctx) {
+function UpdateSettingsComponent_div_44_div_20_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 84);
+    \u0275\u0275elementStart(0, "div", 82);
     \u0275\u0275namespaceSVG();
-    \u0275\u0275elementStart(1, "svg", 85);
-    \u0275\u0275element(2, "path", 86);
+    \u0275\u0275elementStart(1, "svg", 83);
+    \u0275\u0275element(2, "path", 84);
     \u0275\u0275elementEnd();
-    \u0275\u0275text(3, " Key installed on the car \u2014 ");
+    \u0275\u0275text(3, " Key installed on the car, ");
     \u0275\u0275namespaceHTML();
     \u0275\u0275elementStart(4, "code");
     \u0275\u0275text(5);
@@ -30896,9 +30893,9 @@ function UpdateSettingsComponent_div_44_div_22_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.keyFingerprint);
   }
 }
-function UpdateSettingsComponent_div_44_div_23_Template(rf, ctx) {
+function UpdateSettingsComponent_div_44_div_21_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 87);
+    \u0275\u0275elementStart(0, "div", 85);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -30908,7 +30905,7 @@ function UpdateSettingsComponent_div_44_div_23_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.keyError);
   }
 }
-function UpdateSettingsComponent_div_44_div_24_Template(rf, ctx) {
+function UpdateSettingsComponent_div_44_div_22_Template(rf, ctx) {
   if (rf & 1) {
     const _r16 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 75)(1, "span", 76);
@@ -30921,11 +30918,11 @@ function UpdateSettingsComponent_div_44_div_24_Template(rf, ctx) {
     \u0275\u0275elementEnd();
     \u0275\u0275text(7, ' (leave "Allow write access" off). Paste the key below:');
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "pre", 88)(9, "code");
+    \u0275\u0275elementStart(8, "pre", 86)(9, "code");
     \u0275\u0275text(10);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(11, "button", 62);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_div_24_Template_button_click_11_listener() {
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_div_22_Template_button_click_11_listener() {
       \u0275\u0275restoreView(_r16);
       const ctx_r1 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r1.copyPublicKey());
@@ -30939,40 +30936,6 @@ function UpdateSettingsComponent_div_44_div_24_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r1.publicKey);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(ctx_r1.keyCopied ? "Copied!" : "Copy public key");
-  }
-}
-function UpdateSettingsComponent_div_44_div_33_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r17 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 75)(1, "p", 89);
-    \u0275\u0275text(2, "Paste an existing private key (no passphrase). It will be stored on the car as its deploy key.");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "textarea", 90);
-    \u0275\u0275twoWayListener("ngModelChange", function UpdateSettingsComponent_div_44_div_33_Template_textarea_ngModelChange_3_listener($event) {
-      \u0275\u0275restoreView(_r17);
-      const ctx_r1 = \u0275\u0275nextContext(2);
-      \u0275\u0275twoWayBindingSet(ctx_r1.privateKeyInput, $event) || (ctx_r1.privateKeyInput = $event);
-      return \u0275\u0275resetView($event);
-    });
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 32)(5, "button", 33);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_div_33_Template_button_click_5_listener() {
-      \u0275\u0275restoreView(_r17);
-      const ctx_r1 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r1.saveKey());
-    });
-    \u0275\u0275text(6);
-    \u0275\u0275elementEnd()()();
-  }
-  if (rf & 2) {
-    const ctx_r1 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance(3);
-    \u0275\u0275twoWayProperty("ngModel", ctx_r1.privateKeyInput);
-    \u0275\u0275property("disabled", ctx_r1.isSavingKey);
-    \u0275\u0275advance(2);
-    \u0275\u0275property("disabled", ctx_r1.isSavingKey || ctx_r1.isGeneratingKey);
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx_r1.isSavingKey ? "Saving..." : "Use pasted key", " ");
   }
 }
 function UpdateSettingsComponent_div_44_Template(rf, ctx) {
@@ -31005,66 +30968,53 @@ function UpdateSettingsComponent_div_44_Template(rf, ctx) {
     \u0275\u0275elementStart(10, "strong");
     \u0275\u0275text(11, "deploy key");
     \u0275\u0275elementEnd();
-    \u0275\u0275text(12, ". The car makes the key itself \u2014 the secret half never leaves the device. You only copy the public half into your repo. ");
+    \u0275\u0275text(12, ". The car makes the key itself, the secret half never leaves the device. You only copy the public half into your repo. ");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(13, "div", 75)(14, "span", 76);
-    \u0275\u0275text(15, "1. Create the key on the car");
+    \u0275\u0275text(15, "Create the key on the car");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "p");
-    \u0275\u0275text(17, "The car generates an SSH keypair and keeps the private half. Nothing is uploaded anywhere.");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(18, "div", 32)(19, "button", 33);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_19_listener() {
+    \u0275\u0275elementStart(16, "div", 32)(17, "button", 33);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_17_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.generateKey());
     });
-    \u0275\u0275text(20);
+    \u0275\u0275text(18);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(21, UpdateSettingsComponent_div_44_button_21_Template, 2, 1, "button", 16);
+    \u0275\u0275template(19, UpdateSettingsComponent_div_44_button_19_Template, 2, 1, "button", 16);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(22, UpdateSettingsComponent_div_44_div_22_Template, 6, 1, "div", 77)(23, UpdateSettingsComponent_div_44_div_23_Template, 2, 1, "div", 78);
+    \u0275\u0275template(20, UpdateSettingsComponent_div_44_div_20_Template, 6, 1, "div", 77)(21, UpdateSettingsComponent_div_44_div_21_Template, 2, 1, "div", 78);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(24, UpdateSettingsComponent_div_44_div_24_Template, 13, 2, "div", 79);
-    \u0275\u0275elementStart(25, "p", 80);
-    \u0275\u0275text(26, " Your ");
-    \u0275\u0275elementStart(27, "code");
-    \u0275\u0275text(28, "https://");
+    \u0275\u0275template(22, UpdateSettingsComponent_div_44_div_22_Template, 13, 2, "div", 79);
+    \u0275\u0275elementStart(23, "p", 80);
+    \u0275\u0275text(24, " Your ");
+    \u0275\u0275elementStart(25, "code");
+    \u0275\u0275text(26, "https://");
     \u0275\u0275elementEnd();
-    \u0275\u0275text(29, " repo URL is used automatically over SSH once a key is set \u2014 no need to change it. ");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(30, "div", 81)(31, "button", 82);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_31_listener() {
-      \u0275\u0275restoreView(_r14);
-      const ctx_r1 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r1.showPasteFallback = !ctx_r1.showPasteFallback);
-    });
-    \u0275\u0275text(32);
-    \u0275\u0275elementEnd();
-    \u0275\u0275template(33, UpdateSettingsComponent_div_44_div_33_Template, 7, 4, "div", 79);
+    \u0275\u0275text(27, " repo URL is used automatically over SSH once a key is set, no need to change it. ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(34, "div", 83)(35, "button", 33);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_35_listener() {
+    \u0275\u0275elementStart(28, "div", 81)(29, "button", 33);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_29_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r1 = \u0275\u0275nextContext();
       ctx_r1.showKeyModal = false;
       return \u0275\u0275resetView(ctx_r1.checkForUpdates());
     });
-    \u0275\u0275text(36, "Done, re-check");
+    \u0275\u0275text(30, "Done, re-check");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(37, "button", 20);
-    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_37_listener() {
+    \u0275\u0275elementStart(31, "button", 20);
+    \u0275\u0275listener("click", function UpdateSettingsComponent_div_44_Template_button_click_31_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.showKeyModal = false);
     });
-    \u0275\u0275text(38, "Close");
+    \u0275\u0275text(32, "Close");
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext();
-    \u0275\u0275advance(19);
-    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey || ctx_r1.isSavingKey);
+    \u0275\u0275advance(17);
+    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
     \u0275\u0275advance();
     \u0275\u0275textInterpolate1(" ", ctx_r1.isGeneratingKey ? "Generating..." : ctx_r1.hasKey ? "Regenerate key" : "Generate deploy key", " ");
     \u0275\u0275advance();
@@ -31075,14 +31025,10 @@ function UpdateSettingsComponent_div_44_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r1.keyError);
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r1.hasKey && ctx_r1.publicKey);
-    \u0275\u0275advance(8);
-    \u0275\u0275textInterpolate1(" ", ctx_r1.showPasteFallback ? "Hide" : "Already have a key? Paste it instead", " ");
-    \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r1.showPasteFallback);
+    \u0275\u0275advance(7);
+    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
     \u0275\u0275advance(2);
-    \u0275\u0275property("disabled", ctx_r1.isSavingKey || ctx_r1.isGeneratingKey);
-    \u0275\u0275advance(2);
-    \u0275\u0275property("disabled", ctx_r1.isSavingKey || ctx_r1.isGeneratingKey);
+    \u0275\u0275property("disabled", ctx_r1.isGeneratingKey);
   }
 }
 var UpdateSettingsComponent = class _UpdateSettingsComponent {
@@ -31120,10 +31066,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     this.hasKey = false;
     this.publicKey = "";
     this.keyFingerprint = "";
-    this.privateKeyInput = "";
-    this.isSavingKey = false;
     this.isGeneratingKey = false;
-    this.showPasteFallback = false;
     this.keyError = "";
     this.keyCopied = false;
     this.branches = [];
@@ -31442,7 +31385,6 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
   openKeyModal() {
     this.keyError = "";
     this.keyCopied = false;
-    this.showPasteFallback = false;
     this.showKeyModal = true;
     this.loadKey();
   }
@@ -31455,7 +31397,6 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
           this.hasKey = true;
           this.publicKey = response.public_key || "";
           this.keyFingerprint = response.fingerprint || "";
-          this.showPasteFallback = false;
           this.showStatus(response.message || "Deploy key generated.", "success", 1e4);
         } else {
           this.keyError = response.error || "Failed to generate a key.";
@@ -31478,33 +31419,6 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         }
       },
       error: () => {
-      }
-    });
-  }
-  saveKey() {
-    const pk = (this.privateKeyInput || "").trim();
-    if (!pk) {
-      this.keyError = "Paste your private key first.";
-      return;
-    }
-    this.isSavingKey = true;
-    this.keyError = "";
-    this.apiService.setUpdateKey(pk).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.hasKey = true;
-          this.publicKey = response.public_key || "";
-          this.keyFingerprint = response.fingerprint || "";
-          this.privateKeyInput = "";
-          this.showStatus(response.message || "Deploy key saved.", "success", 1e4);
-        } else {
-          this.keyError = response.error || "Failed to save the key.";
-        }
-        this.isSavingKey = false;
-      },
-      error: (err) => {
-        this.keyError = err?.error?.error || "Failed to save the key.";
-        this.isSavingKey = false;
       }
     });
   }
@@ -31569,7 +31483,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     };
   }
   static {
-    this.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _UpdateSettingsComponent, selectors: [["app-update-settings"]], standalone: true, features: [\u0275\u0275StandaloneFeature], decls: 45, vars: 25, consts: [[1, "update-manager"], [1, "update-card"], [1, "card-header"], [1, "card-title"], ["type", "button", 1, "card-source", "card-source-btn", 3, "click", "title"], ["width", "13", "height", "13", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"], ["class", "card-details source-editor", 4, "ngIf"], ["class", "card-alert warning", 4, "ngIf"], ["class", "card-alert", 3, "success", "error", "info", 4, "ngIf"], ["class", "card-alert restart", 4, "ngIf"], ["class", "card-alert error", 4, "ngIf"], ["class", "card-details", 4, "ngIf"], [1, "card-actions"], ["class", "btn btn-update", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-check", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-danger", 3, "disabled", "click", 4, "ngIf"], ["class", "meta-text", 4, "ngIf"], [1, "card-footer"], [1, "card-source"], [1, "btn", "btn-check", 3, "click", "disabled"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 4, "ngIf"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", "class", "spinning", 4, "ngIf"], ["class", "btn btn-flash", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-download", 3, "disabled", "click", 4, "ngIf"], ["class", "modal-overlay", 3, "click", 4, "ngIf"], [1, "card-details", "source-editor"], [1, "detail-row"], [1, "detail-label"], ["type", "text", "placeholder", "https://github.com/your-user/your-fork.git", 1, "source-input", 3, "ngModelChange", "ngModel", "disabled"], [1, "source-hint"], [4, "ngIf"], [1, "confirm-actions"], [1, "btn", "btn-update", 3, "click", "disabled"], [1, "card-alert", "warning"], ["width", "18", "height", "18", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"], [1, "alert-content"], [1, "alert-title"], [1, "alert-text"], [1, "card-alert"], [1, "card-alert", "restart"], [1, "card-alert", "error"], ["class", "conflict-files", 4, "ngIf"], [1, "conflict-files"], [4, "ngFor", "ngForOf"], [1, "card-details"], [1, "branch-select", 3, "ngModelChange", "ngModel", "disabled"], [3, "value", 4, "ngFor", "ngForOf"], [3, "value"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 1, "spinning"], ["d", "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"], [1, "btn", "btn-danger", 3, "click", "disabled"], [1, "meta-text"], ["class", "detail-row", 4, "ngIf"], [1, "detail-value", "tag", 3, "title"], [1, "detail-value", "tag", "tag-blue"], [1, "detail-value", "tag", "tag-green", 3, "title"], [1, "detail-value", "tag", "tag-warn"], [1, "btn", "btn-danger", 3, "click"], [1, "btn", "btn-check", 3, "click"], [1, "btn", "btn-flash", 3, "click", "disabled"], ["d", "M7 2v11h3v9l7-12h-4l4-8z"], [1, "btn", "btn-download", 3, "click", "disabled"], [1, "detail-value", "tag"], [1, "detail-value"], [1, "modal-overlay", 3, "click"], [1, "modal", 3, "click"], [1, "modal-header"], [1, "modal-title"], ["type", "button", "aria-label", "Close", 1, "modal-close", 3, "click"], [1, "modal-body"], [1, "modal-intro"], [1, "help-block"], [1, "help-block-title"], ["class", "key-status", 4, "ngIf"], ["class", "key-error", 4, "ngIf"], ["class", "help-block", 4, "ngIf"], [1, "modal-outro"], [1, "paste-fallback"], ["type", "button", 1, "link-toggle", 3, "click"], [1, "modal-footer"], [1, "key-status"], ["width", "14", "height", "14", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"], [1, "key-error"], [1, "pubkey"], [1, "help-note"], ["placeholder", "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----", "spellcheck", "false", 1, "key-input", 3, "ngModelChange", "ngModel", "disabled"]], template: function UpdateSettingsComponent_Template(rf, ctx) {
+    this.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _UpdateSettingsComponent, selectors: [["app-update-settings"]], standalone: true, features: [\u0275\u0275StandaloneFeature], decls: 45, vars: 25, consts: [[1, "update-manager"], [1, "update-card"], [1, "card-header"], [1, "card-title"], ["type", "button", 1, "card-source", "card-source-btn", 3, "click", "title"], ["width", "13", "height", "13", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"], ["class", "card-details source-editor", 4, "ngIf"], ["class", "card-alert warning", 4, "ngIf"], ["class", "card-alert", 3, "success", "error", "info", 4, "ngIf"], ["class", "card-alert restart", 4, "ngIf"], ["class", "card-alert error", 4, "ngIf"], ["class", "card-details", 4, "ngIf"], [1, "card-actions"], ["class", "btn btn-update", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-check", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-danger", 3, "disabled", "click", 4, "ngIf"], ["class", "meta-text", 4, "ngIf"], [1, "card-footer"], [1, "card-source"], [1, "btn", "btn-check", 3, "click", "disabled"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 4, "ngIf"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", "class", "spinning", 4, "ngIf"], ["class", "btn btn-flash", 3, "disabled", "click", 4, "ngIf"], ["class", "btn btn-download", 3, "disabled", "click", 4, "ngIf"], ["class", "modal-overlay", 3, "click", 4, "ngIf"], [1, "card-details", "source-editor"], [1, "detail-row"], [1, "detail-label"], ["type", "text", "placeholder", "https://github.com/your-user/your-fork.git", 1, "source-input", 3, "ngModelChange", "ngModel", "disabled"], [1, "source-hint"], [4, "ngIf"], [1, "confirm-actions"], [1, "btn", "btn-update", 3, "click", "disabled"], [1, "card-alert", "warning"], ["width", "18", "height", "18", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"], [1, "alert-content"], [1, "alert-title"], [1, "alert-text"], [1, "card-alert"], [1, "card-alert", "restart"], [1, "card-alert", "error"], ["class", "conflict-files", 4, "ngIf"], [1, "conflict-files"], [4, "ngFor", "ngForOf"], [1, "card-details"], [1, "branch-select", 3, "ngModelChange", "ngModel", "disabled"], [3, "value", 4, "ngFor", "ngForOf"], [3, "value"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"], ["width", "16", "height", "16", "viewBox", "0 0 24 24", "fill", "currentColor", 1, "spinning"], ["d", "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"], [1, "btn", "btn-danger", 3, "click", "disabled"], [1, "meta-text"], ["class", "detail-row", 4, "ngIf"], [1, "detail-value", "tag", 3, "title"], [1, "detail-value", "tag", "tag-blue"], [1, "detail-value", "tag", "tag-green", 3, "title"], [1, "detail-value", "tag", "tag-warn"], [1, "btn", "btn-danger", 3, "click"], [1, "btn", "btn-check", 3, "click"], [1, "btn", "btn-flash", 3, "click", "disabled"], ["d", "M7 2v11h3v9l7-12h-4l4-8z"], [1, "btn", "btn-download", 3, "click", "disabled"], [1, "detail-value", "tag"], [1, "detail-value"], [1, "modal-overlay", 3, "click"], [1, "modal", 3, "click"], [1, "modal-header"], [1, "modal-title"], ["type", "button", "aria-label", "Close", 1, "modal-close", 3, "click"], [1, "modal-body"], [1, "modal-intro"], [1, "help-block"], [1, "help-block-title"], ["class", "key-status", 4, "ngIf"], ["class", "key-error", 4, "ngIf"], ["class", "help-block", 4, "ngIf"], [1, "modal-outro"], [1, "modal-footer"], [1, "key-status"], ["width", "14", "height", "14", "viewBox", "0 0 24 24", "fill", "currentColor"], ["d", "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"], [1, "key-error"], [1, "pubkey"]], template: function UpdateSettingsComponent_Template(rf, ctx) {
       if (rf & 1) {
         \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "div", 2)(3, "span", 3);
         \u0275\u0275text(4, "Brain Software");
@@ -31590,7 +31504,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275elementEnd();
         \u0275\u0275template(21, UpdateSettingsComponent_div_21_Template, 9, 5, "div", 12)(22, UpdateSettingsComponent_div_22_Template, 16, 0, "div", 8)(23, UpdateSettingsComponent_div_23_Template, 14, 0, "div", 11);
         \u0275\u0275elementStart(24, "div", 18);
-        \u0275\u0275text(25, 'Updates from your configured repository. For a private repo, add a read-only SSH deploy key (the pencil \u2192 "Add deploy key") \u2014 no passwords or tokens are stored.');
+        \u0275\u0275text(25, 'Updates from your configured repository. For a private repo, add a read-only SSH deploy key (the pencil \u2192 "Add deploy key"), no passwords or tokens are stored.');
         \u0275\u0275elementEnd()();
         \u0275\u0275elementStart(26, "div", 1)(27, "div", 2)(28, "span", 3);
         \u0275\u0275text(29, "Nucleo Firmware");
@@ -31613,7 +31527,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275elementStart(42, "div", 18);
         \u0275\u0275text(43, "robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.");
         \u0275\u0275elementEnd()();
-        \u0275\u0275template(44, UpdateSettingsComponent_div_44_Template, 39, 10, "div", 25);
+        \u0275\u0275template(44, UpdateSettingsComponent_div_44_Template, 33, 8, "div", 25);
         \u0275\u0275elementEnd();
       }
       if (rf & 2) {
@@ -31668,7 +31582,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275advance(3);
         \u0275\u0275property("ngIf", ctx.showKeyModal);
       }
-    }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, NgSelectOption, \u0275NgSelectMultipleOption, DefaultValueAccessor, SelectControlValueAccessor, NgControlStatus, NgModel], styles: ['\n\n.update-manager[_ngcontent-%COMP%] {\n  padding: 0.25rem;\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n  height: 100%;\n}\n.update-card[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.6rem;\n  padding: 0.8rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 8px;\n}\n.card-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.6rem;\n}\n.card-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.95rem;\n  color: rgba(255, 255, 255, 0.95);\n}\n.card-source[_ngcontent-%COMP%] {\n  margin-left: auto;\n  font-size: 0.75rem;\n  color: rgba(255, 255, 255, 0.35);\n  font-family: "Courier New", monospace;\n}\n.card-source-btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.3rem;\n  max-width: 60%;\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.1rem 0.2rem;\n  border-radius: 4px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  transition: color 0.15s ease, background 0.15s ease;\n}\n.card-source-btn[_ngcontent-%COMP%]:hover {\n  color: rgba(255, 255, 255, 0.75);\n  background: rgba(255, 255, 255, 0.06);\n}\n.card-source-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  opacity: 0.7;\n}\n.source-editor[_ngcontent-%COMP%]   .detail-row[_ngcontent-%COMP%] {\n  gap: 0.6rem;\n}\n.source-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 4px;\n  padding: 0.3rem 0.45rem;\n  font-size: 0.8rem;\n  font-family: "Courier New", monospace;\n}\n.source-input[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: rgba(0, 123, 255, 0.5);\n}\n.source-input[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n}\n.source-hint[_ngcontent-%COMP%] {\n  display: block;\n  margin-top: 0.4rem;\n  font-size: 0.74rem;\n  color: rgba(255, 255, 255, 0.45);\n  line-height: 1.4;\n}\n.card-alert[_ngcontent-%COMP%] {\n  padding: 0.5rem 0.7rem;\n  border-radius: 5px;\n  font-size: 0.82rem;\n  line-height: 1.4;\n}\n.card-alert.success[_ngcontent-%COMP%] {\n  background: rgba(40, 167, 69, 0.15);\n  border: 1px solid rgba(40, 167, 69, 0.3);\n  color: #6fcf7c;\n}\n.card-alert.error[_ngcontent-%COMP%] {\n  background: rgba(220, 53, 69, 0.15);\n  border: 1px solid rgba(220, 53, 69, 0.3);\n  color: #f5747f;\n}\n.card-alert.info[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.15);\n  border: 1px solid rgba(0, 123, 255, 0.3);\n  color: #6cb2ff;\n}\n.card-alert.warning[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 152, 0, 0.1);\n  border: 1px solid rgba(255, 152, 0, 0.3);\n  color: #ffb74d;\n}\n.card-alert.warning[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.card-alert.restart[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 193, 7, 0.12);\n  border: 1px solid rgba(255, 193, 7, 0.35);\n  color: #ffd54f;\n}\n.card-alert.restart[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.alert-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.15rem;\n}\n.alert-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.85rem;\n}\n.alert-text[_ngcontent-%COMP%] {\n  font-size: 0.8rem;\n  opacity: 0.85;\n}\n.card-actions[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.5rem;\n  flex-wrap: wrap;\n}\n.btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.35rem;\n  padding: 0.4rem 0.8rem;\n  border: none;\n  border-radius: 5px;\n  cursor: pointer;\n  font-size: 0.82rem;\n  font-weight: 500;\n  transition: all 0.15s ease;\n  white-space: nowrap;\n}\n.btn[_ngcontent-%COMP%]:disabled {\n  background: #495057;\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-check[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  color: rgba(255, 255, 255, 0.85);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n}\n.btn-check[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: rgba(255, 255, 255, 0.14);\n}\n.btn-update[_ngcontent-%COMP%] {\n  background: #28a745;\n  color: white;\n}\n.btn-update[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #1e7e34;\n}\n.btn-download[_ngcontent-%COMP%] {\n  background: #007bff;\n  color: white;\n}\n.btn-download[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #0056b3;\n}\n.btn-flash[_ngcontent-%COMP%] {\n  background: #e65100;\n  color: white;\n}\n.btn-flash[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #bf360c;\n}\n.btn-danger[_ngcontent-%COMP%] {\n  background: #dc3545;\n  color: white;\n}\n.btn-danger[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #b02a37;\n}\n.branch-select[_ngcontent-%COMP%] {\n  width: min(280px, 100%);\n  height: 28px;\n  min-height: 28px;\n  padding: 2px 8px;\n  border-radius: 5px;\n  border: 1px solid rgba(255, 255, 255, 0.14);\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  font-size: 10.5px;\n  line-height: 1;\n  cursor: pointer;\n}\n.branch-select[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: #007bff;\n  background: rgba(255, 255, 255, 0.08);\n}\n.branch-select[_ngcontent-%COMP%]:disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.branch-select[_ngcontent-%COMP%]   option[_ngcontent-%COMP%] {\n  background: #1f252b;\n  color: rgba(255, 255, 255, 0.95);\n}\n.conflict-files[_ngcontent-%COMP%] {\n  margin: 0.35rem 0 0;\n  padding-left: 1.1rem;\n  max-height: 8rem;\n  overflow-y: auto;\n  font-family: "Courier New", monospace;\n  font-size: 0.76rem;\n  opacity: 0.9;\n}\n.conflict-files[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  margin: 0.1rem 0;\n  word-break: break-all;\n}\n.confirm-actions[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.5rem;\n  margin-top: 0.5rem;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.35);\n  margin-left: auto;\n}\n.spinning[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_spin 1s linear infinite;\n}\n@keyframes _ngcontent-%COMP%_spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n.card-details[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.35rem;\n  padding: 0.55rem 0.7rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.06);\n  border-radius: 5px;\n}\n.detail-row[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.detail-label[_ngcontent-%COMP%] {\n  font-size: 0.78rem;\n  color: rgba(255, 255, 255, 0.5);\n}\n.detail-value[_ngcontent-%COMP%] {\n  font-size: 0.82rem;\n  color: rgba(255, 255, 255, 0.85);\n}\n.tag[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 0.8rem;\n  padding: 0.1rem 0.45rem;\n  border-radius: 3px;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.8);\n}\n.tag-blue[_ngcontent-%COMP%] {\n  color: #6cb2ff;\n  background: rgba(0, 123, 255, 0.12);\n}\n.tag-green[_ngcontent-%COMP%] {\n  color: #6fcf7c;\n  background: rgba(40, 167, 69, 0.12);\n}\n.tag-warn[_ngcontent-%COMP%] {\n  color: #ffb74d;\n  background: rgba(255, 152, 0, 0.12);\n}\n.modal-overlay[_ngcontent-%COMP%] {\n  position: fixed;\n  inset: 0;\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n  background: rgba(0, 0, 0, 0.6);\n  backdrop-filter: blur(2px);\n}\n.modal[_ngcontent-%COMP%] {\n  width: min(560px, 100%);\n  max-height: 85vh;\n  overflow-y: auto;\n  background: #1b2026;\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 10px;\n  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);\n}\n.modal-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.6rem;\n  padding: 0.8rem 1rem;\n  border-bottom: 1px solid rgba(255, 255, 255, 0.08);\n}\n.modal-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.95rem;\n  color: rgba(255, 255, 255, 0.95);\n}\n.modal-close[_ngcontent-%COMP%] {\n  margin-left: auto;\n  background: none;\n  border: none;\n  color: rgba(255, 255, 255, 0.5);\n  font-size: 1.3rem;\n  line-height: 1;\n  cursor: pointer;\n  padding: 0 0.2rem;\n}\n.modal-close[_ngcontent-%COMP%]:hover {\n  color: rgba(255, 255, 255, 0.9);\n}\n.modal-body[_ngcontent-%COMP%] {\n  padding: 0.9rem 1rem;\n  font-size: 0.82rem;\n  color: rgba(255, 255, 255, 0.8);\n  line-height: 1.5;\n}\n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 0.6rem;\n}\n.modal-intro[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.help-note[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 0.78rem;\n  background: rgba(255, 255, 255, 0.08);\n  padding: 0.05rem 0.3rem;\n  border-radius: 3px;\n  word-break: break-all;\n}\n.help-block[_ngcontent-%COMP%] {\n  margin: 0.7rem 0;\n  padding: 0.7rem 0.8rem;\n  background: rgba(255, 255, 255, 0.03);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 6px;\n}\n.help-block.help-recommended[_ngcontent-%COMP%] {\n  border-color: rgba(40, 167, 69, 0.4);\n  background: rgba(40, 167, 69, 0.06);\n}\n.help-block-title[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.45rem;\n  font-weight: 600;\n  font-size: 0.85rem;\n  color: rgba(255, 255, 255, 0.92);\n  margin-bottom: 0.45rem;\n}\n.help-badge[_ngcontent-%COMP%] {\n  font-size: 0.66rem;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n  padding: 0.1rem 0.4rem;\n  border-radius: 10px;\n  background: rgba(40, 167, 69, 0.2);\n  color: #6fcf7c;\n}\n.help-badge.muted[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  color: rgba(255, 255, 255, 0.45);\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  margin: 0.4rem 0;\n  padding: 0.55rem 0.7rem;\n  background: #11151a;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 5px;\n  overflow-x: auto;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 0.76rem;\n  color: #9ad0ff;\n  white-space: pre;\n}\n.help-note[_ngcontent-%COMP%] {\n  font-size: 0.76rem;\n  color: rgba(255, 255, 255, 0.5);\n}\n.modal-outro[_ngcontent-%COMP%] {\n  margin-top: 0.7rem;\n}\n.key-input[_ngcontent-%COMP%] {\n  width: 100%;\n  min-height: 7rem;\n  resize: vertical;\n  background: #11151a;\n  color: #9ad0ff;\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 5px;\n  padding: 0.5rem 0.6rem;\n  font-family: "Courier New", monospace;\n  font-size: 0.74rem;\n  line-height: 1.35;\n  white-space: pre;\n}\n.key-input[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: rgba(0, 123, 255, 0.5);\n}\n.key-input[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n}\n.key-error[_ngcontent-%COMP%] {\n  margin-top: 0.4rem;\n  font-size: 0.78rem;\n  color: #f5747f;\n}\n.key-status[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.35rem;\n  margin-top: 0.5rem;\n  font-size: 0.78rem;\n  color: #6fcf7c;\n}\n.key-status[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: rgba(40, 167, 69, 0.12);\n  color: #6fcf7c;\n}\n.paste-fallback[_ngcontent-%COMP%] {\n  margin-top: 0.9rem;\n  padding-top: 0.7rem;\n  border-top: 1px solid rgba(255, 255, 255, 0.08);\n}\n.link-toggle[_ngcontent-%COMP%] {\n  background: none;\n  border: none;\n  padding: 0;\n  cursor: pointer;\n  font-size: 0.78rem;\n  color: #6cb2ff;\n  text-decoration: underline;\n}\n.link-toggle[_ngcontent-%COMP%]:hover {\n  color: #9ad0ff;\n}\n.pubkey[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n}\n.pubkey[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n  word-break: break-all;\n}\n.modal-footer[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.5rem;\n  justify-content: flex-end;\n  padding: 0.8rem 1rem;\n  border-top: 1px solid rgba(255, 255, 255, 0.08);\n}\n.card-footer[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.3);\n  padding-top: 0.25rem;\n  border-top: 1px solid rgba(255, 255, 255, 0.05);\n}\n/*# sourceMappingURL=update-settings.component.css.map */'] });
+    }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, NgSelectOption, \u0275NgSelectMultipleOption, DefaultValueAccessor, SelectControlValueAccessor, NgControlStatus, NgModel], styles: ['\n\n.update-manager[_ngcontent-%COMP%] {\n  padding: 0.25rem;\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n  height: 100%;\n}\n.update-card[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.6rem;\n  padding: 0.8rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 8px;\n}\n.card-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.6rem;\n}\n.card-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.95rem;\n  color: rgba(255, 255, 255, 0.95);\n}\n.card-source[_ngcontent-%COMP%] {\n  margin-left: auto;\n  font-size: 0.75rem;\n  color: rgba(255, 255, 255, 0.35);\n  font-family: "Courier New", monospace;\n}\n.card-source-btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.3rem;\n  max-width: 60%;\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.1rem 0.2rem;\n  border-radius: 4px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  transition: color 0.15s ease, background 0.15s ease;\n}\n.card-source-btn[_ngcontent-%COMP%]:hover {\n  color: rgba(255, 255, 255, 0.75);\n  background: rgba(255, 255, 255, 0.06);\n}\n.card-source-btn[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  opacity: 0.7;\n}\n.source-editor[_ngcontent-%COMP%]   .detail-row[_ngcontent-%COMP%] {\n  gap: 0.6rem;\n}\n.source-input[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 4px;\n  padding: 0.3rem 0.45rem;\n  font-size: 0.8rem;\n  font-family: "Courier New", monospace;\n}\n.source-input[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: rgba(0, 123, 255, 0.5);\n}\n.source-input[_ngcontent-%COMP%]:disabled {\n  opacity: 0.5;\n}\n.source-hint[_ngcontent-%COMP%] {\n  display: block;\n  margin-top: 0.4rem;\n  font-size: 0.74rem;\n  color: rgba(255, 255, 255, 0.45);\n  line-height: 1.4;\n}\n.card-alert[_ngcontent-%COMP%] {\n  padding: 0.5rem 0.7rem;\n  border-radius: 5px;\n  font-size: 0.82rem;\n  line-height: 1.4;\n}\n.card-alert.success[_ngcontent-%COMP%] {\n  background: rgba(40, 167, 69, 0.15);\n  border: 1px solid rgba(40, 167, 69, 0.3);\n  color: #6fcf7c;\n}\n.card-alert.error[_ngcontent-%COMP%] {\n  background: rgba(220, 53, 69, 0.15);\n  border: 1px solid rgba(220, 53, 69, 0.3);\n  color: #f5747f;\n}\n.card-alert.info[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.15);\n  border: 1px solid rgba(0, 123, 255, 0.3);\n  color: #6cb2ff;\n}\n.card-alert.warning[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 152, 0, 0.1);\n  border: 1px solid rgba(255, 152, 0, 0.3);\n  color: #ffb74d;\n}\n.card-alert.warning[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.card-alert.restart[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.6rem;\n  background: rgba(255, 193, 7, 0.12);\n  border: 1px solid rgba(255, 193, 7, 0.35);\n  color: #ffd54f;\n}\n.card-alert.restart[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.alert-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.15rem;\n}\n.alert-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 0.85rem;\n}\n.alert-text[_ngcontent-%COMP%] {\n  font-size: 0.8rem;\n  opacity: 0.85;\n}\n.card-actions[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 0.5rem;\n  flex-wrap: wrap;\n}\n.btn[_ngcontent-%COMP%] {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.35rem;\n  padding: 0.4rem 0.8rem;\n  border: none;\n  border-radius: 5px;\n  cursor: pointer;\n  font-size: 0.82rem;\n  font-weight: 500;\n  transition: all 0.15s ease;\n  white-space: nowrap;\n}\n.btn[_ngcontent-%COMP%]:disabled {\n  background: #495057;\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-check[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  color: rgba(255, 255, 255, 0.85);\n  border: 1px solid rgba(255, 255, 255, 0.12);\n}\n.btn-check[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: rgba(255, 255, 255, 0.14);\n}\n.btn-update[_ngcontent-%COMP%] {\n  background: #28a745;\n  color: white;\n}\n.btn-update[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #1e7e34;\n}\n.btn-download[_ngcontent-%COMP%] {\n  background: #007bff;\n  color: white;\n}\n.btn-download[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #0056b3;\n}\n.btn-flash[_ngcontent-%COMP%] {\n  background: #e65100;\n  color: white;\n}\n.btn-flash[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #bf360c;\n}\n.btn-danger[_ngcontent-%COMP%] {\n  background: #dc3545;\n  color: white;\n}\n.btn-danger[_ngcontent-%COMP%]:hover:not(:disabled) {\n  background: #b02a37;\n}\n.branch-select[_ngcontent-%COMP%] {\n  width: min(280px, 100%);\n  height: 28px;\n  min-height: 28px;\n  padding: 2px 8px;\n  border-radius: 5px;\n  border: 1px solid rgba(255, 255, 255, 0.14);\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.9);\n  font-size: 10.5px;\n  line-height: 1;\n  cursor: pointer;\n}\n.branch-select[_ngcontent-%COMP%]:focus {\n  outline: none;\n  border-color: #007bff;\n  background: rgba(255, 255, 255, 0.08);\n}\n.branch-select[_ngcontent-%COMP%]:disabled {\n  opacity: 0.6;\n  cursor: not-allowed;\n}\n.branch-select[_ngcontent-%COMP%]   option[_ngcontent-%COMP%] {\n  background: #1f252b;\n  color: rgba(255, 255, 255, 0.95);\n}\n.conflict-files[_ngcontent-%COMP%] {\n  margin: 0.35rem 0 0;\n  padding-left: 1.1rem;\n  max-height: 8rem;\n  overflow-y: auto;\n  font-family: "Courier New", monospace;\n  font-size: 0.76rem;\n  opacity: 0.9;\n}\n.conflict-files[_ngcontent-%COMP%]   li[_ngcontent-%COMP%] {\n  margin: 0.1rem 0;\n  word-break: break-all;\n}\n.confirm-actions[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 0.5rem;\n  margin-top: 0.5rem;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.35);\n  margin-left: auto;\n}\n.spinning[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_spin 1s linear infinite;\n}\n@keyframes _ngcontent-%COMP%_spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n.card-details[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.35rem;\n  padding: 0.55rem 0.7rem;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.06);\n  border-radius: 5px;\n}\n.detail-row[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.detail-label[_ngcontent-%COMP%] {\n  font-size: 0.78rem;\n  color: rgba(255, 255, 255, 0.5);\n}\n.detail-value[_ngcontent-%COMP%] {\n  font-size: 0.82rem;\n  color: rgba(255, 255, 255, 0.85);\n}\n.tag[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 0.8rem;\n  padding: 0.1rem 0.45rem;\n  border-radius: 3px;\n  background: rgba(255, 255, 255, 0.06);\n  color: rgba(255, 255, 255, 0.8);\n}\n.tag-blue[_ngcontent-%COMP%] {\n  color: #6cb2ff;\n  background: rgba(0, 123, 255, 0.12);\n}\n.tag-green[_ngcontent-%COMP%] {\n  color: #6fcf7c;\n  background: rgba(40, 167, 69, 0.12);\n}\n.tag-warn[_ngcontent-%COMP%] {\n  color: #ffb74d;\n  background: rgba(255, 152, 0, 0.12);\n}\n.modal-overlay[_ngcontent-%COMP%] {\n  position: fixed;\n  inset: 0;\n  z-index: 10001;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 16px;\n  background: rgba(0, 0, 0, 0.6);\n}\n.modal[_ngcontent-%COMP%] {\n  width: min(560px, 95vw);\n  max-height: 90vh;\n  overflow-y: auto;\n  background: rgb(45, 54, 58);\n  color: white;\n  border-radius: 10px;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);\n  display: flex;\n  flex-direction: column;\n}\n.modal-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 30px;\n  padding: 12px 14px;\n  border-bottom: 1px solid rgba(255, 255, 255, 0.14);\n}\n.modal-title[_ngcontent-%COMP%] {\n  font-size: 15px;\n  font-weight: 560;\n  letter-spacing: -0.01em;\n  color: #fff;\n}\n.modal-close[_ngcontent-%COMP%] {\n  background: transparent;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  cursor: pointer;\n  color: rgba(255, 255, 255, 0.72);\n  width: 26px;\n  min-width: 26px;\n  height: 28px;\n  padding: 0;\n  border-radius: 6px;\n  font-size: 16px;\n  line-height: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition:\n    background-color 0.18s ease,\n    border-color 0.18s ease,\n    color 0.18s ease;\n}\n.modal-close[_ngcontent-%COMP%]:hover {\n  background-color: rgba(255, 255, 255, 0.05);\n  border-color: rgba(255, 255, 255, 0.16);\n  color: #fff;\n}\n.modal-body[_ngcontent-%COMP%] {\n  padding: 14px;\n  font-size: 10.5px;\n  color: rgba(255, 255, 255, 0.78);\n  line-height: 1.45;\n}\n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0 0 8px;\n}\n.modal-intro[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.help-note[_ngcontent-%COMP%]   code[_ngcontent-%COMP%], \n.modal-body[_ngcontent-%COMP%]   p[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 10px;\n  background: rgba(255, 255, 255, 0.08);\n  padding: 1px 4px;\n  border-radius: 3px;\n  word-break: break-all;\n}\n.help-block[_ngcontent-%COMP%] {\n  margin: 9px 0;\n  padding: 9px;\n  background: rgba(255, 255, 255, 0.025);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 7px;\n}\n.help-block-title[_ngcontent-%COMP%] {\n  display: block;\n  font-weight: 600;\n  font-size: 12px;\n  color: rgba(255, 255, 255, 0.92);\n  margin-bottom: 6px;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%] {\n  margin: 6px 0;\n  padding: 8px 9px;\n  background: rgba(0, 0, 0, 0.25);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 6px;\n  overflow-x: auto;\n}\n.help-block[_ngcontent-%COMP%]   pre[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  font-family: "Courier New", monospace;\n  font-size: 10.5px;\n  color: #7df9ff;\n  white-space: pre;\n}\n.help-note[_ngcontent-%COMP%] {\n  font-size: 10px;\n  color: rgba(255, 255, 255, 0.5);\n}\n.modal-outro[_ngcontent-%COMP%] {\n  margin-top: 9px;\n  color: rgba(255, 255, 255, 0.6);\n}\n.key-status[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 5px;\n  margin-top: 8px;\n  font-size: 10.5px;\n  color: #52d273;\n}\n.key-status[_ngcontent-%COMP%]   svg[_ngcontent-%COMP%] {\n  flex-shrink: 0;\n  margin-top: 1px;\n}\n.key-status[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  min-width: 0;\n  max-width: 100%;\n  background: rgba(82, 210, 115, 0.12);\n  color: #52d273;\n  white-space: normal;\n  word-break: break-all;\n}\n.key-error[_ngcontent-%COMP%] {\n  margin-top: 6px;\n  font-size: 10.5px;\n  color: #f5747f;\n}\n.pubkey[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n}\n.pubkey[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  white-space: pre-wrap !important;\n  word-break: break-all;\n}\n.modal-footer[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 8px;\n  justify-content: flex-end;\n  padding: 12px 14px;\n  border-top: 1px solid rgba(255, 255, 255, 0.14);\n}\n.card-footer[_ngcontent-%COMP%] {\n  font-size: 0.72rem;\n  color: rgba(255, 255, 255, 0.3);\n  padding-top: 0.25rem;\n  border-top: 1px solid rgba(255, 255, 255, 0.05);\n}\n/*# sourceMappingURL=update-settings.component.css.map */'] });
   }
 };
 (() => {

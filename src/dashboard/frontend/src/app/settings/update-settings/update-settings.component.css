@@ -361,206 +361,163 @@
   background: rgba(255, 152, 0, 0.12);
 }
 
-/* ===== Private-repo auth help modal ===== */
+/* ===== Deploy key modal (matches the settings dialog look) ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 10001;            /* above the settings dialog (z-index: 10000) */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 16px;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
 }
 
 .modal {
-  width: min(560px, 100%);
-  max-height: 85vh;
+  width: min(560px, 95vw);
+  max-height: 90vh;
   overflow-y: auto;
-  background: #1b2026;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgb(45, 54, 58);
+  color: white;
   border-radius: 10px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .modal-title {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: 15px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  color: #fff;
 }
 
 .modal-close {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 1.3rem;
-  line-height: 1;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  padding: 0 0.2rem;
+  color: rgba(255, 255, 255, 0.72);
+  width: 26px;
+  min-width: 26px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .modal-close:hover {
-  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .modal-body {
-  padding: 0.9rem 1rem;
-  font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
+  padding: 14px;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.45;
 }
 
 .modal-body p {
-  margin: 0 0 0.6rem;
+  margin: 0 0 8px;
 }
 
 .modal-intro code,
 .help-note code,
 .modal-body p code {
   font-family: 'Courier New', monospace;
-  font-size: 0.78rem;
+  font-size: 10px;
   background: rgba(255, 255, 255, 0.08);
-  padding: 0.05rem 0.3rem;
+  padding: 1px 4px;
   border-radius: 3px;
   word-break: break-all;
 }
 
 .help-block {
-  margin: 0.7rem 0;
-  padding: 0.7rem 0.8rem;
-  background: rgba(255, 255, 255, 0.03);
+  margin: 9px 0;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-}
-
-.help-block.help-recommended {
-  border-color: rgba(40, 167, 69, 0.4);
-  background: rgba(40, 167, 69, 0.06);
+  border-radius: 7px;
 }
 
 .help-block-title {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
+  display: block;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.92);
-  margin-bottom: 0.45rem;
-}
-
-.help-badge {
-  font-size: 0.66rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.1rem 0.4rem;
-  border-radius: 10px;
-  background: rgba(40, 167, 69, 0.2);
-  color: #6fcf7c;
-}
-
-.help-badge.muted {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 6px;
 }
 
 .help-block pre {
-  margin: 0.4rem 0;
-  padding: 0.55rem 0.7rem;
-  background: #11151a;
+  margin: 6px 0;
+  padding: 8px 9px;
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 5px;
+  border-radius: 6px;
   overflow-x: auto;
 }
 
 .help-block pre code {
   font-family: 'Courier New', monospace;
-  font-size: 0.76rem;
-  color: #9ad0ff;
+  font-size: 10.5px;
+  color: #7df9ff;
   white-space: pre;
 }
 
 .help-note {
-  font-size: 0.76rem;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.5);
 }
 
 .modal-outro {
-  margin-top: 0.7rem;
-}
-
-.key-input {
-  width: 100%;
-  min-height: 7rem;
-  resize: vertical;
-  background: #11151a;
-  color: #9ad0ff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
-  padding: 0.5rem 0.6rem;
-  font-family: 'Courier New', monospace;
-  font-size: 0.74rem;
-  line-height: 1.35;
-  white-space: pre;
-}
-
-.key-input:focus {
-  outline: none;
-  border-color: rgba(0, 123, 255, 0.5);
-}
-
-.key-input:disabled {
-  opacity: 0.5;
-}
-
-.key-error {
-  margin-top: 0.4rem;
-  font-size: 0.78rem;
-  color: #f5747f;
+  margin-top: 9px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .key-status {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-  font-size: 0.78rem;
-  color: #6fcf7c;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: #52d273;
+}
+
+.key-status svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .key-status code {
-  background: rgba(40, 167, 69, 0.12);
-  color: #6fcf7c;
+  min-width: 0;
+  max-width: 100%;
+  background: rgba(82, 210, 115, 0.12);
+  color: #52d273;
+  white-space: normal;
+  word-break: break-all;
 }
 
-.paste-fallback {
-  margin-top: 0.9rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.link-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 0.78rem;
-  color: #6cb2ff;
-  text-decoration: underline;
-}
-
-.link-toggle:hover {
-  color: #9ad0ff;
+.key-error {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: #f5747f;
 }
 
 .pubkey {
@@ -574,10 +531,10 @@
 
 .modal-footer {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
   justify-content: flex-end;
-  padding: 0.8rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 /* ===== Card Footer ===== */

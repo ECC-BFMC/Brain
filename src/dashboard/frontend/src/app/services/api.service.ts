@@ -259,10 +259,6 @@ export class ApiService {
         return this.http.get<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`);
     }
 
-    setUpdateKey(privateKey: string): Observable<UpdateKeyResponse> {
-        return this.http.post<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`, { private_key: privateKey });
-    }
-
     generateUpdateKey(): Observable<UpdateKeyResponse> {
         return this.http.post<UpdateKeyResponse>(`${this.baseUrl}/api/update/key/generate`, {});
     }

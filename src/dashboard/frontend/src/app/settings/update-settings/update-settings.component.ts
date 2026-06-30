@@ -50,10 +50,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     hasKey: boolean = false;
     publicKey: string = '';
     keyFingerprint: string = '';
-    privateKeyInput: string = '';
-    isSavingKey: boolean = false;
     isGeneratingKey: boolean = false;
-    showPasteFallback: boolean = false;
     keyError: string = '';
     keyCopied: boolean = false;
 
@@ -416,7 +413,6 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     openKeyModal(): void {
         this.keyError = '';
         this.keyCopied = false;
-        this.showPasteFallback = false;
         this.showKeyModal = true;
         this.loadKey();
     }
@@ -431,7 +427,6 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.hasKey = true;
                     this.publicKey = response.public_key || '';
                     this.keyFingerprint = response.fingerprint || '';
-                    this.showPasteFallback = false;
                     this.showStatus(response.message || 'Deploy key generated.', 'success', 10000);
                 } else {
                     this.keyError = response.error || 'Failed to generate a key.';
@@ -455,35 +450,6 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 }
             },
             error: () => { /* non-fatal */ }
-        });
-    }
-
-    saveKey(): void {
-        const pk = (this.privateKeyInput || '').trim();
-        if (!pk) {
-            this.keyError = 'Paste your private key first.';
-            return;
-        }
-        this.isSavingKey = true;
-        this.keyError = '';
-
-        this.apiService.setUpdateKey(pk).subscribe({
-            next: (response: UpdateKeyResponse) => {
-                if (response.success) {
-                    this.hasKey = true;
-                    this.publicKey = response.public_key || '';
-                    this.keyFingerprint = response.fingerprint || '';
-                    this.privateKeyInput = '';   // don't keep the secret in the DOM
-                    this.showStatus(response.message || 'Deploy key saved.', 'success', 10000);
-                } else {
-                    this.keyError = response.error || 'Failed to save the key.';
-                }
-                this.isSavingKey = false;
-            },
-            error: (err) => {
-                this.keyError = err?.error?.error || 'Failed to save the key.';
-                this.isSavingKey = false;
-            }
         });
     }
 

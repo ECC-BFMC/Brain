@@ -277,11 +277,6 @@ class processDashboard(WorkerProcess):
         def api_get_update_key():
             return self.updates.handle_get_key()
 
-        @self.app.route('/api/update/key', methods=['POST'])
-        def api_set_update_key():
-            data = flask_request.get_json() or {}
-            return self.updates.handle_set_key(data.get('private_key', ''))
-
         @self.app.route('/api/update/key/generate', methods=['POST'])
         def api_generate_update_key():
             return self.updates.handle_generate_key()

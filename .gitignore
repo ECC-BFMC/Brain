@@ -5,4 +5,4 @@ __pycache__
 **/*.pyc
 /src/dashboard/frontend/node_modules
 # Dashboard-managed SSH deploy key for private-repo updates (never commit)
-/runtime/ssh/
+/runtime/update_keys/
