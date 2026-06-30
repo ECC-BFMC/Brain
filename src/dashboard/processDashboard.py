@@ -273,17 +273,18 @@ class processDashboard(WorkerProcess):
             data = flask_request.get_json() or {}
             return self.updates.handle_set_source(data.get('url', ''))
 
-        @self.app.route('/api/update/key', methods=['GET'])
-        def api_get_update_key():
-            return self.updates.handle_get_key()
+        @self.app.route('/api/update/token', methods=['GET'])
+        def api_get_update_token():
+            return self.updates.handle_get_token()
 
-        @self.app.route('/api/update/key/generate', methods=['POST'])
-        def api_generate_update_key():
-            return self.updates.handle_generate_key()
+        @self.app.route('/api/update/token', methods=['POST'])
+        def api_set_update_token():
+            data = flask_request.get_json() or {}
+            return self.updates.handle_set_token(data.get('token', ''))
 
-        @self.app.route('/api/update/key', methods=['DELETE'])
-        def api_delete_update_key():
-            return self.updates.handle_delete_key()
+        @self.app.route('/api/update/token', methods=['DELETE'])
+        def api_delete_update_token():
+            return self.updates.handle_delete_token()
         
         # Firmware Update Management
         @self.app.route('/api/firmware/check', methods=['GET'])

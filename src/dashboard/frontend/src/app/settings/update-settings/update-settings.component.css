@@ -626,15 +626,6 @@
   margin-bottom: 0.5rem;
 }
 
-.pubkey {
-  white-space: pre-wrap !important;
-}
-
-.pubkey code {
-  white-space: pre-wrap !important;
-  word-break: break-all;
-}
-
 .modal-footer {
   display: flex;
   gap: 8px;

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateKeyResponse, FirmwareCheckResponse, FirmwareActionResponse, FirmwareSourceResponse, FirmwareRepoBinsResponse, FirmwareTokenResponse, FirmwareBranchesResponse } from '../../services/api.service';
+import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateTokenResponse, FirmwareCheckResponse, FirmwareActionResponse, FirmwareSourceResponse, FirmwareRepoBinsResponse, FirmwareTokenResponse, FirmwareBranchesResponse } from '../../services/api.service';
 
 @Component({
     selector: 'app-update-settings',
@@ -47,14 +47,12 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     isSavingSource: boolean = false;
     sourceLoaded: boolean = false;
 
-    // Deploy-key popup (private-repo access)
-    showKeyModal: boolean = false;
-    hasKey: boolean = false;
-    publicKey: string = '';
-    keyFingerprint: string = '';
-    isGeneratingKey: boolean = false;
-    keyError: string = '';
-    keyCopied: boolean = false;
+    // Access-token popup (private-repo access)
+    showTokenModal: boolean = false;
+    hasToken: boolean = false;
+    tokenInput: string = '';
+    isSavingToken: boolean = false;
+    tokenError: string = '';
 
     // Branch selection
     branches: string[] = [];
@@ -112,7 +110,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.loadSource();
-        this.loadKey();
+        this.loadToken();
         this.loadFirmwareSource();
         this.loadFirmwareToken();
         // Auto-check both on open so the student sees the current status right away.
@@ -699,108 +697,70 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : (path || raw);
     }
 
-    // ==================== Deploy key (private repos) ====================
+    // ==================== Access token (private repos) ====================
 
-    /** Direct link to the "Add deploy key" page of the configured GitHub repo,
-     * e.g. https://github.com/owner/repo/settings/keys/new. Empty for non-GitHub
-     * sources (we can't know the right URL, so we hide the link). */
-    get deployKeysUrl(): string {
-        const raw = (this.sourceUrl || this.sourceOriginUrl || '').trim();
-        if (!raw) return '';
-
-        let path = '';
-        const scp = raw.match(/^git@github\.com:(.+)$/i);
-        if (scp) {
-            path = scp[1];
-        } else {
-            try {
-                const u = new URL(raw);
-                const host = u.hostname.toLowerCase();
-                if (host !== 'github.com' && host !== 'www.github.com') return '';
-                path = u.pathname.replace(/^\/+/, '');
-            } catch {
-                return '';
-            }
-        }
-
-        path = path.replace(/\.git$/i, '');
-        const parts = path.split('/').filter(Boolean);
-        if (parts.length < 2) return '';
-        return `https://github.com/${parts[0]}/${parts[1]}/settings/keys/new`;
-    }
-
-    openKeyModal(): void {
-        this.keyError = '';
-        this.keyCopied = false;
-        this.showKeyModal = true;
-        this.loadKey();
-    }
-
-    generateKey(): void {
-        this.isGeneratingKey = true;
-        this.keyError = '';
-
-        this.apiService.generateUpdateKey().subscribe({
-            next: (response: UpdateKeyResponse) => {
-                if (response.success) {
-                    this.hasKey = true;
-                    this.publicKey = response.public_key || '';
-                    this.keyFingerprint = response.fingerprint || '';
-                    this.showStatus(response.message || 'Deploy key generated.', 'success', 10000);
-                } else {
-                    this.keyError = response.error || 'Failed to generate a key.';
-                }
-                this.isGeneratingKey = false;
-            },
-            error: (err) => {
-                this.keyError = err?.error?.error || 'Failed to generate a key.';
-                this.isGeneratingKey = false;
-            }
-        });
-    }
-
-    loadKey(): void {
-        this.apiService.getUpdateKey().subscribe({
-            next: (response: UpdateKeyResponse) => {
-                if (response.success) {
-                    this.hasKey = response.has_key || false;
-                    this.publicKey = response.public_key || '';
-                    this.keyFingerprint = response.fingerprint || '';
-                }
+    loadToken(): void {
+        this.apiService.getUpdateToken().subscribe({
+            next: (response: UpdateTokenResponse) => {
+                if (response.success) this.hasToken = response.has_token || false;
             },
             error: () => { /* non-fatal */ }
         });
     }
 
-    removeKey(): void {
-        this.apiService.deleteUpdateKey().subscribe({
-            next: (response: UpdateKeyResponse) => {
+    openTokenModal(): void {
+        this.tokenError = '';
+        this.tokenInput = '';
+        this.showTokenModal = true;
+    }
+
+    saveToken(): void {
+        const tok = (this.tokenInput || '').trim();
+        if (!tok) {
+            this.tokenError = 'Paste an access token first.';
+            return;
+        }
+        this.isSavingToken = true;
+        this.tokenError = '';
+
+        this.apiService.setUpdateToken(tok).subscribe({
+            next: (response: UpdateTokenResponse) => {
                 if (response.success) {
-                    this.hasKey = false;
-                    this.publicKey = '';
-                    this.keyFingerprint = '';
-                    this.showStatus(response.message || 'Deploy key removed.', 'info');
+                    this.hasToken = true;
+                    this.tokenInput = '';          // don't keep the secret in the DOM
+                    this.showTokenModal = false;
+                    this.showStatus(response.message || 'Access token saved.', 'success', 8000);
                 } else {
-                    this.keyError = response.error || 'Failed to remove the key.';
+                    this.tokenError = response.error || 'Failed to save the token.';
                 }
+                this.isSavingToken = false;
             },
-            error: (err) => { this.keyError = err?.error?.error || 'Failed to remove the key.'; }
+            error: (err) => {
+                this.tokenError = err?.error?.error || 'Failed to save the token.';
+                this.isSavingToken = false;
+            }
         });
     }
 
-    copyPublicKey(): void {
-        if (!this.publicKey) return;
-        navigator.clipboard?.writeText(this.publicKey).then(() => {
-            this.keyCopied = true;
-            setTimeout(() => { this.keyCopied = false; }, 2000);
-        }).catch(() => { /* clipboard unavailable; user can select manually */ });
+    removeToken(): void {
+        this.apiService.deleteUpdateToken().subscribe({
+            next: (response: UpdateTokenResponse) => {
+                if (response.success) {
+                    this.hasToken = false;
+                    this.showStatus(response.message || 'Access token removed.', 'info');
+                } else {
+                    this.tokenError = response.error || 'Failed to remove the token.';
+                }
+            },
+            error: (err) => { this.tokenError = err?.error?.error || 'Failed to remove the token.'; }
+        });
     }
 
-    /** Open the deploy-key popup when the server reports a private repo it can't
+    /** Open the access-token popup when the server reports a private repo it can't
      * reach. Returns true when handled. */
     private handleAuthRequired(body: any): boolean {
         if (body && body.auth_required) {
-            this.openKeyModal();
+            this.openTokenModal();
             return true;
         }
         return false;

@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import shutil
@@ -56,91 +57,75 @@ class UpdateManager:
         with open(path, 'w') as f:
             json.dump(cfg, f, indent=2)
 
-    # ----------------------------- deploy key -----------------------------
+    # ----------------------------- access token -----------------------------
 
     def _key_dir(self):
         # git-ignored, untracked -> survives `git reset --hard` during updates.
         return os.path.join(self.repo_path, 'runtime', 'update_keys')
 
-    def _key_path(self):
-        return os.path.join(self._key_dir(), 'deploy_key')
+    def _token_path(self):
+        return os.path.join(self._key_dir(), 'brain_token')
 
-    def _pub_key_path(self):
-        return self._key_path() + '.pub'
+    def _load_token(self):
+        path = self._token_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    return f.read().strip()
+            except OSError:
+                return ''
+        return ''
 
-    def _has_deploy_key(self):
-        return os.path.exists(self._key_path())
+    def _has_token(self):
+        return bool(self._load_token())
 
-    def _ssh_command(self):
-        """The ssh command git should use. When a dashboard-managed deploy key
-        exists, pin git to exactly that key; otherwise fall back to the agent /
-        default keys. BatchMode keeps git from ever blocking on a prompt."""
-        base = 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new'
-        if self._has_deploy_key():
-            # Quote the path (Windows dev paths contain spaces); IdentitiesOnly
-            # stops ssh from offering other keys first and tripping MaxAuthTries.
-            return f'{base} -o IdentitiesOnly=yes -i "{self._key_path()}"'
-        return base
+    def _auth_header_args(self):
+        """git -c args injecting an HTTPS Basic auth header from the stored token
+        (the token is the password; GitHub ignores the username). Empty when no
+        token, so public repos clone anonymously."""
+        token = self._load_token()
+        if not token:
+            return []
+        basic = base64.b64encode(f'x-access-token:{token}'.encode()).decode()
+        return ['-c', f'http.extraHeader=Authorization: Basic {basic}']
 
     # ----------------------------- git helpers -----------------------------
 
     def _git(self, *args, timeout=30):
-        # Force git to fail fast instead of blocking on an interactive
-        # credential / passphrase prompt when a private repo has no auth set up
-        # on the Pi. Without these, an https private URL can hang until the
-        # subprocess timeout, and an ssh key with a passphrase can stall too.
+        # Force git to fail fast instead of blocking on an interactive prompt, and
+        # inject the token (when set) so private https repos authenticate. Public
+        # repos work with no token at all.
         env = dict(os.environ)
         env['GIT_TERMINAL_PROMPT'] = '0'
         env['GIT_ASKPASS'] = env.get('GIT_ASKPASS', '') or 'echo'
-        env['GIT_SSH_COMMAND'] = self._ssh_command()
         return subprocess.run(
-            ['git', *args],
+            ['git', *self._auth_header_args(), *args],
             cwd=self.repo_path,
             capture_output=True, text=True, timeout=timeout, env=env
         )
 
     @staticmethod
-    def _to_ssh_url(url):
-        """Convert an http(s) git URL to its scp-style SSH form so a deploy key
-        can be used (keys only authenticate over SSH). Non-http URLs and ones we
-        can't parse are returned unchanged."""
+    def _to_https_url(url):
+        """Convert an scp/ssh git URL to https so the token can authenticate it
+        (tokens only work over https). Other URLs are returned unchanged."""
         u = (url or '').strip()
-        if u.startswith('http://') or u.startswith('https://'):
+        if u.startswith('git@') and ':' in u:
+            host, path = u[len('git@'):].split(':', 1)
+            return f'https://{host}/{path}'
+        if u.startswith('ssh://'):
             parsed = urlparse(u)
             host = parsed.hostname or ''
             path = parsed.path.lstrip('/')
             if host and path:
-                if not path.endswith('.git'):
-                    path += '.git'
-                return f'git@{host}:{path}'
+                return f'https://{host}/{path}'
         return u
 
     def _effective_url(self, url):
-        """The URL git should actually use.
-
-        A deploy key only helps over SSH, and GitHub *rejects anonymous SSH even
-        for public repos* -- so blindly switching every URL to SSH would make a
-        public repo demand a key it doesn't need. Only rewrite to SSH when a key
-        exists AND the repo isn't publicly reachable (i.e. it actually needs
-        auth). Public repos keep their https URL and clone anonymously."""
-        if url and self._has_deploy_key() and not self._repo_is_public(url):
-            return self._to_ssh_url(url)
+        """The URL git should use. With a token we force https so the token's
+        Basic-auth header is actually applied; without one, leave it as entered."""
+        if url and self._has_token():
+            return self._to_https_url(url)
         return url
-
-    def _repo_is_public(self, url):
-        """Best-effort: True only if GitHub confirms the repo is public (an
-        unauthenticated API lookup succeeds with private == False). Anything we
-        can't confirm (non-GitHub, private, offline, rate-limited) returns False,
-        so the deploy key is used as the safe default."""
-        gh = self._parse_github_repo(url)
-        if not gh:
-            return False
-        owner, repo = gh
-        try:
-            info = self._github_get(f'/repos/{owner}/{repo}')
-        except Exception:
-            return False
-        return isinstance(info, dict) and info.get('private') is False
 
     # Markers git prints when a fetch/clone fails because of missing or rejected
     # credentials (vs. a network/other error). Used to tell the student that the
@@ -163,8 +148,8 @@ class UpdateManager:
     )
 
     AUTH_REQUIRED_MESSAGE = (
-        "Couldn't access this repository. It looks private, and the car has no "
-        "credentials for it yet. Grant the Pi read access, then try again."
+        "Couldn't access this repository. If it's private, add a read-only access "
+        "token, then try again."
     )
 
     DIVERGED_MESSAGE = (
@@ -313,10 +298,14 @@ class UpdateManager:
 
     def _github_get(self, path):
         url = f'{self.GITHUB_API_BASE}{path}'
-        req = urllib.request.Request(url, headers={
+        headers = {
             'User-Agent': self.USER_AGENT,
             'Accept': 'application/vnd.github+json',
-        })
+        }
+        token = self._load_token()
+        if token:
+            headers['Authorization'] = f'Bearer {token}'
+        req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             return json.loads(resp.read().decode())
 
@@ -808,99 +797,74 @@ class UpdateManager:
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    # ----------------------------- deploy key (private repos) -----------------------------
+    # ----------------------------- access token (private repos) -----------------------------
 
-    def _key_fingerprint(self):
-        pub = self._pub_key_path()
-        if not os.path.exists(pub):
-            return ''
+    def handle_get_token(self):
+        """Report whether a private-repo access token is configured. The token
+        itself is never returned."""
         try:
-            res = subprocess.run(['ssh-keygen', '-lf', pub],
-                                 capture_output=True, text=True, timeout=10,
-                                 stdin=subprocess.DEVNULL)
-            return res.stdout.strip() if res.returncode == 0 else ''
-        except Exception:
-            return ''
-
-    def handle_get_key(self):
-        """Report whether a deploy key is configured and, if so, the matching
-        public key (so the student can add it to their repo's Deploy Keys). The
-        private key is never returned."""
-        try:
-            has_key = self._has_deploy_key()
-            public_key = ''
-            if os.path.exists(self._pub_key_path()):
-                with open(self._pub_key_path(), 'r') as f:
-                    public_key = f.read().strip()
-            return jsonify({
-                'success': True,
-                'has_key': has_key,
-                'public_key': public_key,
-                'fingerprint': self._key_fingerprint() if has_key else '',
-            })
+            return jsonify({'success': True, 'has_token': self._has_token()})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    def handle_generate_key(self):
-        """Generate a fresh SSH deploy key directly on the car. The private key
-        never leaves the device; the caller gets back only the public key to add
-        to the repo's Deploy Keys. This is the preferred flow (more secure than
-        pasting a key generated elsewhere)."""
+    def handle_set_token(self, token):
+        """Store a read-only token for reaching a private update repo, verifying
+        it can actually read the configured remote before saving."""
         try:
-            os.makedirs(self._key_dir(), exist_ok=True)
-            key_path = self._key_path()
-            # Remove any existing key first so ssh-keygen doesn't block on an
-            # interactive "overwrite?" prompt.
-            for p in (key_path, self._pub_key_path()):
-                if os.path.exists(p):
-                    os.remove(p)
-            try:
-                res = subprocess.run(
-                    ['ssh-keygen', '-t', 'ed25519', '-f', key_path,
-                     '-N', '', '-C', 'bfmc-deploy', '-q'],
-                    capture_output=True, text=True, timeout=30,
-                    stdin=subprocess.DEVNULL,
-                )
-            except FileNotFoundError:
-                return jsonify({'success': False, 'error': 'ssh-keygen is not installed on this device.'}), 500
-            except subprocess.TimeoutExpired:
-                return jsonify({'success': False, 'error': 'Key generation timed out.'}), 500
-            if res.returncode != 0:
-                return jsonify({'success': False, 'error': res.stderr.strip() or 'Key generation failed.'}), 500
+            tok = (token or '').strip()
+            if not tok:
+                return jsonify({'success': False, 'error': 'Paste an access token first.'}), 400
 
+            # Verify with a token-authenticated ls-remote against the configured
+            # source (works for any host, not just GitHub).
+            cfg = self._load_config()
+            url = self._effective_url(cfg.get('url') or self._origin_url())
+            if not url:
+                return jsonify({'success': False, 'error': 'Set a repository URL first.'}), 400
+
+            basic = base64.b64encode(f'x-access-token:{tok}'.encode()).decode()
+            env = dict(os.environ)
+            env['GIT_TERMINAL_PROMPT'] = '0'
+            env['GIT_ASKPASS'] = env.get('GIT_ASKPASS', '') or 'echo'
+            probe = subprocess.run(
+                ['git', '-c', f'http.extraHeader=Authorization: Basic {basic}',
+                 'ls-remote', '--heads', url],
+                cwd=self.repo_path, capture_output=True, text=True, timeout=30, env=env,
+            )
+            if probe.returncode != 0:
+                if self._is_auth_error(probe.stderr or probe.stdout):
+                    return jsonify({'success': False, 'error': "That token can't read this repository. Check it has Contents: read access."}), 400
+                return jsonify({'success': False, 'error': f'Could not verify the token.\n{probe.stderr.strip()}'}), 502
+
+            os.makedirs(self._key_dir(), exist_ok=True)
+            fd = os.open(self._token_path(), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
             try:
-                os.chmod(key_path, 0o600)
+                os.write(fd, (tok + '\n').encode())
+            finally:
+                os.close(fd)
+            try:
+                os.chmod(self._token_path(), 0o600)
             except OSError:
                 pass
 
-            pub = ''
-            if os.path.exists(self._pub_key_path()):
-                with open(self._pub_key_path(), 'r') as f:
-                    pub = f.read().strip()
-
-            # Re-point the remote to the SSH form now that a key exists.
-            cfg = self._load_config()
+            # Re-point the remote to https now that the token can authenticate it.
             if cfg.get('url') and self._is_git_repo():
                 self._ensure_configured_remote(cfg)
 
-            return jsonify({
-                'success': True,
-                'has_key': True,
-                'public_key': pub,
-                'fingerprint': self._key_fingerprint(),
-                'message': ('Deploy key generated on the car. Add the public key below to your '
-                            'repository (Settings -> Deploy keys), then check for updates.'),
-            })
+            return jsonify({'success': True, 'has_token': True,
+                            'message': 'Access token saved and verified.'})
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'error': 'Verifying the token timed out.'}), 504
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    def handle_delete_key(self):
-        """Remove the configured deploy key (revert to default/agent auth)."""
+    def handle_delete_token(self):
+        """Remove the stored access token."""
         try:
-            for path in (self._key_path(), self._pub_key_path()):
-                if os.path.exists(path):
-                    os.remove(path)
-            return jsonify({'success': True, 'has_key': False, 'message': 'Deploy key removed.'})
+            path = self._token_path()
+            if os.path.exists(path):
+                os.remove(path)
+            return jsonify({'success': True, 'has_token': False, 'message': 'Access token removed.'})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 

@@ -30,8 +30,8 @@
         <button class="btn btn-update" (click)="saveSource()" [disabled]="isSavingSource">
           {{ isSavingSource ? 'Saving...' : 'Save repository' }}
         </button>
-        <button class="btn btn-check" (click)="openKeyModal()" [disabled]="isSavingSource">
-          {{ hasKey ? 'Deploy key ✓' : 'Private repo? Add deploy key' }}
+        <button class="btn btn-check" (click)="openTokenModal()" [disabled]="isSavingSource">
+          {{ hasToken ? 'Access token ✓' : 'Private repo? Add token' }}
         </button>
         <button class="btn btn-check" (click)="showSourceEditor = false" [disabled]="isSavingSource">Cancel</button>
       </div>
@@ -312,55 +312,51 @@
     <div class="card-footer">Downloads the selected .bin from your configured repo.</div>
   </div>
 
-  <!-- ==================== DEPLOY KEY (private repos) ==================== -->
-  <div *ngIf="showKeyModal" class="modal-overlay" (click)="showKeyModal = false">
+  <!-- ==================== ACCESS TOKEN (private Brain repo) ==================== -->
+  <div *ngIf="showTokenModal" class="modal-overlay" (click)="showTokenModal = false">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <span class="modal-title">Deploy key for private repos</span>
-        <button type="button" class="modal-close" (click)="showKeyModal = false" aria-label="Close">&times;</button>
+        <span class="modal-title">Access token for private repo</span>
+        <button type="button" class="modal-close" (click)="showTokenModal = false" aria-label="Close">&times;</button>
       </div>
 
       <div class="modal-body">
         <p class="modal-intro">
-          To pull updates from a private repository, the car needs a read-only SSH <strong>deploy key</strong>.
-          The car makes the key itself, the secret half never leaves the device. You only copy the
-          public half into your repo.
+          To pull updates from a private repository, the car needs a read-only <strong>access token</strong>.
+          It's stored only on the car and sent straight to GitHub.
         </p>
 
-        <!-- Step 1: generate the key on the car -->
         <div class="help-block">
-          <span class="help-block-title">Create the key on the car</span>
-          <!-- <p>The car generates an SSH keypair and keeps the private half. Nothing is uploaded anywhere.</p> -->
+          <span class="help-block-title">1. Create a fine-grained token</span>
+          <p>Create a token, then give it access to your update repo
+            with <strong>Repository permissions → Contents: Read-only</strong>.</p>
           <div class="confirm-actions">
-            <button class="btn btn-update" (click)="generateKey()" [disabled]="isGeneratingKey">
-              {{ isGeneratingKey ? 'Generating...' : (hasKey ? 'Regenerate key' : 'Generate deploy key') }}
+            <a class="btn btn-check footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create token</a>
+          </div>
+        </div>
+
+        <div class="help-block">
+          <span class="help-block-title">2. Paste it here</span>
+          <input class="source-input token-input" type="password" [(ngModel)]="tokenInput"
+            placeholder="github_pat_..." [disabled]="isSavingToken" spellcheck="false" autocomplete="off" />
+          <div *ngIf="tokenError" class="key-error">{{ tokenError }}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-update" (click)="saveToken()" [disabled]="isSavingToken">
+              {{ isSavingToken ? 'Verifying...' : (hasToken ? 'Replace token' : 'Save token') }}
             </button>
-            <button *ngIf="hasKey" class="btn btn-danger" (click)="removeKey()" [disabled]="isGeneratingKey">Remove key</button>
+            <button *ngIf="hasToken" class="btn btn-danger" (click)="removeToken()" [disabled]="isSavingToken">Remove token</button>
           </div>
-          <div *ngIf="hasKey && keyFingerprint" class="key-status">
+          <div *ngIf="hasToken" class="key-status">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            Key installed on the car, <code>{{ keyFingerprint }}</code>
+            A token is stored on the car.
           </div>
-          <div *ngIf="keyError" class="key-error">{{ keyError }}</div>
         </div>
 
-        <!-- Step 2: add the public key as a deploy key -->
-        <div class="help-block" *ngIf="hasKey && publicKey">
-          <span class="help-block-title">2. Add this public key to your repo</span>
-          <p>In your repository on GitHub: <strong>Settings → Deploy keys → Add deploy key</strong>
-            (leave "Allow write access" off). Paste the key below:</p>
-          <pre class="pubkey"><code>{{ publicKey }}</code></pre>
-          <button class="btn btn-check" (click)="copyPublicKey()">{{ keyCopied ? 'Copied!' : 'Copy public key' }}</button>
-        </div>
-
-        <p class="modal-outro">
-          Your <code>https://</code> repo URL is used automatically over SSH once a key is set, no need to change it.
-        </p>
+        <p class="modal-outro">It's verified against the configured repo before being saved.</p>
       </div>
 
       <div class="modal-footer">
-        <a *ngIf="deployKeysUrl" class="btn btn-check footer-link" [href]="deployKeysUrl" target="_blank" rel="noopener">Open deploy keys</a>
-        <button class="btn btn-update" (click)="showKeyModal = false; checkForUpdates()" [disabled]="isGeneratingKey">Done</button>
+        <button class="btn btn-update" (click)="showTokenModal = false; checkForUpdates()" [disabled]="isSavingToken">Done</button>
       </div>
     </div>
   </div>

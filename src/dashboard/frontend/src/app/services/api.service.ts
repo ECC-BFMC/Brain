@@ -89,11 +89,9 @@ export interface UpdateSourceResponse {
     error?: string;
 }
 
-export interface UpdateKeyResponse {
+export interface UpdateTokenResponse {
     success: boolean;
-    has_key?: boolean;
-    public_key?: string;
-    fingerprint?: string;
+    has_token?: boolean;
     message?: string;
     error?: string;
 }
@@ -302,16 +300,16 @@ export class ApiService {
         return this.http.post<UpdateSourceResponse>(`${this.baseUrl}/api/update/source`, { url });
     }
 
-    getUpdateKey(): Observable<UpdateKeyResponse> {
-        return this.http.get<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`);
+    getUpdateToken(): Observable<UpdateTokenResponse> {
+        return this.http.get<UpdateTokenResponse>(`${this.baseUrl}/api/update/token`);
     }
 
-    generateUpdateKey(): Observable<UpdateKeyResponse> {
-        return this.http.post<UpdateKeyResponse>(`${this.baseUrl}/api/update/key/generate`, {});
+    setUpdateToken(token: string): Observable<UpdateTokenResponse> {
+        return this.http.post<UpdateTokenResponse>(`${this.baseUrl}/api/update/token`, { token });
     }
 
-    deleteUpdateKey(): Observable<UpdateKeyResponse> {
-        return this.http.delete<UpdateKeyResponse>(`${this.baseUrl}/api/update/key`);
+    deleteUpdateToken(): Observable<UpdateTokenResponse> {
+        return this.http.delete<UpdateTokenResponse>(`${this.baseUrl}/api/update/token`);
     }
 
     // Firmware Update Management
