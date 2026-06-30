@@ -340,11 +340,16 @@ class UpdateManager:
         # branch has that we lack, so when we're ahead of / level with it that
         # list is empty -- fetch the real tip so the UI can still offer a switch.
         remote_commit = commits[-1].get('sha', '') if commits else ''
+        remote_date = ''
+        if commits:
+            remote_date = ((commits[-1].get('commit') or {}).get('committer') or {}).get('date', '')
         if not remote_commit:
             try:
                 binfo = self._github_get(f'/repos/{owner}/{repo}/branches/{branch}')
                 if isinstance(binfo, dict):
-                    remote_commit = (binfo.get('commit') or {}).get('sha', '') or ''
+                    c = binfo.get('commit') or {}
+                    remote_commit = c.get('sha', '') or ''
+                    remote_date = ((c.get('commit') or {}).get('committer') or {}).get('date', '') or remote_date
             except Exception:
                 remote_commit = ''
         if not remote_commit:
@@ -356,6 +361,7 @@ class UpdateManager:
             'current_commit_short': head[:7],
             'remote_commit': remote_commit,
             'remote_commit_short': remote_commit[:7] if remote_commit else '',
+            'remote_date': remote_date,
             'behind_by': ahead_by,
             'deps_changed': self._deps_changed(files),
             'message': self.DIVERGED_MESSAGE if diverged else '',
@@ -399,6 +405,13 @@ class UpdateManager:
                 parts = counts.stdout.split()
                 if len(parts) == 2 and parts[1].isdigit():
                     behind_by = int(parts[1])
+
+        remote_date = ''
+        if remote_commit:
+            d = self._git('show', '-s', '--format=%cI', remote_commit, timeout=10)
+            if d.returncode == 0:
+                remote_date = d.stdout.strip()
+
         return {
             'update_available': update_available,
             'diverged': diverged,
@@ -406,6 +419,7 @@ class UpdateManager:
             'current_commit_short': head[:7],
             'remote_commit': remote_commit,
             'remote_commit_short': remote_commit[:7] if remote_commit else '',
+            'remote_date': remote_date,
             'behind_by': behind_by,
             'deps_changed': self._deps_changed(files),
             'message': self.DIVERGED_MESSAGE if diverged else '',

@@ -255,12 +255,13 @@ class FirmwareManager:
                 return jsonify({'success': False, 'error': f'No commits found for "{file_path}" on {repo}@{branch}.'}), 404
 
             local_info = self._get_local_info()
-            # Only treat the stored sha as ours if it was for this same file.
-            same_file = bool(local_info) and local_info.get('file_path', '') == file_path
-            local_sha = local_info.get('commit_sha', '') if same_file else ''
-
             fw_path = os.path.join(self._get_firmware_dir(), saved_name)
             has_local_file = os.path.exists(fw_path)
+            # Match the stored metadata to the *selected* file by its saved name
+            # (older downloads recorded no path and were always robot_car.bin).
+            local_name = (local_info or {}).get('file_name') or 'robot_car.bin'
+            same_file = bool(local_info) and has_local_file and local_name == saved_name
+            local_sha = local_info.get('commit_sha', '') if same_file else ''
 
             update_available = (local_sha != remote_sha) or not has_local_file
 
@@ -287,7 +288,22 @@ class FirmwareManager:
 
     def _github_http_error(self, e):
         """Map a GitHub HTTP error to a response, flagging the private-repo case so
-        the UI can offer to add an access token."""
+        the UI can offer to add an access token -- but NOT mistaking GitHub's
+        rate-limit 403 (common for unauthenticated calls) for an auth problem."""
+        remaining = None
+        try:
+            remaining = e.headers.get('X-RateLimit-Remaining')
+        except Exception:
+            remaining = None
+
+        # Rate limited: 403/429 with the remaining-quota header at 0.
+        if e.code in (403, 429) and remaining == '0':
+            extra = '' if self._has_token() else ' Adding an access token raises the limit.'
+            return jsonify({
+                'success': False,
+                'error': f'GitHub API rate limit reached. Wait a few minutes and try again.{extra}',
+            }), 429
+
         if e.code in (404, 401, 403):
             if not self._has_token():
                 return jsonify({

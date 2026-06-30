@@ -18,6 +18,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     currentCommitShort: string = '';
     remoteCommit: string = '';
     remoteCommitShort: string = '';
+    remoteDate: string = '';
     currentBranch: string = '';
     behindBy: number = 0;
     via: string = '';
@@ -165,6 +166,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 this.currentCommitShort = response.current_commit_short || '';
                 this.remoteCommit = response.remote_commit || '';
                 this.remoteCommitShort = response.remote_commit_short || '';
+                this.remoteDate = response.remote_date || '';
                 this.currentBranch = response.branch || '';
                 this.selectedBranch = response.branch || this.selectedBranch;
                 this.behindBy = response.behind_by || 0;
