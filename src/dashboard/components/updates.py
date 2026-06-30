@@ -236,11 +236,9 @@ class UpdateManager:
             self._git('remote', 'set-url', remote, url, timeout=10)
         return remote, None
 
-    def _resolve_branch(self, cfg, remote):
-        """Configured branch, else the remote's default branch (never hardcode
-        master, since forks may use main or anything else)."""
-        if cfg.get('branch'):
-            return cfg['branch']
+    def _remote_default_branch(self, remote):
+        """The remote's own default branch (its HEAD symref) -- independent of
+        what the student has chosen to track. Empty if it can't be determined."""
         symref = self._git('ls-remote', '--symref', remote, 'HEAD', timeout=20)
         if symref.returncode == 0:
             for line in symref.stdout.splitlines():
@@ -248,6 +246,16 @@ class UpdateManager:
                     parts = line.split()
                     if len(parts) >= 2 and parts[1].startswith('refs/heads/'):
                         return parts[1][len('refs/heads/'):]
+        return ''
+
+    def _resolve_branch(self, cfg, remote):
+        """The branch to actually pull: the configured one, else the remote's
+        default (never hardcode master, since forks may use main or anything)."""
+        if cfg.get('branch'):
+            return cfg['branch']
+        default = self._remote_default_branch(remote)
+        if default:
+            return default
         current = self._git('rev-parse', '--abbrev-ref', 'HEAD', timeout=10).stdout.strip()
         return current if current and current != 'HEAD' else 'master'
 
@@ -737,7 +745,9 @@ class UpdateManager:
                             if '\trefs/heads/' in line:
                                 branches.append(line.split('\trefs/heads/')[1].strip())
                     if not default_branch:
-                        default_branch = self._resolve_branch(cfg, remote)
+                        # The repo's real default -- not the tracked branch, so a
+                        # tracked branch isn't mislabeled "(default)".
+                        default_branch = self._remote_default_branch(remote)
 
             return jsonify({
                 'success': True,
