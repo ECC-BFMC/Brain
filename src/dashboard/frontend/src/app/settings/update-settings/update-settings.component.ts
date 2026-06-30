@@ -73,6 +73,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     fwIsChecking: boolean = false;
     fwIsDownloading: boolean = false;
     fwIsFlashing: boolean = false;
+    fwJustDownloaded: boolean = false;   // gate the Flash button behind a fresh pull
     fwStatusMessage: string = '';
     fwStatusType: 'success' | 'error' | 'info' = 'info';
     fwHasChecked: boolean = false;
@@ -425,6 +426,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 if (response.success) {
                     this.showFwStatus(response.message || 'Firmware downloaded successfully!', 'success', 10000);
                     this.fwUpdateAvailable = false;
+                    this.fwJustDownloaded = true;   // now the Flash button may appear
                     this.checkFirmware();
                 } else if (!this.fwHandleAuthRequired(response)) {
                     this.showFwStatus(response.error || 'Download failed', 'error');
@@ -453,8 +455,9 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 }
                 this.fwIsFlashing = false;
             },
-            error: () => {
-                this.showFwStatus('Failed to connect to server', 'error');
+            error: (err) => {
+                // The server returns the real reason (e.g. Nucleo not detected) in the body.
+                this.showFwStatus(err?.error?.error || 'Failed to connect to server', 'error');
                 this.fwIsFlashing = false;
             }
         });
@@ -493,6 +496,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.fwBranches = [];   // new repo -> reload its branches
                     this.fwSelectedBranch = '';
                     this.fwHasChecked = false;
+                    this.fwJustDownloaded = false;
                     this.showFwStatus(response.message || 'Firmware source saved.', 'success');
                     this.loadFirmwareSource();
                     this.loadFirmwareBranches();
@@ -542,6 +546,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                 if (response.success) {
                     this.fwBranch = branch || this.fwDefaultBranch;
                     this.fwHasChecked = false;
+                    this.fwJustDownloaded = false;
                     // The .bin set and latest commit depend on the branch.
                     this.fwRepoBins = [];
                     if (this.fwShowFilePicker) this.loadFirmwareRepoBins();
@@ -585,6 +590,7 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.fwFileName = this.fwFilePath.split('/').pop() || '';
                     this.fwShowFilePicker = false;
                     this.fwHasChecked = false;
+                    this.fwJustDownloaded = false;
                     this.showFwStatus(`Selected ${this.fwFileName}.`, 'info');
                 } else {
                     this.showFwStatus(response.error || 'Failed to set firmware file', 'error');

@@ -31469,6 +31469,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
     this.fwIsChecking = false;
     this.fwIsDownloading = false;
     this.fwIsFlashing = false;
+    this.fwJustDownloaded = false;
     this.fwStatusMessage = "";
     this.fwStatusType = "info";
     this.fwHasChecked = false;
@@ -31782,6 +31783,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         if (response.success) {
           this.showFwStatus(response.message || "Firmware downloaded successfully!", "success", 1e4);
           this.fwUpdateAvailable = false;
+          this.fwJustDownloaded = true;
           this.checkFirmware();
         } else if (!this.fwHandleAuthRequired(response)) {
           this.showFwStatus(response.error || "Download failed", "error");
@@ -31808,8 +31810,8 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         }
         this.fwIsFlashing = false;
       },
-      error: () => {
-        this.showFwStatus("Failed to connect to server", "error");
+      error: (err) => {
+        this.showFwStatus(err?.error?.error || "Failed to connect to server", "error");
         this.fwIsFlashing = false;
       }
     });
@@ -31843,6 +31845,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
           this.fwBranches = [];
           this.fwSelectedBranch = "";
           this.fwHasChecked = false;
+          this.fwJustDownloaded = false;
           this.showFwStatus(response.message || "Firmware source saved.", "success");
           this.loadFirmwareSource();
           this.loadFirmwareBranches();
@@ -31890,6 +31893,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         if (response.success) {
           this.fwBranch = branch || this.fwDefaultBranch;
           this.fwHasChecked = false;
+          this.fwJustDownloaded = false;
           this.fwRepoBins = [];
           if (this.fwShowFilePicker)
             this.loadFirmwareRepoBins();
@@ -31932,6 +31936,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
           this.fwFileName = this.fwFilePath.split("/").pop() || "";
           this.fwShowFilePicker = false;
           this.fwHasChecked = false;
+          this.fwJustDownloaded = false;
           this.showFwStatus(`Selected ${this.fwFileName}.`, "info");
         } else {
           this.showFwStatus(response.error || "Failed to set firmware file", "error");
@@ -32297,7 +32302,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275advance(2);
         \u0275\u0275textInterpolate(ctx.fwIsChecking ? "Checking..." : "Check");
         \u0275\u0275advance();
-        \u0275\u0275property("ngIf", ctx.fwHasLocalFile);
+        \u0275\u0275property("ngIf", ctx.fwJustDownloaded);
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.fwUpdateAvailable);
         \u0275\u0275advance();
