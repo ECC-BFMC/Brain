@@ -180,7 +180,7 @@
     <div class="card-header">
       <span class="card-title">Nucleo Firmware</span>
       <button type="button" class="card-source card-source-btn" [title]="'Change firmware repository'"
-        (click)="fwShowSourceEditor = !fwShowSourceEditor">
+        (click)="fwShowSourceEditor = !fwShowSourceEditor; fwShowSourceEditor && !fwBranches.length && loadFirmwareBranches()">
         {{ fwRepo || fwDefaultRepo || 'firmware source' }}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
           <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -213,6 +213,13 @@
 
     <!-- Selected .bin file -->
     <div class="card-details">
+      <div *ngIf="fwBranches.length" class="detail-row">
+        <span class="detail-label">Track branch</span>
+        <select class="branch-select" [ngModel]="fwSelectedBranch" (ngModelChange)="onFirmwareBranchChange($event)"
+          [disabled]="fwIsChecking || fwIsDownloading || fwBinsLoading">
+          <option *ngFor="let b of fwBranches" [value]="b">{{ b }}{{ b === fwDefaultBranch ? ' (default)' : '' }}</option>
+        </select>
+      </div>
       <div class="detail-row">
         <span class="detail-label">Firmware file</span>
         <button type="button" class="file-pick-btn" (click)="openFirmwareFilePicker()" [title]="fwFilePath">

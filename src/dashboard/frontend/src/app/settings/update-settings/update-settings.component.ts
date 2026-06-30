@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateKeyResponse, FirmwareCheckResponse, FirmwareActionResponse, FirmwareSourceResponse, FirmwareRepoBinsResponse, FirmwareTokenResponse } from '../../services/api.service';
+import { ApiService, UpdateStatusResponse, UpdateActionResponse, UpdateConflict, UpdateSourceResponse, UpdateKeyResponse, FirmwareCheckResponse, FirmwareActionResponse, FirmwareSourceResponse, FirmwareRepoBinsResponse, FirmwareTokenResponse, FirmwareBranchesResponse } from '../../services/api.service';
 
 @Component({
     selector: 'app-update-settings',
@@ -90,6 +90,12 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     fwBinsTruncated: boolean = false;
     fwShowFilePicker: boolean = false;
 
+    // Firmware branch selection
+    fwBranches: string[] = [];
+    fwDefaultBranch: string = '';
+    fwSelectedBranch: string = '';
+    fwBranchesLoading: boolean = false;
+
     // Firmware private-repo token
     fwHasToken: boolean = false;
     fwShowTokenModal: boolean = false;
@@ -107,6 +113,9 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
         this.loadKey();
         this.loadFirmwareSource();
         this.loadFirmwareToken();
+        // Auto-check both on open so the student sees the current status right away.
+        this.checkForUpdates();
+        this.checkFirmware();
     }
 
     ngOnDestroy(): void {
@@ -378,9 +387,10 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.fwLocalSha = response.local_sha || '';
                     this.fwLocalDate = response.local_date || '';
                     if (response.source) this.fwRepo = response.source;
-                    if (response.branch) this.fwBranch = response.branch;
+                    if (response.branch) { this.fwBranch = response.branch; this.fwSelectedBranch = response.branch; }
                     if (response.file_path) this.fwFilePath = response.file_path;
                     if (response.file_name) this.fwFileName = response.file_name;
+                    if (!this.fwBranches.length) this.loadFirmwareBranches();
 
                     if (this.fwUpdateAvailable) {
                         this.showFwStatus(this.fwHasLocalFile ? 'New firmware version available!' : 'Firmware not yet downloaded.', 'info');
@@ -478,9 +488,12 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     // Changing the repo clears the selected file server-side; reflect that
                     // and reopen the picker so the student chooses a .bin from the new repo.
                     this.fwRepoBins = [];
+                    this.fwBranches = [];   // new repo -> reload its branches
+                    this.fwSelectedBranch = '';
                     this.fwHasChecked = false;
                     this.showFwStatus(response.message || 'Firmware source saved.', 'success');
                     this.loadFirmwareSource();
+                    this.loadFirmwareBranches();
                     this.openFirmwareFilePicker();
                 } else {
                     this.showFwStatus(response.error || 'Failed to save firmware source', 'error');
@@ -497,6 +510,46 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     openFirmwareFilePicker(): void {
         this.fwShowFilePicker = true;
         this.loadFirmwareRepoBins();
+        if (!this.fwBranches.length) this.loadFirmwareBranches();
+    }
+
+    loadFirmwareBranches(): void {
+        this.fwBranchesLoading = true;
+        this.apiService.listFirmwareBranches().subscribe({
+            next: (response: FirmwareBranchesResponse) => {
+                if (response.success) {
+                    this.fwBranches = response.branches || [];
+                    this.fwDefaultBranch = response.default_branch || '';
+                    this.fwSelectedBranch = response.selected_branch || this.fwSelectedBranch || this.fwDefaultBranch;
+                } else {
+                    this.fwHandleAuthRequired(response);
+                }
+                this.fwBranchesLoading = false;
+            },
+            error: (err) => {
+                this.fwHandleAuthRequired(err?.error);
+                this.fwBranchesLoading = false;
+            }
+        });
+    }
+
+    onFirmwareBranchChange(branch: string): void {
+        this.fwSelectedBranch = branch;
+        this.apiService.setFirmwareBranch(branch).subscribe({
+            next: (response: FirmwareBranchesResponse) => {
+                if (response.success) {
+                    this.fwBranch = branch || this.fwDefaultBranch;
+                    this.fwHasChecked = false;
+                    // The .bin set and latest commit depend on the branch.
+                    this.fwRepoBins = [];
+                    if (this.fwShowFilePicker) this.loadFirmwareRepoBins();
+                    this.showFwStatus(`Now tracking "${branch || this.fwDefaultBranch}".`, 'info');
+                } else {
+                    this.showFwStatus(response.error || 'Failed to set branch', 'error');
+                }
+            },
+            error: (err) => this.showFwStatus(err?.error?.error || 'Failed to set branch', 'error')
+        });
     }
 
     loadFirmwareRepoBins(): void {

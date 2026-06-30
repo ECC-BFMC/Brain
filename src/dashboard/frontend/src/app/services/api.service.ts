@@ -189,6 +189,17 @@ export interface FirmwareTokenResponse {
     error?: string;
 }
 
+export interface FirmwareBranchesResponse {
+    success: boolean;
+    branches?: string[];
+    default_branch?: string;
+    selected_branch?: string;
+    repo?: string;
+    auth_required?: boolean;
+    message?: string;
+    error?: string;
+}
+
 export interface LocalFirmwareFile {
     name: string;
     size: number;
@@ -337,6 +348,14 @@ export class ApiService {
 
     setFirmwareFile(filePath: string): Observable<FirmwareSourceResponse> {
         return this.http.post<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/file`, { file_path: filePath });
+    }
+
+    listFirmwareBranches(): Observable<FirmwareBranchesResponse> {
+        return this.http.get<FirmwareBranchesResponse>(`${this.baseUrl}/api/firmware/branches`);
+    }
+
+    setFirmwareBranch(branch: string): Observable<FirmwareBranchesResponse> {
+        return this.http.post<FirmwareBranchesResponse>(`${this.baseUrl}/api/firmware/branch`, { branch });
     }
 
     getFirmwareToken(): Observable<FirmwareTokenResponse> {

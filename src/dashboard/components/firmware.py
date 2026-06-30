@@ -418,6 +418,57 @@ class FirmwareManager:
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
+    def handle_list_branches(self):
+        """List the branches of the configured firmware repo so the student can
+        pick which one to pull firmware from."""
+        try:
+            cfg = self._load_config()
+            repo = self._resolve_repo(cfg)
+
+            default_branch = ''
+            try:
+                info = self._github_get(f'/repos/{repo}')
+                if isinstance(info, dict):
+                    default_branch = info.get('default_branch', '') or ''
+            except urllib.error.HTTPError:
+                raise
+            except Exception:
+                pass
+
+            data = self._github_get(f'/repos/{repo}/branches?per_page=100')
+            branches = sorted(b.get('name') for b in data if isinstance(b, dict) and b.get('name'))
+
+            return jsonify({
+                'success': True,
+                'branches': branches,
+                'default_branch': default_branch,
+                'selected_branch': cfg.get('branch') or default_branch,
+                'repo': repo,
+            })
+        except urllib.error.HTTPError as e:
+            return self._github_http_error(e)
+        except urllib.error.URLError as e:
+            return jsonify({'success': False, 'error': f'Failed to reach GitHub: {e.reason}'}), 502
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    def handle_set_branch(self, branch):
+        """Persist which branch of the firmware repo to pull from. Empty resets to
+        the repo's default branch."""
+        try:
+            branch = (branch or '').strip()
+            if branch.startswith('-') or any(c.isspace() for c in branch):
+                return jsonify({'success': False, 'error': 'Invalid branch name.'}), 400
+
+            cfg = self._load_config()
+            cfg['branch'] = branch
+            self._save_config(cfg)
+            message = (f'Firmware branch set to "{branch}".' if branch
+                       else 'Firmware branch reset to the repository default.')
+            return jsonify({'success': True, 'selected_branch': branch, 'message': message})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
     def handle_set_file(self, file_path):
         """Persist which .bin in the source repo to pull."""
         try:

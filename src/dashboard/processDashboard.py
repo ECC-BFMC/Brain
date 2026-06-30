@@ -325,6 +325,15 @@ class processDashboard(WorkerProcess):
             data = flask_request.get_json() or {}
             return self.firmware.handle_set_file(data.get('file_path', ''))
 
+        @self.app.route('/api/firmware/branches', methods=['GET'])
+        def api_list_firmware_branches():
+            return self.firmware.handle_list_branches()
+
+        @self.app.route('/api/firmware/branch', methods=['POST'])
+        def api_set_firmware_branch():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_branch(data.get('branch', ''))
+
         @self.app.route('/api/firmware/token', methods=['GET'])
         def api_get_firmware_token():
             return self.firmware.handle_get_token()
