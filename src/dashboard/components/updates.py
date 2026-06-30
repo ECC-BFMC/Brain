@@ -555,11 +555,14 @@ class UpdateManager:
     # ----------------------------- force pull -----------------------------
 
     def handle_force_pull(self):
-        """Discard local changes and hard-reset to the configured remote branch.
+        """Discard local changes and switch onto the configured remote branch.
 
-        Required because runtime/ files the app itself rewrites are tracked, so a
-        plain fast-forward can become permanently blocked. Destructive -- the
-        frontend gates this behind an explicit confirmation."""
+        Used both to recover when a plain fast-forward is blocked (runtime/ files
+        the app rewrites are tracked) and to switch branches. We ``checkout -f -B
+        <branch> <remote>/<branch>`` rather than ``reset --hard`` so the checkout
+        actually lands *on* the tracked branch (git reports the right branch) and
+        the previously checked-out branch ref is left untouched. Destructive --
+        the frontend gates this behind an explicit confirmation."""
         try:
             if not self._is_git_repo():
                 return jsonify({'success': False, 'error': 'This installation is not a git repository.'}), 400
@@ -579,11 +582,13 @@ class UpdateManager:
             remote_branch = f'{remote}/{branch}'
             remote_commit = self._git('rev-parse', remote_branch, timeout=10).stdout.strip()
 
-            reset = self._git('reset', '--hard', remote_branch, timeout=60)
-            if reset.returncode != 0:
+            # -f discards local working-tree changes; -B creates/resets the local
+            # branch at the remote tip and checks it out (so HEAD is on `branch`).
+            checkout = self._git('checkout', '-f', '-B', branch, remote_branch, timeout=60)
+            if checkout.returncode != 0:
                 return jsonify({
                     'success': False,
-                    'error': f'Failed to apply the update.\n{reset.stderr.strip()}'
+                    'error': f'Failed to switch to the update.\n{checkout.stderr.strip()}'
                 }), 500
 
             self._git('submodule', 'update', '--init', '--recursive', timeout=180)
