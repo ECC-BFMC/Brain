@@ -30536,7 +30536,7 @@ function UpdateSettingsComponent_button_19_Template(rf, ctx) {
     const ctx_r1 = \u0275\u0275nextContext();
     \u0275\u0275property("disabled", ctx_r1.isForcing || ctx_r1.isUpdating);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(ctx_r1.isForcing ? "Updating..." : "Discard local changes & update");
+    \u0275\u0275textInterpolate(ctx_r1.isForcing ? "Switching..." : ctx_r1.conflict ? "Discard local changes & update" : "Switch to " + ctx_r1.selectedBranch);
   }
 }
 function UpdateSettingsComponent_span_20_Template(rf, ctx) {
@@ -31114,6 +31114,14 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
       clearTimeout(this.fwStatusTimeout);
   }
   // ==================== Brain update ====================
+  /** True when the selected branch points at a different commit than what's
+   * checked out, but it isn't a clean fast-forward (diverged, or the local
+   * copy is ahead). In that case there's no "Pull", but the user can still
+   * switch to that branch via a force reset -- even when the checker would
+   * otherwise say "up to date". */
+  get canSwitchBranch() {
+    return this.isGitRepo && !!this.remoteCommit && this.remoteCommit !== this.currentCommit && !this.updateAvailable && !this.conflict;
+  }
   checkForUpdates() {
     this.isChecking = true;
     this.statusMessage = "";
@@ -31151,6 +31159,8 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
           this.showStatus(response.message, "info");
         } else if (this.updateAvailable) {
           this.showStatus(`Update available from ${this.source || "the configured source"}.`, "info");
+        } else if (this.canSwitchBranch) {
+          this.showStatus(`"${this.selectedBranch}" differs from the car's copy. Switch to it to apply.`, "info");
         } else {
           this.showStatus("You are up to date.", "success");
         }
@@ -31600,7 +31610,7 @@ var UpdateSettingsComponent = class _UpdateSettingsComponent {
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.isGitRepo && ctx.updateAvailable && !ctx.conflict);
         \u0275\u0275advance();
-        \u0275\u0275property("ngIf", ctx.isGitRepo && (ctx.conflict || ctx.diverged));
+        \u0275\u0275property("ngIf", ctx.isGitRepo && (ctx.conflict || ctx.canSwitchBranch));
         \u0275\u0275advance();
         \u0275\u0275property("ngIf", ctx.lastChecked);
         \u0275\u0275advance();

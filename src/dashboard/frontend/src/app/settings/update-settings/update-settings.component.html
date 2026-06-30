@@ -116,10 +116,10 @@
         <span>{{ isUpdating ? 'Updating...' : 'Pull Update' }}</span>
       </button>
 
-      <!-- Force update (offered when a conflict or divergence blocks the fast-forward) -->
-      <button *ngIf="isGitRepo && (conflict || diverged)" class="btn btn-danger"
+      <!-- Force update / branch switch (when a clean fast-forward isn't possible) -->
+      <button *ngIf="isGitRepo && (conflict || canSwitchBranch)" class="btn btn-danger"
         (click)="showForceConfirm = true" [disabled]="isForcing || isUpdating">
-        <span>{{ isForcing ? 'Updating...' : 'Discard local changes & update' }}</span>
+        <span>{{ isForcing ? 'Switching...' : (conflict ? 'Discard local changes & update' : 'Switch to ' + selectedBranch) }}</span>
       </button>
 
       <span *ngIf="lastChecked" class="meta-text">{{ lastChecked }}</span>

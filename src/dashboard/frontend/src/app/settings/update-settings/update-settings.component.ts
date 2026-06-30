@@ -93,6 +93,17 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
 
     // ==================== Brain update ====================
 
+    /** True when the selected branch points at a different commit than what's
+     * checked out, but it isn't a clean fast-forward (diverged, or the local
+     * copy is ahead). In that case there's no "Pull", but the user can still
+     * switch to that branch via a force reset -- even when the checker would
+     * otherwise say "up to date". */
+    get canSwitchBranch(): boolean {
+        return this.isGitRepo && !!this.remoteCommit
+            && this.remoteCommit !== this.currentCommit
+            && !this.updateAvailable && !this.conflict;
+    }
+
     checkForUpdates(): void {
         this.isChecking = true;
         this.statusMessage = '';
@@ -137,6 +148,8 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
                     this.showStatus(response.message, 'info');
                 } else if (this.updateAvailable) {
                     this.showStatus(`Update available from ${this.source || 'the configured source'}.`, 'info');
+                } else if (this.canSwitchBranch) {
+                    this.showStatus(`"${this.selectedBranch}" differs from the car's copy. Switch to it to apply.`, 'info');
                 } else {
                     this.showStatus('You are up to date.', 'success');
                 }

@@ -116,11 +116,31 @@ class UpdateManager:
         return u
 
     def _effective_url(self, url):
-        """The URL git should actually use: rewritten to SSH when a deploy key is
-        configured, otherwise as the student entered it."""
-        if url and self._has_deploy_key():
+        """The URL git should actually use.
+
+        A deploy key only helps over SSH, and GitHub *rejects anonymous SSH even
+        for public repos* -- so blindly switching every URL to SSH would make a
+        public repo demand a key it doesn't need. Only rewrite to SSH when a key
+        exists AND the repo isn't publicly reachable (i.e. it actually needs
+        auth). Public repos keep their https URL and clone anonymously."""
+        if url and self._has_deploy_key() and not self._repo_is_public(url):
             return self._to_ssh_url(url)
         return url
+
+    def _repo_is_public(self, url):
+        """Best-effort: True only if GitHub confirms the repo is public (an
+        unauthenticated API lookup succeeds with private == False). Anything we
+        can't confirm (non-GitHub, private, offline, rate-limited) returns False,
+        so the deploy key is used as the safe default."""
+        gh = self._parse_github_repo(url)
+        if not gh:
+            return False
+        owner, repo = gh
+        try:
+            info = self._github_get(f'/repos/{owner}/{repo}')
+        except Exception:
+            return False
+        return isinstance(info, dict) and info.get('private') is False
 
     # Markers git prints when a fetch/clone fails because of missing or rejected
     # credentials (vs. a network/other error). Used to tell the student that the
