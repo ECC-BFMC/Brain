@@ -410,6 +410,34 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
 
     // ==================== Deploy key (private repos) ====================
 
+    /** Direct link to the "Add deploy key" page of the configured GitHub repo,
+     * e.g. https://github.com/owner/repo/settings/keys/new. Empty for non-GitHub
+     * sources (we can't know the right URL, so we hide the link). */
+    get deployKeysUrl(): string {
+        const raw = (this.sourceUrl || this.sourceOriginUrl || '').trim();
+        if (!raw) return '';
+
+        let path = '';
+        const scp = raw.match(/^git@github\.com:(.+)$/i);
+        if (scp) {
+            path = scp[1];
+        } else {
+            try {
+                const u = new URL(raw);
+                const host = u.hostname.toLowerCase();
+                if (host !== 'github.com' && host !== 'www.github.com') return '';
+                path = u.pathname.replace(/^\/+/, '');
+            } catch {
+                return '';
+            }
+        }
+
+        path = path.replace(/\.git$/i, '');
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length < 2) return '';
+        return `https://github.com/${parts[0]}/${parts[1]}/settings/keys/new`;
+    }
+
     openKeyModal(): void {
         this.keyError = '';
         this.keyCopied = false;

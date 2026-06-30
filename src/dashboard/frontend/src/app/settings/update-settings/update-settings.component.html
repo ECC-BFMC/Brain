@@ -290,6 +290,7 @@
       </div>
 
       <div class="modal-footer">
+        <a *ngIf="deployKeysUrl" class="btn btn-check footer-link" [href]="deployKeysUrl" target="_blank" rel="noopener">Open deploy keys</a>
         <button class="btn btn-update" (click)="showKeyModal = false; checkForUpdates()" [disabled]="isGeneratingKey">Done, re-check</button>
         <button class="btn btn-check" (click)="showKeyModal = false" [disabled]="isGeneratingKey">Close</button>
       </div>

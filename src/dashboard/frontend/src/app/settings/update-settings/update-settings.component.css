@@ -520,6 +520,34 @@
   color: #f5747f;
 }
 
+/* Footer link styled to match the settings cyan buttons (ng-deep button theme
+   doesn't apply to anchors, so style it here). */
+.footer-link {
+  margin-right: auto;            /* push to the left, Done/Close stay right */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
+  color: #7df9ff;
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.footer-link:hover {
+  color: #b9fdff;
+  border-color: rgba(125, 249, 255, 0.34);
+  background: rgba(125, 249, 255, 0.07);
+}
+
 .pubkey {
   white-space: pre-wrap !important;
 }
