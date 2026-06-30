@@ -30569,7 +30569,7 @@ function UpdateSettingsComponent_div_21_div_1_Template(rf, ctx) {
 function UpdateSettingsComponent_div_21_div_7_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 27)(1, "span", 28);
-    \u0275\u0275text(2, "Latest");
+    \u0275\u0275text(2);
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(3, "span", 59);
     \u0275\u0275text(4);
@@ -30577,7 +30577,9 @@ function UpdateSettingsComponent_div_21_div_7_Template(rf, ctx) {
   }
   if (rf & 2) {
     const ctx_r1 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance(3);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx_r1.canSwitchBranch && !ctx_r1.updateAvailable ? ctx_r1.selectedBranch : "Latest");
+    \u0275\u0275advance();
     \u0275\u0275property("title", ctx_r1.remoteCommit);
     \u0275\u0275advance();
     \u0275\u0275textInterpolate(ctx_r1.remoteCommitShort);
@@ -30608,7 +30610,7 @@ function UpdateSettingsComponent_div_21_Template(rf, ctx) {
     \u0275\u0275elementStart(5, "span", 57);
     \u0275\u0275text(6);
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(7, UpdateSettingsComponent_div_21_div_7_Template, 5, 2, "div", 56)(8, UpdateSettingsComponent_div_21_div_8_Template, 5, 2, "div", 56);
+    \u0275\u0275template(7, UpdateSettingsComponent_div_21_div_7_Template, 5, 3, "div", 56)(8, UpdateSettingsComponent_div_21_div_8_Template, 5, 2, "div", 56);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -30620,7 +30622,7 @@ function UpdateSettingsComponent_div_21_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275textInterpolate(ctx_r1.currentCommitShort);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r1.remoteCommitShort && ctx_r1.updateAvailable);
+    \u0275\u0275property("ngIf", ctx_r1.remoteCommitShort && (ctx_r1.updateAvailable || ctx_r1.canSwitchBranch));
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r1.behindBy > 0);
   }

@@ -327,14 +327,28 @@ class UpdateManager:
         # base...head with base=local HEAD, head=remote branch. GitHub reports a
         # status of identical / ahead / behind / diverged:
         #   ahead    -> remote has commits we don't, fast-forwardable (an update)
+        #   behind   -> local is ahead of the branch (e.g. on 2027, picking master)
         #   diverged -> both sides have unique commits (needs a force reset)
         status = data.get('status', '')
         ahead_by = data.get('ahead_by', 0)
         commits = data.get('commits') or []
-        remote_commit = commits[-1].get('sha', '') if commits else head
         files = [f.get('filename', '') for f in (data.get('files') or [])]
         diverged = status == 'diverged'
         update_available = status == 'ahead' and ahead_by > 0
+
+        # The actual branch tip. The compare endpoint only lists commits the
+        # branch has that we lack, so when we're ahead of / level with it that
+        # list is empty -- fetch the real tip so the UI can still offer a switch.
+        remote_commit = commits[-1].get('sha', '') if commits else ''
+        if not remote_commit:
+            try:
+                binfo = self._github_get(f'/repos/{owner}/{repo}/branches/{branch}')
+                if isinstance(binfo, dict):
+                    remote_commit = (binfo.get('commit') or {}).get('sha', '') or ''
+            except Exception:
+                remote_commit = ''
+        if not remote_commit:
+            remote_commit = head
         return {
             'update_available': update_available,
             'diverged': diverged,

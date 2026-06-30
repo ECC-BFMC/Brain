@@ -135,8 +135,8 @@
         <span class="detail-label">Local</span>
         <span class="detail-value tag" [title]="currentCommit">{{ currentCommitShort }}</span>
       </div>
-      <div *ngIf="remoteCommitShort && updateAvailable" class="detail-row">
-        <span class="detail-label">Latest</span>
+      <div *ngIf="remoteCommitShort && (updateAvailable || canSwitchBranch)" class="detail-row">
+        <span class="detail-label">{{ canSwitchBranch && !updateAvailable ? selectedBranch : 'Latest' }}</span>
         <span class="detail-value tag tag-green" [title]="remoteCommit">{{ remoteCommitShort }}</span>
       </div>
       <div *ngIf="behindBy > 0" class="detail-row">
