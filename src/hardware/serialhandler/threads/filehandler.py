@@ -27,16 +27,21 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from threading import Lock
 
+from src.utils.logConfig import timestamp
+
 
 class FileHandler:
     def __init__(self, f_fileName):
-        self.outFile = open(f_fileName, "w")
+        self.outFile = open(f_fileName, "w", buffering=1)
         self.lock = Lock()
 
     def write(self, f_str):
-        self.lock.acquire()
-        self.outFile.write(f_str)
-        self.lock.release()
+        with self.lock:
+            for line in f_str.splitlines():
+                if not line.strip():
+                    continue
+                self.outFile.write(f"{timestamp()} {line}\n")
+            self.outFile.flush()
 
     def close(self):
         self.outFile.close()

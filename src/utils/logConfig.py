@@ -23,6 +23,11 @@ _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
+def timestamp():
+    """Current time formatted like the log files' line timestamps."""
+    return time.strftime(_DATE_FORMAT)
+
+
 class _StreamTee:
     """File-like object: writes to the original stream and appends clean,
     timestamped lines to one or more log files."""
