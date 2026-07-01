@@ -406,6 +406,11 @@ class processDashboard(WorkerProcess):
         # silence Werkzeug's per-request access logging
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
+        # silence Flask's dev-server startup banner (" * Serving Flask app...",
+        # " * Debug mode: ...") which is printed directly, not via logging.
+        import flask.cli
+        flask.cli.show_server_banner = lambda *args, **kwargs: None
+
         # setup flask and socketio
         self.app = Flask(__name__)
         self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading')
