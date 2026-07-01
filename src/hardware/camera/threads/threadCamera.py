@@ -28,6 +28,7 @@
 
 import cv2
 import threading
+import base64
 try:
     import picamera2
     HAS_PICAMERA2 = True

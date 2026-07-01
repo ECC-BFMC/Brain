@@ -1,0 +1,21 @@
+# Ruff config for CI linting.
+# Scoped conservatively so CI flags real problems (undefined names, unused
+# imports, syntax) rather than drowning an existing codebase in style noise.
+target-version = "py311"
+line-length = 120
+
+extend-exclude = [
+    ".venv",
+    "**/node_modules",
+    "docs",
+    "runtime",
+    "**/*.pyc",
+]
+
+[lint]
+# Minimal, high-signal set: syntax errors (E9) and the serious pyflakes
+# checks (F63 assertion/comparison mistakes, F7 misplaced statements,
+# F82 undefined names). This is the widely-used "catch real bugs, ignore
+# style" baseline. Broaden later (e.g. add "F401", "E7", "W") and run
+# `ruff check --fix` to clean up the existing whitespace/import noise.
+select = ["E9", "F63", "F7", "F82"]

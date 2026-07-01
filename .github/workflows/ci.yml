@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master, "2027"]
+
+jobs:
+  python:
+    name: Python (lint + compile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Compile smoke test
+        # Byte-compiles every module to catch syntax/indentation errors.
+        # No dependency install needed: this does not import the modules,
+        # so Pi-only packages (picamera2) and system libs are irrelevant.
+        run: python -m compileall -q main.py newComponent.py src
+
+  frontend:
+    name: Angular build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/dashboard/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: src/dashboard/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
