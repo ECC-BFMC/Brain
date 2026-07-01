@@ -3,7 +3,7 @@ Flask-SocketIO>=5.3.2,<6
 Flask-Cors>=4,<5
 psutil>=5.9.4
 picamera2>=0.3.21; sys_platform != "win32"
-eventlet>=0.36.1
+simple-websocket>=1.0
 Twisted>=24.7.0
 cryptography>=43,<45
 opencv-python          # if wheel fails, use: sudo apt-get install -y python3-opencv

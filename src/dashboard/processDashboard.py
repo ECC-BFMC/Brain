@@ -34,7 +34,6 @@ import queue
 import psutil
 import json
 import inspect
-import eventlet
 import os
 import time
 
@@ -349,16 +348,24 @@ class processDashboard(WorkerProcess):
             return self.firmware.handle_delete_token()
 
 
+    def _spawn_after(self, delay, target, *args):
+        """Run target(*args) after delay seconds in a SocketIO background task."""
+        def runner():
+            self.socketio.sleep(delay)
+            target(*args)
+        self.socketio.start_background_task(runner)
+
+
     def _start_background_tasks(self):
         """Start background monitoring tasks."""
         psutil.cpu_percent(interval=1, percpu=False)
 
-        eventlet.spawn(self.update_hardware_data)
-        eventlet.spawn(self.send_continuous_messages, self.fast_stream_messages, self.fast_stream_interval)
-        eventlet.spawn(self.send_continuous_messages, self.default_stream_messages, self.default_stream_interval)
-        eventlet.spawn(self.send_hardware_data_to_frontend)
-        eventlet.spawn(self.send_heartbeat)
-        eventlet.spawn(self.stream_console_logs)
+        self.socketio.start_background_task(self.update_hardware_data)
+        self.socketio.start_background_task(self.send_continuous_messages, self.fast_stream_messages, self.fast_stream_interval)
+        self.socketio.start_background_task(self.send_continuous_messages, self.default_stream_messages, self.default_stream_interval)
+        self.socketio.start_background_task(self.send_hardware_data_to_frontend)
+        self.socketio.start_background_task(self.send_heartbeat)
+        self.socketio.start_background_task(self.stream_console_logs)
 
 
     def stream_console_logs(self):
@@ -372,15 +379,15 @@ class processDashboard(WorkerProcess):
                 while not log_queue.empty():
                     msg = log_queue.get_nowait()
                     self.socketio.emit('console_log', {'data': msg})
-                    eventlet.sleep(0)
-                
-                eventlet.sleep(0.1)
+                    self.socketio.sleep(0)
+
+                self.socketio.sleep(0.1)
             except queue.Empty:
-                eventlet.sleep(0.1)
+                self.socketio.sleep(0.1)
             except Exception as e:
                 if self.debugging:
                     self.logger.error(f"Error streaming logs: {e}")
-                eventlet.sleep(1)
+                self.socketio.sleep(1)
 
 
     # ===================================== STOP ==========================================
@@ -397,7 +404,7 @@ class processDashboard(WorkerProcess):
 
         # setup flask and socketio
         self.app = Flask(__name__)
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading')
         CORS(self.app, supports_credentials=True)
 
         # components
@@ -578,7 +585,7 @@ class processDashboard(WorkerProcess):
         except Exception:
             self.cpuTemperature = 0
 
-        eventlet.spawn_after(1, self.update_hardware_data)
+        self._spawn_after(1, self.update_hardware_data)
 
 
     def send_heartbeat(self):
@@ -597,10 +604,10 @@ class processDashboard(WorkerProcess):
                 self.activeUser = None
                 self.heartbeat_retries = 0
 
-            eventlet.spawn_after(self.heartbeat_time_between_retries, self.send_heartbeat)
+            self._spawn_after(self.heartbeat_time_between_retries, self.send_heartbeat)
         else:
             self.heartbeat_received = False
-            eventlet.spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
+            self._spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
 
 
     def send_continuous_messages(self, message_names, interval):
@@ -622,7 +629,7 @@ class processDashboard(WorkerProcess):
                 if self.debugging:
                     self.logger.info(f"{msg}: {resp}")
 
-        eventlet.spawn_after(interval, self.send_continuous_messages, message_names, interval)
+        self._spawn_after(interval, self.send_continuous_messages, message_names, interval)
 
 
     def send_hardware_data_to_frontend(self):
@@ -638,4 +645,4 @@ class processDashboard(WorkerProcess):
             }
         })
 
-        eventlet.spawn_after(1.0, self.send_hardware_data_to_frontend)
+        self._spawn_after(1.0, self.send_hardware_data_to_frontend)
