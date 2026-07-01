@@ -72,6 +72,14 @@ class _ComponentFormatter(logging.Formatter):
         return f"{ts} [ {name} ] : {level} - {msg}"
 
 
+class _NoFileOnlyFilter(logging.Filter):
+    """Drops records flagged with ``extra={"file_only": True}`` so they go to the
+    log files but never to the console."""
+
+    def filter(self, record):
+        return not getattr(record, "file_only", False)
+
+
 class _StreamTee:
     """File-like object: writes to the original stream and appends clean,
     timestamped lines to one or more log files."""
@@ -153,6 +161,7 @@ def setup_logging(level=logging.INFO):
     console = logging.StreamHandler()
     console.setLevel(level)
     console.setFormatter(console_formatter)
+    console.addFilter(_NoFileOnlyFilter())
 
     info_file = logging.FileHandler(info_path, encoding="utf-8")
     info_file.setLevel(logging.INFO)

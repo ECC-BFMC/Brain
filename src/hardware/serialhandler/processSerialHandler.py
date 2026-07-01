@@ -31,7 +31,6 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 import re
-import os
 import serial
 import serial.tools.list_ports
 import threading
@@ -39,7 +38,6 @@ from threading import Lock
 
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.serialhandler.mock.nucleoMockSerial import NucleoMockSerial
-from src.hardware.serialhandler.threads.filehandler import FileHandler
 from src.hardware.serialhandler.threads.threadRead import threadRead
 from src.hardware.serialhandler.threads.threadWrite import threadWrite
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
@@ -59,8 +57,6 @@ class processSerialHandler(WorkerProcess):
     # ===================================== INIT =========================================
     def __init__(self, queueList, ready_event=None, dashboard_ready=None, debugging=False, example=False, use_mock=False):
         # devFile = "/dev/ttyACM0"
-        logFile = os.path.join("runtime", "temp", "serial_history.log")
-
         self.logger = get_logger("Serial Handler")
         self.queuesList = queueList
         self.debugging = debugging
@@ -77,10 +73,6 @@ class processSerialHandler(WorkerProcess):
 
         self._init_subscribers()
         self._init_senders()
-
-        # log file init
-        self.logFile = logFile
-        self.historyFile = None
 
         super(processSerialHandler, self).__init__(self.queuesList, ready_event)
 
@@ -194,8 +186,6 @@ class processSerialHandler(WorkerProcess):
     def run(self):
         """Apply the initializing methods and start the threads."""
         self.serialLock = Lock()
-        if self.historyFile is None:
-            self.historyFile = FileHandler(self.logFile)
         self._try_serial_connection()
 
         if not self.serialConnected:
@@ -210,8 +200,6 @@ class processSerialHandler(WorkerProcess):
                 threading.Thread(target=self._wait_for_dashboard_and_notify, daemon=True).start()
 
         super(processSerialHandler, self).run()
-        if self.historyFile is not None:
-            self.historyFile.close()
 
     # ===================================== PROCESS WORK ==========================================
     def process_work(self):
@@ -235,7 +223,7 @@ class processSerialHandler(WorkerProcess):
 
     # ===================================== STOP ==========================================
     def stop(self):
-        """Close the history file and stop the process."""
+        """Stop the process."""
         # close serial connection
         if self.serialLock is not None:
             with self.serialLock:
@@ -256,8 +244,8 @@ class processSerialHandler(WorkerProcess):
     # ===================================== INIT TH =================================
     def _init_threads(self):
         """Initializes the read and the write thread."""
-        readTh = threadRead(self, self.historyFile, self.queuesList, self.debugging)
-        writeTh = threadWrite(self, self.historyFile, self.queuesList, self.debugging, self.example)
+        readTh = threadRead(self, self.queuesList, self.debugging)
+        writeTh = threadWrite(self, self.queuesList, self.debugging, self.example)
         self.threads.extend([readTh, writeTh])
 
         if not self.serialConnected:

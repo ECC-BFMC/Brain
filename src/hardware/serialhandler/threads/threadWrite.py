@@ -59,16 +59,14 @@ class threadWrite(ThreadWithStop):
     Args:
         queues (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
         process (processSerialHandler): ProcessSerialHandler object.
-        logFile (FileHandler): The path to the history file where you can find the logs from the connection.
         example (bool, optional): Flag for exmaple activation. Defaults to False.
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, process, logFile, queues, debugger = False, example=False):
+    def __init__(self, process, queues, debugger = False, example=False):
         super(threadWrite, self).__init__(pause=0.001)
         self.process = process
         self.queuesList = queues
-        self.logFile = logFile
         self.exampleFlag = example
         self.logger = get_logger("Serial Handler")
         self.debugger = debugger
@@ -122,7 +120,8 @@ class threadWrite(ThreadWithStop):
                     serialCon = self.process.serialCon
                     if serialCon and self.process.serialConnected and serialCon.is_open:
                         serialCon.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
+                        # Command history: log file only, keep it off the console.
+                        self.logger.info(command_msg.strip(), extra={"file_only": True})
 
             except Exception as e:
                 if self._should_send_error():

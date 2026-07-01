@@ -59,15 +59,13 @@ class threadRead(ThreadWithStop):
 
     Args:
         process (processSerialHandler): ProcessSerialHandler object.
-        logFile (FileHandler): The path to the history file where you can find the logs from the connection.
         queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, process, logFile, queueList, debugger = False):
+    def __init__(self, process, queueList, debugger = False):
         super(threadRead, self).__init__(pause=0.01)
         self.process = process
-        self.logFile = logFile
         self.buffer = ""
         self.queuesList = queueList
         self.logger = get_logger("Serial Handler")
