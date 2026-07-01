@@ -8,6 +8,7 @@ import shutil
 import glob as glob_module
 from urllib.parse import urlparse, quote
 
+import yaml
 from flask import jsonify
 
 
@@ -34,31 +35,61 @@ class FirmwareManager:
 
     # ----------------------------- source config -----------------------------
 
-    def _config_path(self):
-        return os.path.join(self.repo_path, 'runtime', 'firmware_config.json')
+    CONFIG_SECTION = 'firmware'
 
-    def _load_config(self):
-        """Read the firmware source config. Empty values fall back to the default
-        Embedded_Platform repo and its robot_car.bin path."""
-        cfg = {'url': '', 'branch': '', 'file_path': ''}
-        path = self._config_path()
+    def _yaml_path(self):
+        return os.path.join(self.repo_path, 'runtime', 'config.yaml')
+
+    def _read_yaml(self):
+        path = self._yaml_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    data = yaml.safe_load(f)
+                if isinstance(data, dict):
+                    return data
+            except (yaml.YAMLError, OSError):
+                pass
+        return {}
+
+    def _legacy_json_config(self):
+        """Read the pre-YAML runtime/firmware_config.json, if it still exists, so
+        an already-configured car keeps working after upgrading to config.yaml."""
+        path = os.path.join(self.repo_path, 'runtime', 'firmware_config.json')
         if os.path.exists(path):
             try:
                 with open(path, 'r') as f:
                     data = json.load(f)
                 if isinstance(data, dict):
-                    cfg['url'] = str(data.get('url') or '').strip()
-                    cfg['branch'] = str(data.get('branch') or '').strip()
-                    cfg['file_path'] = str(data.get('file_path') or '').strip()
+                    return data
             except (ValueError, OSError):
                 pass
+        return {}
+
+    def _load_config(self):
+        """Read the firmware source config from the ``firmware`` section of
+        runtime/config.yaml. Empty values fall back to the default
+        Embedded_Platform repo and its robot_car.bin path."""
+        cfg = {'url': '', 'branch': '', 'file_path': ''}
+        section = self._read_yaml().get(self.CONFIG_SECTION)
+        if not isinstance(section, dict):
+            section = self._legacy_json_config()
+        cfg['url'] = str(section.get('url') or '').strip()
+        cfg['branch'] = str(section.get('branch') or '').strip()
+        cfg['file_path'] = str(section.get('file_path') or '').strip()
         return cfg
 
     def _save_config(self, cfg):
-        path = self._config_path()
+        path = self._yaml_path()
+        data = self._read_yaml()
+        data[self.CONFIG_SECTION] = {
+            'url': cfg.get('url', ''),
+            'branch': cfg.get('branch', ''),
+            'file_path': cfg.get('file_path', ''),
+        }
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w') as f:
-            json.dump(cfg, f, indent=2)
+            yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
 
     def _parse_github_repo(self, url):
         """Return 'owner/repo' for a github.com URL (https/ssh/scp), else None."""
@@ -204,20 +235,43 @@ class FirmwareManager:
 
         return fw_path, normalized_name
 
+    def _info_path(self):
+        return os.path.join(self._get_firmware_dir(), 'firmware_version.yaml')
+
     def _get_local_info(self):
-        """Read locally stored firmware version metadata."""
-        info_path = os.path.join(self._get_firmware_dir(), 'firmware_version.json')
-        if os.path.exists(info_path):
-            with open(info_path, 'r') as f:
-                return json.load(f)
+        """Read locally stored firmware version metadata (YAML), falling back to
+        the pre-YAML firmware_version.json for cars that downloaded earlier."""
+        path = self._info_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    data = yaml.safe_load(f)
+                if isinstance(data, dict):
+                    return data
+            except (yaml.YAMLError, OSError):
+                pass
+        legacy = os.path.join(self._get_firmware_dir(), 'firmware_version.json')
+        if os.path.exists(legacy):
+            try:
+                with open(legacy, 'r') as f:
+                    return json.load(f)
+            except (ValueError, OSError):
+                pass
         return None
 
     def _save_local_info(self, info):
-        """Save firmware version metadata to disk."""
+        """Save firmware version metadata to disk (YAML)."""
         fw_dir = self._get_firmware_dir()
         os.makedirs(fw_dir, exist_ok=True)
-        with open(os.path.join(fw_dir, 'firmware_version.json'), 'w') as f:
-            json.dump(info, f, indent=2)
+        with open(self._info_path(), 'w') as f:
+            yaml.safe_dump(info, f, default_flow_style=False, sort_keys=False)
+        # Drop the stale JSON so the two don't diverge.
+        legacy = os.path.join(fw_dir, 'firmware_version.json')
+        if os.path.exists(legacy):
+            try:
+                os.remove(legacy)
+            except OSError:
+                pass
 
     def _find_nucleo_mount(self):
         """Find the Nucleo board's mass storage mount point."""

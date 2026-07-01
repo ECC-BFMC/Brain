@@ -7,19 +7,19 @@ import urllib.request
 import urllib.error
 from urllib.parse import urlparse
 
+import yaml
 from flask import jsonify
 
 
 class UpdateManager:
     """Handles Brain codebase updates from a configurable git remote.
 
-    The dashboard never stores or transmits credentials. The update source is
-    configured out-of-band on the Pi via ``runtime/update_config.json`` together
-    with the student's own git auth (an SSH deploy key or a credential helper set
-    up over SSH). The GitHub API is used only for the read-only check / branch
-    listing layer, with a git fallback for private, non-GitHub, rate-limited or
-    offline repositories. Applying an update is always git (fetch + fast-forward,
-    or an explicit force reset) -- never the API tarball, so no token is needed.
+    The update source (repo URL + branch) lives in the ``brain`` section of
+    ``runtime/config.yaml`` and is editable from the dashboard. Private repos are
+    reached with a read-only access token, stored on the car only. The GitHub API
+    is used for the read-only check / branch listing layer, with a git fallback
+    for private, non-GitHub, rate-limited or offline repositories. Applying an
+    update is always git (fetch + fast-forward, or an explicit force reset).
     """
 
     DEFAULT_REMOTE_NAME = 'bfmc-upstream'
@@ -31,31 +31,61 @@ class UpdateManager:
 
     # ----------------------------- config -----------------------------
 
-    def _config_path(self):
-        return os.path.join(self.repo_path, 'runtime', 'update_config.json')
+    CONFIG_SECTION = 'brain'
 
-    def _load_config(self):
-        """Read the Pi-side update config. Defaults keep zero-config behaviour:
-        an empty url means "update from origin" (the repo the student cloned)."""
-        cfg = {'remote_name': self.DEFAULT_REMOTE_NAME, 'url': '', 'branch': ''}
-        path = self._config_path()
+    def _yaml_path(self):
+        return os.path.join(self.repo_path, 'runtime', 'config.yaml')
+
+    def _read_yaml(self):
+        path = self._yaml_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    data = yaml.safe_load(f)
+                if isinstance(data, dict):
+                    return data
+            except (yaml.YAMLError, OSError):
+                pass
+        return {}
+
+    def _legacy_json_config(self):
+        """Read the pre-YAML runtime/update_config.json, if it still exists, so an
+        already-configured car keeps working after upgrading to config.yaml."""
+        path = os.path.join(self.repo_path, 'runtime', 'update_config.json')
         if os.path.exists(path):
             try:
                 with open(path, 'r') as f:
                     data = json.load(f)
                 if isinstance(data, dict):
-                    cfg['remote_name'] = str(data.get('remote_name') or cfg['remote_name']).strip()
-                    cfg['url'] = str(data.get('url') or '').strip()
-                    cfg['branch'] = str(data.get('branch') or '').strip()
+                    return data
             except (ValueError, OSError):
                 pass
+        return {}
+
+    def _load_config(self):
+        """Read the Pi-side update config from the ``brain`` section of
+        runtime/config.yaml. Defaults keep zero-config behaviour: an empty url
+        means "update from origin" (the repo the student cloned)."""
+        cfg = {'remote_name': self.DEFAULT_REMOTE_NAME, 'url': '', 'branch': ''}
+        section = self._read_yaml().get(self.CONFIG_SECTION)
+        if not isinstance(section, dict):
+            section = self._legacy_json_config()
+        cfg['remote_name'] = str(section.get('remote_name') or cfg['remote_name']).strip()
+        cfg['url'] = str(section.get('url') or '').strip()
+        cfg['branch'] = str(section.get('branch') or '').strip()
         return cfg
 
     def _save_config(self, cfg):
-        path = self._config_path()
+        path = self._yaml_path()
+        data = self._read_yaml()
+        data[self.CONFIG_SECTION] = {
+            'remote_name': cfg.get('remote_name', self.DEFAULT_REMOTE_NAME),
+            'url': cfg.get('url', ''),
+            'branch': cfg.get('branch', ''),
+        }
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w') as f:
-            json.dump(cfg, f, indent=2)
+            yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
 
     # ----------------------------- access token -----------------------------
 
@@ -648,7 +678,7 @@ class UpdateManager:
             if not ok:
                 return jsonify({
                     'success': False,
-                    'error': err or 'Set a repository URL in runtime/update_config.json first.'
+                    'error': err or 'Set a repository URL first (use the pencil next to the title).'
                 }), 400
 
             perm_err = self._adopt_preflight()

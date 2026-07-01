@@ -9,3 +9,4 @@ cryptography>=43,<45
 opencv-python          # if wheel fails, use: sudo apt-get install -y python3-opencv
 pyserial==3.5
 scipy>=1.15,<2
+PyYAML>=6,<7
