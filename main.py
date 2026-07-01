@@ -75,8 +75,6 @@ from src.utils.logConfig import get_logger
 
 # ------ New component imports ends here ------#
 
-# test
-
 # ===================================== SHUTDOWN PROCESS ====================================
 
 def shutdown_process(process, timeout=1):
