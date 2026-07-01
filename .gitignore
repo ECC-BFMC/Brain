@@ -7,3 +7,5 @@ __pycache__
 # Per-install dashboard config (repo/branch/file selections) and private-repo tokens
 /runtime/config.yaml
 /runtime/update_keys/
+# Runtime logs (per-run info/error logs, serial history)
+/runtime/temp/

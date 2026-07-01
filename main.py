@@ -54,8 +54,9 @@ from src.utils.bigPrintMessages import BigPrint
 from src.utils.outputWriters import QueueWriter, MultiWriter
 import logging
 import logging.handlers
+from src.utils.logConfig import setup_logging
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 
 # ===================================== PROCESS IMPORTS ==================================
 
@@ -81,13 +82,13 @@ def shutdown_process(process, timeout=1):
     """Helper function to gracefully shutdown a process."""
     process.join(timeout)
     if process.is_alive():
-        print(f"The process {process} cannot normally stop, it's blocked somewhere! Terminate it!")
+        print(f"\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The process \033[94m{process}\033[0m cannot normally stop, it's blocked somewhere! Terminate it!")
         process.terminate()  # force terminate if it won't stop
         process.join(timeout)  # give it a moment to terminate
         if process.is_alive():
-            print(f"The process {process} is still alive after terminate, killing it!")
+            print(f"\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The process \033[94m{process}\033[0m is still alive after terminate, killing it!")
             process.kill()  # last resort
-    print(f"The process {process} stopped")
+    print(f"\033[1;97m[ System ] :\033[0m \033[1;92mINFO\033[0m - The process \033[94m{process}\033[0m stopped")
 
 # ===================================== PROCESS MANAGEMENT ==================================
 
@@ -211,7 +212,7 @@ if __name__ == "__main__":
             blocker.wait(0.1)
 
     except KeyboardInterrupt:
-        print("\nCatching a KeyboardInterruption exception! Shutdown all processes.\n")
+        print("\n\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - Catching a KeyboardInterruption exception! Shutdown all processes.\n")
 
         for proc in reversed(allProcesses):
             proc.stop()

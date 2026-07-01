@@ -121,12 +121,12 @@ class WorkerProcess(Process):
 
                 if th.is_alive():
                     print(
-                        "The thread %s cannot normally stop, it's blocked somewhere!"
+                        "\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The thread \033[94m%s\033[0m cannot normally stop, it's blocked somewhere!"
                         % (th)
                     )
-                print("The thread %s stopped" % (th))
+                print("\033[1;97m[ System ] :\033[0m \033[1;92mINFO\033[0m - The thread \033[94m%s\033[0m stopped" % (th))
             else:
-                print("The thread %s has no stop function" % (th))
+                print("\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The thread \033[94m%s\033[0m has no stop function" % (th))
 
             del th
 
