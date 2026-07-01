@@ -34,6 +34,7 @@ import queue
 import psutil
 import json
 import inspect
+import logging
 import os
 import time
 
@@ -401,6 +402,9 @@ class processDashboard(WorkerProcess):
     def run(self):
         """Apply the initializing method."""
         repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        # silence Werkzeug's per-request access logging
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
         # setup flask and socketio
         self.app = Flask(__name__)
