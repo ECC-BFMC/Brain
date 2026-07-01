@@ -32,6 +32,7 @@ if __name__ == "__main__":
 
 from src.templates.workerprocess import WorkerProcess
 from src.gateway.threads.threadGateway import threadGateway
+from src.utils.logConfig import get_logger
 
 
 class processGateway(WorkerProcess):
@@ -42,8 +43,7 @@ class processGateway(WorkerProcess):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logger, ready_event=None, debugging=False):
-        self.logger = logger
+    def __init__(self, queueList, ready_event=None, debugging=False):
         self.debugging = debugging
         super(processGateway, self).__init__(queueList, ready_event)
 
@@ -51,7 +51,7 @@ class processGateway(WorkerProcess):
     def _init_threads(self):
         """Initializes the gateway thread."""
         
-        gatewayThread = threadGateway(self.queuesList, self.logger, self.debugging)
+        gatewayThread = threadGateway(self.queuesList, self.debugging)
         self.threads.append(gatewayThread)
 
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         "Config": Queue(),
     }
     logging = logging.getLogger()
-    process = processGateway(queueList, logging, debugging=True)
+    process = processGateway(queueList, debugging=True)
     process.daemon = True
     process.start()
 
@@ -140,9 +140,9 @@ if __name__ == "__main__":
 
     # Code to verify that the function send Owner threadGateway.py is working properly.
 
-    print(pipeReceive3.recv())
-    print(pipeReceive1.recv())
-    print(pipeReceive2.recv())
+    get_logger("Gateway").info(pipeReceive3.recv())
+    get_logger("Gateway").info(pipeReceive1.recv())
+    get_logger("Gateway").info(pipeReceive2.recv())
 
     # ===================================== STAYING ALIVE ====================================
 

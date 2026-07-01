@@ -20,17 +20,17 @@ def main():
         file.write(f'    import sys\n')
         file.write(f'    sys.path.insert(0, "../../..")\n\n')
         file.write(f'from src.templates.workerprocess import WorkerProcess\n')
-        file.write(f'from src.{category}.{package_name}.threads.thread{package_name} import thread{package_name}\n\n')
+        file.write(f'from src.{category}.{package_name}.threads.thread{package_name} import thread{package_name}\n')
+        file.write(f'from src.utils.logConfig import get_logger\n\n')
         file.write(f'class process{package_name}(WorkerProcess):\n')
         file.write(f'    """This process handles {package_name}.\n')
         file.write(f'    Args:\n')
         file.write(f'        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.\n')
-        file.write(f'        logging (logging object): Made for debugging.\n')
         file.write(f'        debugging (bool, optional): A flag for debugging. Defaults to False.\n')
         file.write(f'    """\n\n')
-        file.write(f'    def __init__(self, queueList, logging, ready_event=None, debugging=False):\n')
+        file.write(f'    def __init__(self, queueList, ready_event=None, debugging=False):\n')
         file.write(f'        self.queuesList = queueList\n')
-        file.write(f'        self.logging = logging\n')
+        file.write(f'        self.logger = get_logger("{package_name}")\n')
         file.write(f'        self.debugging = debugging\n')
         file.write(f'        super(process{package_name}, self).__init__(self.queuesList, ready_event)\n\n')
         file.write(f'    def state_change_handler(self):\n')
@@ -40,7 +40,7 @@ def main():
         file.write(f'    def _init_threads(self):\n')
         file.write(f'        """Create the {package_name} Publisher thread and add to the list of threads."""\n')
         file.write(f'        {package_name}Th = thread{package_name}(\n')
-        file.write(f'            self.queuesList, self.logging, self.debugging\n')
+        file.write(f'            self.queuesList, self.debugging\n')
         file.write(f'        )\n')
         file.write(f'        self.threads.append({package_name}Th)\n')
 
@@ -50,17 +50,17 @@ def main():
         file.write(f'from src.templates.threadwithstop import ThreadWithStop\n')
         file.write(f'from src.utils.messages.allMessages import (mainCamera)\n')
         file.write(f'from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber\n')
-        file.write(f'from src.utils.messages.messageHandlerSender import messageHandlerSender\n\n')
+        file.write(f'from src.utils.messages.messageHandlerSender import messageHandlerSender\n')
+        file.write(f'from src.utils.logConfig import get_logger\n\n')
         file.write(f'class thread{package_name}(ThreadWithStop):\n')
         file.write(f'    """This thread handles {package_name}.\n')
         file.write(f'    Args:\n')
         file.write(f'        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.\n')
-        file.write(f'        logging (logging object): Made for debugging.\n')
         file.write(f'        debugging (bool, optional): A flag for debugging. Defaults to False.\n')
         file.write(f'    """\n\n')
-        file.write(f'    def __init__(self, queueList, logging, debugging=False):\n')
+        file.write(f'    def __init__(self, queueList, debugging=False):\n')
         file.write(f'        self.queuesList = queueList\n')
-        file.write(f'        self.logging = logging\n')
+        file.write(f'        self.logger = get_logger("{package_name}")\n')
         file.write(f'        self.debugging = debugging\n')
         file.write(f'        self.subscribe()\n')
         file.write(f'        super(thread{package_name}, self).__init__()\n\n')
@@ -83,7 +83,7 @@ def main():
 
     # Add import to the lines
     import_line = f"from src.{category}.{package_name}.process{package_name} import process{package_name}\n"
-    run_line = f"{package_name}_ready = Event()\nprocess{package_name} = process{package_name}(queueList, logging, {package_name}_ready, debugging = False)\nallProcesses.insert(0, process{package_name})\n"
+    run_line = f"{package_name}_ready = Event()\nprocess{package_name} = process{package_name}(queueList, {package_name}_ready, debugging = False)\nallProcesses.insert(0, process{package_name})\n"
 
     import_index = run_index = None
     for i, line in enumerate(lines):

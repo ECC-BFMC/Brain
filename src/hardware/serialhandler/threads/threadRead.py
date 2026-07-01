@@ -51,6 +51,7 @@ from src.utils.messages.allMessages import (
     AliveSignal
 )
 from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.logConfig import get_logger
 
 
 class threadRead(ThreadWithStop):
@@ -63,13 +64,13 @@ class threadRead(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, process, logFile, queueList, logger, debugger = False):
+    def __init__(self, process, logFile, queueList, debugger = False):
         super(threadRead, self).__init__(pause=0.01)
         self.process = process
         self.logFile = logFile
         self.buffer = ""
         self.queuesList = queueList
-        self.logger = logger
+        self.logger = get_logger("Serial Handler")
         self.debugger = debugger
         self.event = threading.Event()
         self._init_senders()
@@ -119,7 +120,7 @@ class threadRead(ThreadWithStop):
                     except Exception as e:
                         if self._should_send_error():
                             self.serialConnectionStateSender.send(False)
-                            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Reading from serial ({e})")
+                            self.logger.error(f"Reading from serial ({e})")
                         return
 
             while ";;" in self.buffer:
@@ -129,12 +130,12 @@ class threadRead(ThreadWithStop):
                     try:
                         self.send_queue(msg.strip())
                     except Exception as e:
-                        print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Processing message \033[94m{msg.strip()}\033[0m ({e})")
+                        self.logger.error(f"Processing message {msg.strip()} ({e})")
 
         except Exception as e:
             if self._should_send_error():
                 self.serialConnectionStateSender.send(False)
-                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Thread run method ({e})")
+                self.logger.error(f"Thread run method ({e})")
 
     # ==================================== SENDING =======================================
     def queue_sending(self):
@@ -220,21 +221,21 @@ class threadRead(ThreadWithStop):
             elif action == "warning":
                 data = re.match(self.warningPattern, value)
                 if data:
-                    print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Shutdown in \033[94m{data.group(1)}h {data.group(2)}m {data.group(3)}s\033[0m")
+                    self.logger.warning(f"Shutdown in {data.group(1)}h {data.group(2)}m {data.group(3)}s")
                     self.warningSender.send(data)
                     
             elif action == "shutdown":
-                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - \033[94mShutting down now!\033[0m")
+                self.logger.warning("Shutting down now!")
                 self.event.wait(3)
                 os.system("sudo shutdown -h now")
             
     def check_valid_value(self, action, message):
         if message == "syntax error":
-            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Invalid \033[94m{action.upper()}\033[0m value (expected {self.expectedValues[action]})")
+            self.logger.warning(f"Invalid {action.upper()} value (expected {self.expectedValues[action]})")
             return False
     
         if message == "kl 15/30 is required!!":
-            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - KL 15/30 required for \033[94m{action.upper()}\033[0m")
+            self.logger.warning(f"KL 15/30 required for {action.upper()}")
             return False
         
         if message == "ack":

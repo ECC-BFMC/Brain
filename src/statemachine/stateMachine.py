@@ -35,6 +35,7 @@ from src.statemachine.systemMode import SystemMode
 from src.statemachine.transitionTable import TransitionTable
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.allMessages import StateChange
+from src.utils.logConfig import get_logger
 
 class StateMachine:
     """
@@ -148,7 +149,7 @@ class StateMachine:
             # validate transition
             mode = TransitionTable.get_next_mode(current_mode, action)
             if not mode['transition_valid']:
-                print(f"\033[1;97m[ State Machine ] :\033[0m \033[1;93mWARNING\033[0m - Invalid transition from \033[1;94m{current_mode.name}\033[0m with action \033[1;94m{action}\033[0m, ignoring request")
+                get_logger("State Machine").warning(f"Invalid transition from {current_mode.name} with action {action}, ignoring request")
                 return False
 
             self._shared_state['mode'] = mode['next_mode']
@@ -157,7 +158,7 @@ class StateMachine:
                 # print(f"\033[1;97m[ State Machine ] :\033[0m \033[1;93mWARNING\033[0m - Already in \033[1;94m{mode['next_mode'].name}\033[0m mode")
                 return False
             
-            print(f"\033[1;97m[ State Machine ] :\033[0m \033[1;92mINFO\033[0m - Mode changed from \033[1;94m{current_mode.name}\033[0m to \033[1;94m{mode['next_mode'].name}\033[0m")
+            get_logger("State Machine").info(f"Mode changed from {current_mode.name} to {mode['next_mode'].name}")
 
             # send state change notification
             self._send_state_change(mode['next_mode'])
@@ -177,7 +178,7 @@ class StateMachine:
             try:
                 self.stateChangeSender.send(mode.name)
             except Exception as e:
-                print(f"\033[1;97m[ State Machine ] :\033[0m \033[1;93mWARNING\033[0m - Failed to send state change: {e}")
+                get_logger("State Machine").warning(f"Failed to send state change: {e}")
 
     @classmethod
     def _send_starting_mode(cls, mode: SystemMode):
@@ -186,9 +187,9 @@ class StateMachine:
             try:
                 sender = messageHandlerSender(cls._queueList, StateChange)
                 sender.send(mode.name)
-                print(f"\033[1;97m[ State Machine ] :\033[0m \033[1;92mINFO\033[0m - Starting in \033[1;94m{mode.name}\033[0m mode")
+                get_logger("State Machine").info(f"Starting in {mode.name} mode")
             except Exception as e:
-                print(f"\033[1;97m[ State Machine ] :\033[0m \033[1;93mWARNING\033[0m - Failed to send starting mode: {e}")
+                get_logger("State Machine").warning(f"Failed to send starting mode: {e}")
 
     @classmethod
     def cleanup(cls):
@@ -197,7 +198,7 @@ class StateMachine:
             try:
                 cls._manager.shutdown()
             except Exception as e:
-                print(f"StateMachine: Error during cleanup: {e}")
+                get_logger("State Machine").error(f"Error during cleanup: {e}")
             finally:
                 cls._manager = None
                 cls._shared_state = None

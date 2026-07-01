@@ -52,8 +52,6 @@ sys.path.append(".")
 from multiprocessing import Queue, Event
 from src.utils.bigPrintMessages import BigPrint
 from src.utils.outputWriters import QueueWriter, MultiWriter
-import logging
-import logging.handlers
 from src.utils.logConfig import setup_logging
 
 setup_logging()
@@ -70,6 +68,7 @@ from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.allMessages import StateChange
 from src.statemachine.stateMachine import StateMachine
 from src.statemachine.systemMode import SystemMode
+from src.utils.logConfig import get_logger
 
 # ------ New component imports starts here ------#
 
@@ -82,13 +81,13 @@ def shutdown_process(process, timeout=1):
     """Helper function to gracefully shutdown a process."""
     process.join(timeout)
     if process.is_alive():
-        print(f"\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The process \033[94m{process}\033[0m cannot normally stop, it's blocked somewhere! Terminate it!")
+        get_logger("System").warning(f"The process {process} cannot normally stop, it's blocked somewhere! Terminate it!")
         process.terminate()  # force terminate if it won't stop
         process.join(timeout)  # give it a moment to terminate
         if process.is_alive():
-            print(f"\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The process \033[94m{process}\033[0m is still alive after terminate, killing it!")
+            get_logger("System").warning(f"The process {process} is still alive after terminate, killing it!")
             process.kill()  # last resort
-    print(f"\033[1;97m[ System ] :\033[0m \033[1;92mINFO\033[0m - The process \033[94m{process}\033[0m stopped")
+    get_logger("System").info(f"The process {process} stopped")
 
 # ===================================== PROCESS MANAGEMENT ==================================
 
@@ -131,8 +130,6 @@ if __name__ == "__main__":
         "Config": Queue(),
         "Log": Queue(),
     }
-    logging = logging.getLogger()
-
     original_stdout = sys.stdout
     original_stderr = sys.stderr
 
@@ -146,30 +143,30 @@ if __name__ == "__main__":
     StateMachine.initialize_shared_state(queueList)
 
     # Initializing gateway
-    processGateway = processGateway(queueList, logging)
+    processGateway = processGateway(queueList)
     processGateway.start()
 
     # ===================================== INITIALIZE PROCESSES ==================================
 
     # Initializing dashboard
     dashboard_ready = Event()
-    processDashboard = processDashboard(queueList, logging, dashboard_ready, debugging = False)
+    processDashboard = processDashboard(queueList, dashboard_ready, debugging = False)
 
     # Initializing camera
     camera_ready = Event()
-    processCamera = processCamera(queueList, logging, camera_ready, debugging = False, dev_mode=args.dev)
+    processCamera = processCamera(queueList, camera_ready, debugging = False, dev_mode=args.dev)
 
     # Initializing semaphores
     semaphore_ready = Event()
-    processSemaphore = processSemaphores(queueList, logging, semaphore_ready, debugging = False)
+    processSemaphore = processSemaphores(queueList, semaphore_ready, debugging = False)
 
     # Initializing GPS
     traffic_com_ready = Event()
-    processTrafficCom = processTrafficCommunication(queueList, logging, 3, traffic_com_ready, debugging = False)
+    processTrafficCom = processTrafficCommunication(queueList, 3, traffic_com_ready, debugging = False)
 
     # Initializing serial connection NUCLEO - > PI
     serial_handler_ready = Event()
-    processSerialHandler = processSerialHandler(queueList, logging, serial_handler_ready, dashboard_ready, debugging = False, use_mock=args.dev)
+    processSerialHandler = processSerialHandler(queueList, serial_handler_ready, dashboard_ready, debugging = False, use_mock=args.dev)
 
     # Adding all processes to the list
     allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
@@ -206,13 +203,13 @@ if __name__ == "__main__":
                 modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
                 modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
 
-                processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, logging, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
-                processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, logging, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
+                processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
+                processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
 
             blocker.wait(0.1)
 
     except KeyboardInterrupt:
-        print("\n\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - Catching a KeyboardInterruption exception! Shutdown all processes.\n")
+        get_logger("System").warning("Catching a KeyboardInterruption exception! Shutdown all processes.")
 
         for proc in reversed(allProcesses):
             proc.stop()

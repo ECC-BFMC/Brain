@@ -46,6 +46,7 @@ from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.statemachine.systemMode import SystemMode
 from src.utils.messages.allMessages import StateChange, SerialConnectionState
+from src.utils.logConfig import get_logger
 
 class processSerialHandler(WorkerProcess):
     """This process handle connection between NUCLEO and Raspberry PI.\n
@@ -57,11 +58,11 @@ class processSerialHandler(WorkerProcess):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, queueList, logging, ready_event=None, dashboard_ready=None, debugging=False, example=False, use_mock=False):
+    def __init__(self, queueList, ready_event=None, dashboard_ready=None, debugging=False, example=False, use_mock=False):
         # devFile = "/dev/ttyACM0"
         logFile = os.path.join("runtime", "temp", "serial_history.log")
 
-        self.logger = logging
+        self.logger = get_logger("Serial Handler")
         self.queuesList = queueList
         self.debugging = debugging
         self.example = example
@@ -97,9 +98,9 @@ class processSerialHandler(WorkerProcess):
             try:
                 self.serialCon.close()
             except (OSError, serial.SerialException) as e:
-                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Error closing serial connection: {e}")
+                self.logger.warning(f"Error closing serial connection: {e}")
             except Exception as e:
-                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Unexpected error closing serial: {e}")
+                self.logger.error(f"Unexpected error closing serial: {e}")
 
     def _try_serial_connection(self):
         """Try to connect to the serial device."""
@@ -109,7 +110,7 @@ class processSerialHandler(WorkerProcess):
                 self.serialDevice = "MOCK_NUCLEO"
                 self.serialCon = NucleoMockSerial()
                 self.serialConnected = True
-                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;92mINFO\033[0m - Connected to \033[94m{self.serialDevice}\033[0m")
+                self.logger.info(f"Connected to {self.serialDevice}")
                 return
 
             try:
@@ -121,7 +122,7 @@ class processSerialHandler(WorkerProcess):
                 self.serialCon.reset_input_buffer()
                 self.serialCon.reset_output_buffer()
                 self.serialConnected = True
-                print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;92mINFO\033[0m - Connected to \033[94m{self.serialDevice}\033[0m")
+                self.logger.info(f"Connected to {self.serialDevice}")
 
             except (serial.SerialException, FileNotFoundError):
                 self._safe_close_serial()
@@ -175,7 +176,7 @@ class processSerialHandler(WorkerProcess):
             if self.reconnecting or not self.serialConnected:
                 return
 
-            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Serial device disconnected")
+            self.logger.warning("Serial device disconnected")
 
             # mark as disconnected
             self.serialConnected = False
@@ -199,7 +200,7 @@ class processSerialHandler(WorkerProcess):
         self._try_serial_connection()
 
         if not self.serialConnected:
-            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - No serial connection found")
+            self.logger.warning("No serial connection found")
             if not self.use_mock:
                 threading.Timer(1, self._try_reconnect).start()
 
@@ -243,21 +244,21 @@ class processSerialHandler(WorkerProcess):
                     try:
                         self.serialCon.close()
                     except Exception as e:
-                        print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Error closing serial port: {e}")
+                        self.logger.warning(f"Error closing serial port: {e}")
         else:
             if self.serialCon:
                 try:
                     self.serialCon.close()
                 except Exception as e:
-                    print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;93mWARNING\033[0m - Error closing serial port: {e}")
+                    self.logger.warning(f"Error closing serial port: {e}")
 
         super(processSerialHandler, self).stop()
 
     # ===================================== INIT TH =================================
     def _init_threads(self):
         """Initializes the read and the write thread."""
-        readTh = threadRead(self, self.historyFile, self.queuesList, self.logger, self.debugging)
-        writeTh = threadWrite(self, self.historyFile, self.queuesList, self.logger, self.debugging, self.example)
+        readTh = threadRead(self, self.historyFile, self.queuesList, self.debugging)
+        writeTh = threadWrite(self, self.historyFile, self.queuesList, self.debugging, self.example)
         self.threads.extend([readTh, writeTh])
 
         if not self.serialConnected:
@@ -282,9 +283,8 @@ if __name__ == "__main__":
         "General": Queue(),
         "Config": Queue(),
     }
-    logger = logging.getLogger()
     pipeRecv, pipeSend = Pipe(duplex=False)
-    process = processSerialHandler(queueList, logger, debugg, True)
+    process = processSerialHandler(queueList, debugg, True)
     process.daemon = True
     process.start()
     time.sleep(4)  # modify the value to increase/decrease the time of the example

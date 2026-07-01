@@ -45,6 +45,7 @@ from src.utils.messages.allMessages import ControlCalib, CalibPWMData, CalibRunD
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.statemachine.stateMachine import StateMachine
+from src.utils.logConfig import get_logger
 
 
 class Calibration():
@@ -178,7 +179,7 @@ class Calibration():
                 'success': True,
                 'zipData': zip_data
             }, room=socketId)
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;92mCalibration files successfully generated and saved\033[0m")
+            get_logger("Calibration").info(f"Calibration files successfully generated and saved")
 
         elif action == 'get_status':
             self.send_calibration_status(socketId)
@@ -263,7 +264,7 @@ class Calibration():
                             limit_points.append([scaled, int(pwm)])
 
                     except Exception as e:
-                        print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Could not evaluate limit points: {e}")
+                        get_logger("Calibration").error(f"Could not evaluate limit points: {e}")
 
                 response['limitPointsData'] = {
                     'points': limit_points,
@@ -280,10 +281,6 @@ class Calibration():
             'zeroOffsetData': self.zero_offset_spline_data_for_frontend
         }
         self.socketio.emit('Calibration', response, room=socketId)
-        # if self.zero_offset_spline_data_for_frontend:
-        #     print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mZero offset spline data sent to frontend\033[0m")
-        # else:
-        #     print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - No zero offset spline data to send")
 
 
     def send_current_run_value(self, direction, socketId):
@@ -354,7 +351,7 @@ class Calibration():
 
         # a cubic spline requires at least 4 points
         if len(focused_points) < 4:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough points for cubic spline interpolation ({len(focused_points)} found), using 0° as fallback. At least 4 are needed.")
+            get_logger("Calibration").warning(f"Not enough points for cubic spline interpolation ({len(focused_points)} found), using 0° as fallback. At least 4 are needed.")
             corrected_steer = 0
             self.zero_offset_spline_data_for_frontend = None
         else:
@@ -363,7 +360,7 @@ class Calibration():
             
             actual_steers = [p[1] for p in focused_points]
             if not (any(s < 0 for s in actual_steers) and any(s > 0 for s in actual_steers)):
-                print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Focused calibration points do not bracket actual_steer=0. Cannot interpolate accurately. Using 0° as fallback.")
+                get_logger("Calibration").warning(f"Focused calibration points do not bracket actual_steer=0. Cannot interpolate accurately. Using 0° as fallback.")
                 corrected_steer = 0
                 self.zero_offset_spline_data_for_frontend = None
             else:
@@ -381,7 +378,7 @@ class Calibration():
                     unique_points.append([sum(desireds) / len(desireds), actual])
 
                 if len(unique_points) < 4:
-                    print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough unique points for cubic spline ({len(unique_points)} found), using 0° as fallback. At least 4 are needed.")
+                    get_logger("Calibration").warning(f"Not enough unique points for cubic spline ({len(unique_points)} found), using 0° as fallback. At least 4 are needed.")
                     corrected_steer = 0
                     self.zero_offset_spline_data_for_frontend = None
                 else:
@@ -413,14 +410,14 @@ class Calibration():
                         }
 
                     except Exception as e:
-                        print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Cubic spline interpolation failed: {e}. Using 0° as fallback.")
+                        get_logger("Calibration").error(f"Cubic spline interpolation failed: {e}. Using 0° as fallback.")
                         corrected_steer = 0
                         self.zero_offset_spline_data_for_frontend = None
         
         # store the steering offset for limit adjustment
         self.steering_offset = corrected_steer
 
-        print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;94mCorrected steer: {corrected_steer}\033[0m")
+        get_logger("Calibration").info(f"Corrected steer: {corrected_steer}")
         self.controlCalibSender.send({
             'Time': self.test_run['time'], 
             'Speed': self.test_run['speed'], 
@@ -461,7 +458,7 @@ class Calibration():
         # we need to use current_step - 1 to get the command that was just executed
         command_index = self.current_step - 1
         if command_index < 0 or command_index >= len(self.commands[direction]):
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Invalid command index {command_index}")
+            get_logger("Calibration").error(f"Invalid command index {command_index}")
             return
         
         target_command = self.commands[direction][command_index]
@@ -742,12 +739,12 @@ class Calibration():
     def fit_cubic_spline(self, points, type):
         """Fit a shape-preserving piecewise cubic curve with guarded endpoint extension."""
         if len(points) < 2:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough points to calculate spline for {type}")
+            get_logger("Calibration").warning(f"Not enough points to calculate spline for {type}")
             return None, None, None, []
 
         filtered_points = self._prepare_curve_points(points, type)
         if len(filtered_points) < 2:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough unique points after filtering to calculate spline for {type}")
+            get_logger("Calibration").warning(f"Not enough unique points after filtering to calculate spline for {type}")
             return None, None, filtered_points, []
 
         synthetic_points = []
@@ -763,7 +760,7 @@ class Calibration():
         try:
             cs = PchipInterpolator(x_all, y_all)
         except Exception as e:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Could not create cubic spline for {type}: {e}")
+            get_logger("Calibration").error(f"Could not create cubic spline for {type}: {e}")
             return None, None, filtered_points, synthetic_points
         
         # extract spline coefficients for each segment
@@ -888,7 +885,7 @@ class Calibration():
                     f"#define calib_sup_limit {adjusted_sup_limit}",
                     new_content
                 )
-                print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mSet calib_sup_limit to {adjusted_sup_limit} (original: {sup_limit}, offset: {offset_scaled})")
+                get_logger("Calibration").info(f"Set calib_sup_limit to {adjusted_sup_limit} (original: {sup_limit}, offset: {offset_scaled})")
             
             if self.max_angle_left is not None:
                 inf_limit = int(-self.max_angle_left * self.STEER_SCALING_FACTOR)
@@ -898,7 +895,7 @@ class Calibration():
                     f"#define calib_inf_limit {adjusted_inf_limit}",
                     new_content
                 )
-                print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mSet calib_inf_limit to {adjusted_inf_limit} (original: {inf_limit}, offset: {offset_scaled})")
+                get_logger("Calibration").info(f"Set calib_inf_limit to {adjusted_inf_limit} (original: {inf_limit}, offset: {offset_scaled})")
 
         output_dir = "calibration/source/drivers"
         if not os.path.exists(output_dir):
@@ -1148,10 +1145,8 @@ class Calibration():
                     )
                 )
             except Exception as exc:
-                print(
-                    f"\033[1;97m[ Calibration ] :\033[0m "
-                    f"\033[1;93mWARNING\033[0m - Skipping incompatible saved calibration "
-                    f"'{filename}': {exc}"
+                get_logger("Calibration").warning(
+                    f"Skipping incompatible saved calibration '{filename}': {exc}"
                 )
 
         measurements.sort(
@@ -1304,7 +1299,7 @@ class Calibration():
             return zip_base64
             
         except Exception as e:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mError creating zip file: {str(e)}\033[0m")
+            get_logger("Calibration").info(f"Error creating zip file: {str(e)}")
             return None
 
     

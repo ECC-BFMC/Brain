@@ -28,6 +28,8 @@
 
 from multiprocessing import Process, Event
 
+from src.utils.logConfig import get_logger
+
 
 class WorkerProcess(Process):
     def __init__(self, queuesList, ready_event=None, daemon=True):
@@ -103,8 +105,10 @@ class WorkerProcess(Process):
                     self._resume_event.clear()
                     
                 self._blocker.wait(0.1) # shorter wait for responsiveness
-            except KeyboardInterrupt as e:
-                print(e)
+            except KeyboardInterrupt:
+                # Ctrl+C is handled by the parent process, which shuts us down
+                # via stop(); ignore it here so shutdown stays coordinated.
+                continue
                 
         # cleanup section
         self.stop_threads()
@@ -120,13 +124,10 @@ class WorkerProcess(Process):
                 th.join(1)
 
                 if th.is_alive():
-                    print(
-                        "\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The thread \033[94m%s\033[0m cannot normally stop, it's blocked somewhere!"
-                        % (th)
-                    )
-                print("\033[1;97m[ System ] :\033[0m \033[1;92mINFO\033[0m - The thread \033[94m%s\033[0m stopped" % (th))
+                    get_logger("System").warning("The thread %s cannot normally stop, it's blocked somewhere!" % (th))
+                get_logger("System").info("The thread %s stopped" % (th))
             else:
-                print("\033[1;97m[ System ] :\033[0m \033[1;93mWARNING\033[0m - The thread \033[94m%s\033[0m has no stop function" % (th))
+                get_logger("System").warning("The thread %s has no stop function" % (th))
 
             del th
 

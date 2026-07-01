@@ -50,6 +50,7 @@ from src.utils.messages.allMessages import (
 )
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.logConfig import get_logger
 
 
 class threadWrite(ThreadWithStop):
@@ -63,13 +64,13 @@ class threadWrite(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, process, logFile, queues, logger, debugger = False, example=False):
+    def __init__(self, process, logFile, queues, debugger = False, example=False):
         super(threadWrite, self).__init__(pause=0.001)
         self.process = process
         self.queuesList = queues
         self.logFile = logFile
         self.exampleFlag = example
-        self.logger = logger
+        self.logger = get_logger("Serial Handler")
         self.debugger = debugger
 
         self.running = False
@@ -126,7 +127,7 @@ class threadWrite(ThreadWithStop):
             except Exception as e:
                 if self._should_send_error():
                     self.serialConnectionStateSender.send(False)
-                    print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Failed to write to serial ({e})")
+                    self.logger.error(f"Failed to write to serial ({e})")
 
     def load_config(self, configType):
         with open(self.configPath, "r") as file:
@@ -274,7 +275,7 @@ class threadWrite(ThreadWithStop):
                     self.send_to_serial(command)
 
         except Exception as e:
-            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - {e}")
+            self.logger.error(f"{e}")
             self.serialConnectionStateSender.send(False)
 
     # ==================================== START =========================================

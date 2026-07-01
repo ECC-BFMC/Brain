@@ -48,9 +48,8 @@ class processCamera(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, ready_event=None, debugging=False, dev_mode=False):
+    def __init__(self, queueList, ready_event=None, debugging=False, dev_mode=False):
         self.queuesList = queueList
-        self.logging = logging
         self.debugging = debugging
         self.dev_mode = dev_mode
         self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
@@ -72,7 +71,7 @@ class processCamera(WorkerProcess):
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
         camTh = threadCamera(
-         self.queuesList, self.logging, self.debugging, self.dev_mode
+         self.queuesList, self.debugging, self.dev_mode
         )
         self.threads.append(camTh)
 
@@ -99,9 +98,7 @@ if __name__ == "__main__":
         "Config": Queue(),
     }
 
-    logger = logging.getLogger()
-
-    process = processCamera(queueList, logger, debugg)
+    process = processCamera(queueList, debugg)
 
     process.daemon = True
     process.start()

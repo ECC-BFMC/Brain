@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 from src.templates.threadwithstop import ThreadWithStop
+from src.utils.logConfig import get_logger
 import time
 
 class threadGateway(ThreadWithStop):
@@ -39,9 +40,9 @@ class threadGateway(ThreadWithStop):
 
     # ===================================== INIT =========================================
 
-    def __init__(self, queueList, logger, debugging):
+    def __init__(self, queueList, debugging):
         super(threadGateway, self).__init__(pause=0.001)
-        self.logger = logger
+        self.logger = get_logger("Gateway")
         self.debugging = debugging
         self.sendingList = {}
         self.queuesList = queueList

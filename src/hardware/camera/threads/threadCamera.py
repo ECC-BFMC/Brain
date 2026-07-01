@@ -50,6 +50,7 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import StateChange
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.statemachine.systemMode import SystemMode
+from src.utils.logConfig import get_logger
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
@@ -60,10 +61,10 @@ class threadCamera(ThreadWithStop):
     """
 
     # ================================ INIT ===============================================
-    def __init__(self, queuesList, logger, debugger, dev_mode=False):
+    def __init__(self, queuesList, debugger, dev_mode=False):
         super(threadCamera, self).__init__(pause=0.001)
         self.queuesList = queuesList
-        self.logger = logger
+        self.logger = get_logger("Camera")
         self.debugger = debugger
         self.dev_mode = dev_mode
         self.frame_rate = 5
@@ -127,7 +128,7 @@ class threadCamera(ThreadWithStop):
                     )
 
         except Exception as e:
-            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
+            get_logger("Camera").error(f"{e}")
 
         try:
             mainRequest = self.camera.capture_array("main")
@@ -150,7 +151,7 @@ class threadCamera(ThreadWithStop):
             self.mainCameraSender.send(mainEncodedImageData)
             self.serialCameraSender.send(serialEncodedImageData)
         except Exception as e:
-            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
+            get_logger("Camera").error(f"{e}")
 
     # ================================ STATE CHANGE HANDLER ========================================
     def state_change_handler(self):
@@ -159,7 +160,7 @@ class threadCamera(ThreadWithStop):
             modeDict = SystemMode[message].value["camera"]["thread"]
 
             if "resolution" in modeDict:
-                print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - Resolution changed to {modeDict['resolution']}")
+                get_logger("Camera Thread").info(f"Resolution changed to {modeDict['resolution']}")
 
     # ================================ INIT CAMERA ========================================
     def _init_camera(self):
@@ -171,14 +172,14 @@ class threadCamera(ThreadWithStop):
 
         if not HAS_PICAMERA2:
             self.camera = None
-            print("\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - No picamera2 available. Camera functionality will be disabled.")
+            get_logger("Camera Thread").error("No picamera2 available. Camera functionality will be disabled.")
             return
 
         try:
             # check if camera is available
             if len(picamera2.Picamera2.global_camera_info()) == 0:
                 self.camera = None
-                print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - No camera detected. Camera functionality will be disabled.")
+                get_logger("Camera Thread").error(f"No camera detected. Camera functionality will be disabled.")
                 return
             
             self.camera = picamera2.Picamera2()
@@ -191,15 +192,15 @@ class threadCamera(ThreadWithStop):
             )
             self.camera.configure(config) # type: ignore
             self.camera.start()
-            print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - Camera initialized successfully")
+            get_logger("Camera Thread").info(f"Camera initialized successfully")
         except Exception as e:
             self.camera = None
-            print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - Failed to initialize camera: {e}")
+            get_logger("Camera Thread").error(f"Failed to initialize camera: {e}")
 
     def _init_offline_camera(self, reason):
         self.offlineCamera = OfflineCamera()
         self.camera = None
-        print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - {reason}. Using OFFLINE placeholder sequence.")
+        get_logger("Camera Thread").info(f"{reason}. Using OFFLINE placeholder sequence.")
 
     # =============================== STOP ================================================
     def stop(self):

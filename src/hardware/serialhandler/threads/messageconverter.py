@@ -27,6 +27,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 
+from src.utils.logConfig import get_logger
+
+
 class MessageConverter:
     """Creates the message to be sent over the serial communication
 
@@ -112,20 +115,20 @@ class MessageConverter:
             The dictionary with the names and values of command parameters, it has to contain all parameters defined in the commands dictionary.
         """
         if len(commandDict.keys()) != len(MessageConverter.commands[action][0]):
-            print( "Number of arguments does not match" + str(len(commandDict.keys())), str(len(MessageConverter.commands[action][0])))
+            get_logger("Message Converter").warning("Number of arguments does not match " + str(len(commandDict.keys())) + " vs " + str(len(MessageConverter.commands[action][0])))
             return False
         for i, [key, value] in enumerate(commandDict.items()):
             if key not in MessageConverter.commands[action][0]:
-                print(action + " should not contain key: " + key)
+                get_logger("Message Converter").warning(action + " should not contain key: " + key)
                 return False
             elif type(value) != int:
-                print(action + " should be of type int instead of " + str(type(value)))
+                get_logger("Message Converter").warning(action + " should be of type int instead of " + str(type(value)))
                 return False
             elif value<0 and len(str(value)) > (MessageConverter.commands[action][1][i]+1):
-                print(action + " should have " + str(MessageConverter.commands[action][1][i]) + " digits ")
+                get_logger("Message Converter").warning(action + " should have " + str(MessageConverter.commands[action][1][i]) + " digits ")
                 return False
             elif value>0 and len(str(value)) > MessageConverter.commands[action][1][i]:
-                print(action + " should have " + str(MessageConverter.commands[action][1][i]) + " digits ")
+                get_logger("Message Converter").warning(action + " should have " + str(MessageConverter.commands[action][1][i]) + " digits ")
                 return False
 
         return True

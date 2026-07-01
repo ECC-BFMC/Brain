@@ -54,6 +54,7 @@ from src.dashboard.components.updates import UpdateManager
 from src.dashboard.components.firmware import FirmwareManager
 
 import src.utils.messages.allMessages as allMessages
+from src.utils.logConfig import get_logger
 
 
 class processDashboard(WorkerProcess):
@@ -65,14 +66,14 @@ class processDashboard(WorkerProcess):
         debugging (bool): Enable debugging mode.
     """
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, ready_event=None, debugging = False):
+    def __init__(self, queueList, ready_event=None, debugging = False):
         self.fast_stream_interval = 0.03
         self.default_stream_interval = 0.1
         self.fast_stream_candidates = ("serialCamera", "mainCamera")
 
         self.running = True
         self.queueList = queueList
-        self.logger = logging
+        self.logger = get_logger("Dashboard")
         self.debugging = debugging
 
         # state machine
@@ -468,7 +469,7 @@ class processDashboard(WorkerProcess):
             if dataName == "SessionAccess":
                 self.handle_single_user_session(socketId)
             elif self.sessionActive and self.activeUser != socketId:
-                print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;93mWARNING\033[0m - Message received from unauthorized user \033[94m{socketId}\033[0m")
+                get_logger("Dashboard").warning(f"Message received from unauthorized user {socketId}")
                 return
 
             if dataName == "Heartbeat":
@@ -517,14 +518,14 @@ class processDashboard(WorkerProcess):
         if not self.sessionActive:
             self.sessionActive = True
             self.activeUser = socketId
-            print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;92mINFO\033[0m - Session access granted to \033[94m{socketId}\033[0m")
+            get_logger("Dashboard").info(f"Session access granted to {socketId}")
             self.socketio.emit('session_access', {'data': True}, room=socketId)
             self.send_message_to_brain("RequestSteerLimits", {"Value": True})
         elif self.activeUser == socketId:
             self.socketio.emit('session_access', {'data': True}, room=socketId)
             self.send_message_to_brain("RequestSteerLimits", {"Value": True})
         else:
-            print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;92mINFO\033[0m - Session access denied to \033[94m{socketId}\033[0m")
+            get_logger("Dashboard").info(f"Session access denied to {socketId}")
             self.socketio.emit('session_access', {'data': False}, room=socketId)
 
 
@@ -602,7 +603,7 @@ class processDashboard(WorkerProcess):
             if self.heartbeat_retries < self.heartbeat_max_retries:
                 self.socketio.emit('heartbeat', {'data': 'Heartbeat'})
             else:
-                print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;93mWARNING\033[0m - Connection lost with peer \033[94m{self.activeUser}\033[0m")
+                get_logger("Dashboard").warning(f"Connection lost with peer {self.activeUser}")
                 self.socketio.emit('heartbeat_disconnect', {'data': 'Heartbeat timeout'})
                 self.sessionActive = False
                 self.activeUser = None

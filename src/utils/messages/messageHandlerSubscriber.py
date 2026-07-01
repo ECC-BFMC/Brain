@@ -29,6 +29,8 @@
 import inspect
 from multiprocessing import Pipe
 
+from src.utils.logConfig import get_logger
+
 class messageHandlerSubscriber: 
     """Class which will handle subscriber functionalities.\n
     Args:
@@ -53,8 +55,8 @@ class messageHandlerSubscriber:
             self.subscribe()
 
         if self._deliveryMode not in ["fifo", "lastonly"]:
-            print("WARNING! Wrong delivery mode supplied.", deliveryMode, "instead of FIFO or LastOnly.", self._message, self._receiver)
-            print("WARNING! Switching to FIFO")
+            get_logger("Message Handler").warning(f"Wrong delivery mode supplied: {deliveryMode} instead of FIFO or LastOnly. ({self._message}, {self._receiver})")
+            get_logger("Message Handler").warning("Switching to FIFO")
             self._deliveryMode = "fifo"
 
     def receive(self):
@@ -81,7 +83,7 @@ class messageHandlerSubscriber:
         
         if self._deliveryMode == "fifo":
             if messageType != self._message.msgType.value:
-                print("WARNING! Message type and value type are not matching.", self._message, "received:", messageType, "expected:", self._message.msgType.value)
+                get_logger("Message Handler").warning(f"Message type and value type are not matching. {self._message} received: {messageType} expected: {self._message.msgType.value}")
             return message["value"]
         
         elif self._deliveryMode == "lastonly":
@@ -89,7 +91,7 @@ class messageHandlerSubscriber:
                 message = self._pipeRecv.recv()
 
             if messageType != self._message.msgType.value:
-                print("WARNING! Message type and value type are not matching.", self._message, "received:", messageType, "expected:", self._message.msgType.value)
+                get_logger("Message Handler").warning(f"Message type and value type are not matching. {self._message} received: {messageType} expected: {self._message.msgType.value}")
             return message["value"]
         
     def empty(self):
