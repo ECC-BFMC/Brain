@@ -52,7 +52,6 @@ class processSerialHandler(WorkerProcess):
     """This process handle connection between NUCLEO and Raspberry PI.\n
     Args:
         queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-        logging (logging object): Made for debugging.
         debugging (bool, optional): A flag for debugging. Defaults to False.
         example (bool, optional): A flag for running the example. Defaults to False.
     """
@@ -271,7 +270,6 @@ class processSerialHandler(WorkerProcess):
 
 if __name__ == "__main__":
     from multiprocessing import Queue, Pipe
-    import logging
     import time
 
     allProcesses = list()

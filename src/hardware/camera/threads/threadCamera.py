@@ -56,17 +56,16 @@ class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
     Args:
         queuesList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-        logger (logging object): Made for debugging.
         debugger (bool): A flag for debugging.
     """
 
     # ================================ INIT ===============================================
-    def __init__(self, queuesList, debugger, dev_mode=False):
+    def __init__(self, queuesList, debugger, use_mock=False):
         super(threadCamera, self).__init__(pause=0.001)
         self.queuesList = queuesList
         self.logger = get_logger("Camera")
         self.debugger = debugger
-        self.dev_mode = dev_mode
+        self.use_mock = use_mock
         self.frame_rate = 5
         self.recording = False
 
@@ -166,8 +165,8 @@ class threadCamera(ThreadWithStop):
     def _init_camera(self):
         """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
 
-        if self.dev_mode:
-            self._init_offline_camera("Development mode enabled")
+        if self.use_mock:
+            self._init_offline_camera("Mock mode enabled")
             return
 
         if not HAS_PICAMERA2:

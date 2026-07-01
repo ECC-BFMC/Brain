@@ -62,7 +62,6 @@ class processDashboard(WorkerProcess):
     
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-        logging (logging object): Made for debugging.
         debugging (bool): Enable debugging mode.
     """
     # ====================================== INIT ==========================================

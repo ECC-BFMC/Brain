@@ -43,15 +43,14 @@ class processCamera(WorkerProcess):
     """This process handle camera.\n
     Args:
             queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-            logging (logging object): Made for debugging.
             debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, ready_event=None, debugging=False, dev_mode=False):
+    def __init__(self, queueList, ready_event=None, debugging=False, use_mock=False):
         self.queuesList = queueList
         self.debugging = debugging
-        self.dev_mode = dev_mode
+        self.use_mock = use_mock
         self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
         super(processCamera, self).__init__(self.queuesList, ready_event)
@@ -71,7 +70,7 @@ class processCamera(WorkerProcess):
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
         camTh = threadCamera(
-         self.queuesList, self.debugging, self.dev_mode
+         self.queuesList, self.debugging, self.use_mock
         )
         self.threads.append(camTh)
 
@@ -82,7 +81,6 @@ class processCamera(WorkerProcess):
 if __name__ == "__main__":
     from multiprocessing import Queue, Event
     import time
-    import logging
     import cv2
     import base64
     import numpy as np
@@ -105,7 +103,7 @@ if __name__ == "__main__":
 
     time.sleep(4)
     if debugg:
-        logger.warning("getting")
+        print("getting")
     img = {"msgValue": 1}
     while not isinstance(img["msgValue"], str):
         img = queueList["General"].get()
@@ -118,6 +116,6 @@ if __name__ == "__main__":
     img = np.frombuffer(image_data, dtype=np.uint8)
     image = cv2.imdecode(img, cv2.IMREAD_COLOR)
     if debugg:
-        logger.warning("got")
+        print("got")
     cv2.imwrite("test.jpg", image)
     process.stop()

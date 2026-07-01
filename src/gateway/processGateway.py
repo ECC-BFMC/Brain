@@ -39,7 +39,6 @@ class processGateway(WorkerProcess):
     """This process handle all the data distribution\n
     Args:
         queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-        logger (logging object): Made for debugging.
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
@@ -62,7 +61,6 @@ class processGateway(WorkerProcess):
 if __name__ == "__main__":
     from multiprocessing import Pipe, Queue, Event
     import time
-    import logging
 
     allProcesses = list()
     # We have a list of multiprocessing.Queue() which individualy represent a priority for processes.
@@ -72,7 +70,6 @@ if __name__ == "__main__":
         "General": Queue(),
         "Config": Queue(),
     }
-    logging = logging.getLogger()
     process = processGateway(queueList, debugging=True)
     process.daemon = True
     process.start()
@@ -140,9 +137,9 @@ if __name__ == "__main__":
 
     # Code to verify that the function send Owner threadGateway.py is working properly.
 
-    get_logger("Gateway").info(pipeReceive3.recv())
-    get_logger("Gateway").info(pipeReceive1.recv())
-    get_logger("Gateway").info(pipeReceive2.recv())
+    print(pipeReceive3.recv())
+    print(pipeReceive1.recv())
+    print(pipeReceive2.recv())
 
     # ===================================== STAYING ALIVE ====================================
 

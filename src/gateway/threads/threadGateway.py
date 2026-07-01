@@ -34,7 +34,6 @@ class threadGateway(ThreadWithStop):
     """Thread which will handle processGateway functionalities.\n
     Args:
         queuesList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-        logger (logging object): Made for debugging.
         debugger (bool): A flag for debugging.
     """
 

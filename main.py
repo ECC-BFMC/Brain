@@ -154,7 +154,7 @@ if __name__ == "__main__":
 
     # Initializing camera
     camera_ready = Event()
-    processCamera = processCamera(queueList, camera_ready, debugging = False, dev_mode=args.dev)
+    processCamera = processCamera(queueList, camera_ready, debugging = False, use_mock=args.dev)
 
     # Initializing semaphores
     semaphore_ready = Event()
