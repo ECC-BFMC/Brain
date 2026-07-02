@@ -44,6 +44,24 @@ jobs:
       - name: Run unit tests
         run: pytest
 
+  audit:
+    name: Python (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          grep -vi picamera2 requirements.txt > audit-requirements.txt
+          pip install -r audit-requirements.txt pip-audit
+
+      - name: Audit dependencies for known vulnerabilities
+        run: pip-audit
+
   frontend:
     name: Angular build
     runs-on: ubuntu-latest
