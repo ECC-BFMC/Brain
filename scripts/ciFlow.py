@@ -34,6 +34,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import os
 import re
@@ -81,10 +82,10 @@ def relaunch_detached() -> str:
     """Re-run this script in the background, logging to a file.
 
     Used by --silent (e.g. cron jobs): the child runs the full flow detached
-    from the terminal while the caller returns immediately. Output goes to a
-    timestamped log file (not the terminal) so a failed background run is still
-    diagnosable. The --silent flag is stripped from the child's argv so it
-    doesn't background itself again. Returns the log file path.
+    from the terminal while the caller returns immediately. Its output is
+    redirected into a timestamped log file so a failed background run is still
+    diagnosable; only the latest log is kept. The --silent flag is stripped from
+    the child's argv so it doesn't background itself again. Returns the log path.
     """
     argv = [a for a in sys.argv if a != "--silent"]
 
@@ -92,6 +93,14 @@ def relaunch_detached() -> str:
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime", "temp"
     )
     os.makedirs(log_dir, exist_ok=True)
+
+    # Keep only the latest run's log: remove any previous ciFlow_*.log first.
+    for old in glob.glob(os.path.join(log_dir, "ciFlow_*.log")):
+        try:
+            os.remove(old)
+        except OSError:
+            pass
+
     log_path = os.path.join(log_dir, f"ciFlow_{datetime.now():%Y%m%d_%H%M%S}.log")
     logfile = open(log_path, "wb")
 
