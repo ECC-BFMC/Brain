@@ -1,11 +1,13 @@
-import base64
-
 import cv2
 import numpy as np
 
 
 class OfflineCamera:
-    """Deterministic offline camera frames for development mode."""
+    """Deterministic offline camera frames for development mode.
+
+    Provides raw BGR frames for both streams; publishing (shared memory) and
+    encoding (dashboard) happen elsewhere, exactly as with the real camera.
+    """
 
     def __init__(self):
         self._main_frames = []
@@ -14,6 +16,7 @@ class OfflineCamera:
         self._build_frames()
 
     def next_frame(self):
+        """Returns (main raw BGR array, serial raw BGR array)."""
         index = self._frame_index
         self._frame_index = (index + 1) % len(self._main_frames)
         return self._main_frames[index], self._serial_frames[index]
@@ -56,10 +59,8 @@ class OfflineCamera:
         for p_main, p_serial in zip(positions_main, positions_serial):
             main_img = np.zeros((1080, 2048, 3), dtype=np.uint8)
             cv2.putText(main_img, text, p_main, font, scale, (255, 255, 255), thickness)
-            _, main_enc = cv2.imencode(".jpg", main_img)
-            self._main_frames.append(base64.b64encode(main_enc).decode("utf-8"))
+            self._main_frames.append(main_img)
 
             serial_img = np.zeros((270, 512, 3), dtype=np.uint8)
             cv2.putText(serial_img, text, p_serial, font, scale_s, (255, 255, 255), thick_s)
-            _, serial_enc = cv2.imencode(".jpg", serial_img)
-            self._serial_frames.append(base64.b64encode(serial_enc).decode("utf-8"))
+            self._serial_frames.append(serial_img)

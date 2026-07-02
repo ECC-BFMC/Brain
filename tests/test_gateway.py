@@ -6,7 +6,7 @@ This is the counterpart to the messageHandler tests and is exercised end-to-end
 with real pipes.
 """
 
-from multiprocessing import Pipe
+from multiprocessing import Pipe, Queue
 
 import pytest
 
@@ -69,3 +69,119 @@ def test_duplicate_subscribe_keeps_single_pipe_but_approves_each(gateway):
     # Same receiver -> one pipe entry, but approval recorded twice.
     assert list(gateway.sendingList["owner"][4].keys()) == ["same"]
     assert gateway.messageApproved.count(("owner", 4)) == 2
+
+
+def test_unsubscribe_unknown_subscription_does_not_raise(gateway):
+    gateway.unsubscribe({"Owner": "ghost", "msgID": 9, "To": {"receiver": "X"}})
+    assert gateway.messageApproved == []
+
+
+def test_double_unsubscribe_does_not_raise(gateway):
+    recv, send = Pipe(duplex=False)
+    gateway.subscribe(sub_message("owner", 5, "A", send))
+    unsub = {"Owner": "owner", "msgID": 5, "To": {"receiver": "A"}}
+    gateway.unsubscribe(unsub)
+    gateway.unsubscribe(unsub)
+    assert gateway.messageApproved == []
+
+
+def feedback_message(owner, msg_id, pipe):
+    """Sender feedback registration as messageHandlerSender puts it on the Config queue."""
+    return {"Subscribe/Unsubscribe": "senderFeedback", "Owner": owner, "msgID": msg_id, "To": {"pipe": pipe}}
+
+
+def test_sender_registration_reports_current_count(gateway):
+    recv, send = Pipe(duplex=False)
+    gateway.subscribe(sub_message("threadCamera", 2, "dash", send))
+
+    # a sender registered after the subscriber must start with the right count
+    feedback_recv, feedback_send = Pipe(duplex=False)
+    gateway.registerSender(feedback_message("threadCamera", 2, feedback_send))
+    assert feedback_recv.recv() == 1
+
+
+def test_sender_feedback_follows_subscribe_and_unsubscribe(gateway):
+    feedback_recv, feedback_send = Pipe(duplex=False)
+    gateway.registerSender(feedback_message("threadCamera", 2, feedback_send))
+    assert feedback_recv.recv() == 0
+
+    recv, send = Pipe(duplex=False)
+    gateway.subscribe(sub_message("threadCamera", 2, "dash", send))
+    assert feedback_recv.recv() == 1
+
+    gateway.unsubscribe({"Owner": "threadCamera", "msgID": 2, "To": {"receiver": "dash"}})
+    assert feedback_recv.recv() == 0
+
+
+def test_sender_feedback_only_for_own_message(gateway):
+    feedback_recv, feedback_send = Pipe(duplex=False)
+    gateway.registerSender(feedback_message("threadCamera", 2, feedback_send))
+    feedback_recv.recv()
+
+    recv, send = Pipe(duplex=False)
+    gateway.subscribe(sub_message("someoneElse", 7, "dash", send))
+    assert feedback_recv.poll() is False
+
+
+def make_queues():
+    return {name: Queue() for name in ("Critical", "Warning", "General", "Config")}
+
+
+def config_sub_message(owner, msg_id, receiver, pipe):
+    """Subscribe request as it arrives on the Config queue (from messageHandlerSubscriber)."""
+    return {"Subscribe/Unsubscribe": "subscribe", **sub_message(owner, msg_id, receiver, pipe)}
+
+
+def pump(gateway, done, attempts=100):
+    """Run thread_work until `done()` or the attempts run out (multiprocessing
+    queues flush through a feeder thread, so the first calls may see nothing)."""
+    for _ in range(attempts):
+        gateway.thread_work()
+        if done():
+            return
+    raise AssertionError("gateway did not process the expected messages in time")
+
+
+def test_thread_work_applies_config_then_routes_data():
+    queues = make_queues()
+    gw = threadGateway(queues, False)
+    recv, send = Pipe(duplex=False)
+
+    queues["Config"].put(config_sub_message("owner", 7, "recv", send))
+    pump(gw, lambda: ("owner", 7) in gw.messageApproved)
+
+    queues["General"].put(send_message("owner", 7, "hello"))
+    pump(gw, recv.poll)
+    assert recv.recv()["value"] == "hello"
+
+
+def test_thread_work_registers_sender_feedback():
+    queues = make_queues()
+    gw = threadGateway(queues, False)
+    feedback_recv, feedback_send = Pipe(duplex=False)
+
+    queues["Config"].put(feedback_message("threadCamera", 2, feedback_send))
+    pump(gw, feedback_recv.poll)
+    assert feedback_recv.recv() == 0
+
+
+def test_thread_work_delivers_critical_before_general():
+    queues = make_queues()
+    gw = threadGateway(queues, False)
+    recv, send = Pipe(duplex=False)
+
+    queues["Config"].put(config_sub_message("owner", 1, "recv", send))
+    queues["Config"].put(config_sub_message("owner", 2, "recv", send))
+    pump(gw, lambda: gw.messageApproved.count(("owner", 1)) + gw.messageApproved.count(("owner", 2)) == 2)
+
+    queues["General"].put(send_message("owner", 1, "low"))
+    queues["Critical"].put(send_message("owner", 2, "high"))
+    # wait until both messages are visible so the priority drain sees them together
+    while queues["General"].empty() or queues["Critical"].empty():
+        pass
+
+    gw.thread_work()
+    pump(gw, lambda: recv.poll())
+    assert recv.recv()["value"] == "high"
+    pump(gw, lambda: recv.poll())
+    assert recv.recv()["value"] == "low"

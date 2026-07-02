@@ -30,6 +30,7 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
+import base64
 import queue
 import psutil
 import json
@@ -37,6 +38,8 @@ import inspect
 import logging
 import os
 import time
+
+import cv2
 
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
@@ -55,6 +58,7 @@ from src.dashboard.components.firmware import FirmwareManager
 
 import src.utils.messages.allMessages as allMessages
 from src.utils.logConfig import get_logger
+from src.utils.sharedFrameBuffer import NotifiedFrameReader
 
 
 class processDashboard(WorkerProcess):
@@ -69,6 +73,8 @@ class processDashboard(WorkerProcess):
         self.fast_stream_interval = 0.03
         self.default_stream_interval = 0.1
         self.fast_stream_candidates = ("serialCamera", "mainCamera")
+
+        self.cameraFrameReader = NotifiedFrameReader()
 
         self.running = True
         self.queueList = queueList
@@ -631,6 +637,12 @@ class processDashboard(WorkerProcess):
 
             resp = subscriber["obj"].receive()
             if resp is not None:
+                if msg == "serialCamera":
+                    # camera messages carry a shared-memory notification, not
+                    # pixels: read the frame and encode it here
+                    self._emitCameraFrame(resp)
+                    continue
+
                 if msg == "SerialConnectionState":
                     self.serialConnected = resp
 
@@ -639,6 +651,22 @@ class processDashboard(WorkerProcess):
                     self.logger.info(f"{msg}: {resp}")
 
         self._spawn_after(interval, self.send_continuous_messages, message_names, interval)
+
+
+    def _emitCameraFrame(self, notification):
+        """Reads the newest camera frame from shared memory, JPEG/base64 encodes
+        it and emits it to the frontend."""
+        try:
+            result = self.cameraFrameReader.read(notification)
+            if result is None:
+                return  # no new frame since the last emit
+            frame, _, _ = result
+
+            _, encoded = cv2.imencode(".jpg", frame)
+            data = base64.b64encode(encoded).decode("utf-8")
+            self.socketio.emit("serialCamera", {"value": data})
+        except Exception:
+            self.logger.exception("Failed to emit the camera frame")
 
 
     def send_hardware_data_to_frontend(self):

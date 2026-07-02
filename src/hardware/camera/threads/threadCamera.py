@@ -27,8 +27,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import cv2
-import threading
-import base64
+import os
+from datetime import datetime
 try:
     import picamera2
     HAS_PICAMERA2 = True
@@ -44,14 +44,18 @@ from src.utils.messages.allMessages import (
     Record,
     Brightness,
     Contrast,
+    StateChange,
 )
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import StateChange
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.statemachine.systemMode import SystemMode
 from src.utils.logConfig import get_logger
+from src.utils.sharedFrameBuffer import (
+    SharedFrameWriter,
+    CAMERA_SHM_NAME,
+    CAMERA_MAIN_SHM_NAME,
+)
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
@@ -67,19 +71,28 @@ class threadCamera(ThreadWithStop):
         self.logger = get_logger("Camera")
         self.debugger = debugger
         self.use_mock = use_mock
-        self.frame_rate = 5
+        self.frame_rate = 15  # recording playback fps; frames are written on this cadence
         self.recording = False
-
-        self.video_writer = ""
+        self.video_writer = None
+        self.recordingsDir = os.path.join("runtime", "recordings")
+        self._nextRecordFrameDue = 0.0
+        self._lastHousekeeping = 0.0
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
         self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
 
+        # Demand-driven streams: raw frames go into shared memory plus a small
+        # gateway notification ({"seq", "timestamp", "shm", "shape"}), but only
+        # while the stream's sender reports hasSubscribers() - so consumers
+        # pick a stream just by subscribing to mainCamera/serialCamera.
+        self._streams = {
+            "mainCamera": {"shm": CAMERA_MAIN_SHM_NAME, "writer": None, "sender": self.mainCameraSender},
+            "serialCamera": {"shm": CAMERA_SHM_NAME, "writer": None, "sender": self.serialCameraSender},
+        }
+
         self.subscribe()
         self._init_camera()
-        self.queue_sending()
-        self.configs()
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
@@ -89,69 +102,153 @@ class threadCamera(ThreadWithStop):
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
         self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
-    def queue_sending(self):
-        """Callback function for recording flag."""
-        if self._blocker.is_set():
+    # ============================ PERIODIC HOUSEKEEPING ==================================
+    def _housekeeping(self):
+        """Runs on the camera thread at most once per second: publishes the
+        recording flag and applies pending brightness/contrast settings.
+        (Replaces the old self-rearming threading.Timer callbacks, so nothing
+        touches the camera from another thread and nothing fires after stop.)"""
+        now = time.monotonic()
+        if now - self._lastHousekeeping < 1.0:
             return
-        self.recordingSender.send(self.recording)
-        threading.Timer(1, self.queue_sending).start()
+        self._lastHousekeeping = now
+        if self.recordingSender.hasSubscribers():
+            self.recordingSender.send(self.recording)
+        self._applyCameraControls()
+
+    def _applyCameraControls(self):
+        """Applies pending brightness/contrast messages to the camera."""
+        if self.camera is None:
+            return
+        message = self.brightnessSubscriber.receive()
+        if message is not None:
+            if self.debugger:
+                self.logger.info(str(message))
+            self.camera.set_controls(
+                {
+                    "AeEnable": False,
+                    "AwbEnable": False,
+                    "Brightness": max(0.0, min(1.0, float(message))), # type: ignore
+                }
+            )
+        message = self.contrastSubscriber.receive()
+        if message is not None:
+            if self.debugger:
+                self.logger.info(str(message))
+            self.camera.set_controls(
+                {
+                    "AeEnable": False,
+                    "AwbEnable": False,
+                    "Contrast": max(0.0, min(32.0, float(message))), # type: ignore
+                }
+            )
 
     # ================================ RUN ================================================
     def thread_work(self):
-        """This function will run while the running flag is True. 
-        It captures the image from camera and make the required modifies 
-        and then it send the data to process gateway."""
-        # If no real camera exists in dev mode, send pre-built offline frames at 1 fps.
+        """This function will run while the running flag is True.
+        It captures frames from the camera and publishes each demanded stream:
+        raw pixels into shared memory, a small notification through the gateway."""
+        self._housekeeping()
+
+        # If no real camera exists in dev mode, publish pre-built offline frames at 1 fps.
         if self.camera is None:
             if hasattr(self, "offlineCamera"):
                 main_frame, serial_frame = self.offlineCamera.next_frame()
-                self.mainCameraSender.send(main_frame)
-                self.serialCameraSender.send(serial_frame)
+                if self.mainCameraSender.hasSubscribers():
+                    self._publishStream("mainCamera", main_frame)
+                if self.serialCameraSender.hasSubscribers():
+                    self._publishStream("serialCamera", serial_frame)
             time.sleep(1)
             return
-            
+
         try:
             recordRecv = self.recordSubscriber.receive()
-            if recordRecv is not None: 
-                self.recording = bool(recordRecv)
-                if recordRecv == False:
-                    self.video_writer.release() # type: ignore
-                else:
-                    fourcc = cv2.VideoWriter_fourcc( # type: ignore
-                        *"XVID"
-                    )  # You can choose different codecs, e.g., 'MJPG', 'XVID', 'H264', etc.
-                    self.video_writer = cv2.VideoWriter(
-                        "output_video" + str(time.time()) + ".avi",
-                        fourcc,
-                        self.frame_rate,
-                        (2048, 1080),
-                    )
-
-        except Exception as e:
-            get_logger("Camera").error(f"{e}")
+            if recordRecv is not None:
+                self._handleRecordToggle(bool(recordRecv))
+        except Exception:
+            self.logger.exception("Failed to handle the record toggle")
 
         try:
-            mainRequest = self.camera.capture_array("main")
-            serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
-
-            if self.recording == True:
-                self.video_writer.write(mainRequest) # type: ignore
-
-            serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
-
-            _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
-            _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore
-
-            mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8") # type: ignore
-            serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8") # type: ignore
-
-            if self._blocker.is_set():
+            wantsMainStream = self.mainCameraSender.hasSubscribers()
+            wantsSerial = self.serialCameraSender.hasSubscribers()
+            wantsMain = self.recording or wantsMainStream
+            if not wantsMain and not wantsSerial:
+                time.sleep(0.1)  # nobody is listening: idle instead of spinning
                 return
 
-            self.mainCameraSender.send(mainEncodedImageData)
-            self.serialCameraSender.send(serialEncodedImageData)
-        except Exception as e:
-            get_logger("Camera").error(f"{e}")
+            if wantsMain:
+                mainRequest = self.camera.capture_array("main")
+                if self.recording:
+                    self._recordFrame(mainRequest)
+                if wantsMainStream:
+                    self._publishStream("mainCamera", mainRequest)
+
+            if wantsSerial:
+                serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
+                serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
+                self._publishStream("serialCamera", serialRequest)
+        except Exception:
+            self.logger.exception("Camera capture failed")
+
+    # ============================ STREAM PUBLISHING ======================================
+    def _publishStream(self, name, frame):
+        """Writes the raw frame into the stream's shared memory segment and
+        notifies subscribers through the gateway."""
+        stream = self._streams[name]
+        try:
+            if stream["writer"] is None:
+                # created on first demand, sized from the actual frame
+                stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape)
+            timestamp = time.time()
+            seq = stream["writer"].write(frame, timestamp)
+            stream["sender"].send(
+                {
+                    "seq": seq,
+                    "timestamp": timestamp,
+                    "shm": stream["shm"],
+                    "shape": list(frame.shape),
+                }
+            )
+        except Exception:
+            self.logger.exception(f"Failed to publish the {name} stream")
+
+    # =============================== RECORDING ===========================================
+    def _handleRecordToggle(self, enable):
+        """Starts or stops recording; repeated same-state toggles are ignored."""
+        if enable and not self.recording:
+            self._nextRecordFrameDue = time.monotonic()
+        elif not enable and self.recording:
+            self._stopRecording()
+        self.recording = enable
+
+    def _recordFrame(self, frame):
+        """Writes frames on a fixed time cadence (frame_rate) so playback speed
+        matches real time regardless of how fast the capture loop runs."""
+        now = time.monotonic()
+        if now < self._nextRecordFrameDue:
+            return
+
+        if self.video_writer is None:
+            # created lazily so the size always matches what the camera delivers
+            os.makedirs(self.recordingsDir, exist_ok=True)
+            path = os.path.join(
+                self.recordingsDir,
+                datetime.now().strftime("recording_%Y-%m-%d_%H-%M-%S.avi"),
+            )
+            fourcc = cv2.VideoWriter_fourcc(*"XVID") # type: ignore
+            height, width = frame.shape[:2]
+            self.video_writer = cv2.VideoWriter(path, fourcc, self.frame_rate, (width, height))
+            self.logger.info(f"Recording to {path}")
+
+        self.video_writer.write(frame)
+        self._nextRecordFrameDue += 1.0 / self.frame_rate
+        if self._nextRecordFrameDue < now:
+            self._nextRecordFrameDue = now  # fell behind: skip ahead instead of bursting
+
+    def _stopRecording(self):
+        if self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
 
     # ================================ STATE CHANGE HANDLER ========================================
     def state_change_handler(self):
@@ -204,37 +301,12 @@ class threadCamera(ThreadWithStop):
 
     # =============================== STOP ================================================
     def stop(self):
-        if self.recording and self.video_writer:
-            self.video_writer.release() # type: ignore
+        self.recording = False
+        self._stopRecording()
         if self.camera is not None:
             self.camera.stop()
+        for stream in self._streams.values():
+            if stream["writer"] is not None:
+                stream["writer"].close()
+                stream["writer"] = None
         super(threadCamera, self).stop()
-
-    # =============================== CONFIG ==============================================
-    def configs(self):
-        """Callback function for receiving configs on the pipe."""
-        if self._blocker.is_set():
-            return
-        if self.camera is not None and self.brightnessSubscriber.is_data_in_pipe():
-            message = self.brightnessSubscriber.receive()
-            if self.debugger:
-                self.logger.info(str(message))
-            self.camera.set_controls(
-                {
-                    "AeEnable": False,
-                    "AwbEnable": False,
-                    "Brightness": max(0.0, min(1.0, float(message))), # type: ignore
-                }
-            )
-        if self.camera is not None and self.contrastSubscriber.is_data_in_pipe():
-            message = self.contrastSubscriber.receive() # de modificat marti uc camera noua 
-            if self.debugger:
-                self.logger.info(str(message))
-            self.camera.set_controls(
-                {
-                    "AeEnable": False,
-                    "AwbEnable": False,
-                    "Contrast": max(0.0, min(32.0, float(message))), # type: ignore
-                }
-            )
-        threading.Timer(1, self.configs).start()
