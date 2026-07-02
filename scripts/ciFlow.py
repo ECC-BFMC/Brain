@@ -26,9 +26,9 @@ Requires the GitHub CLI (`gh`) to be installed and authenticated:
     gh auth login
 
 Examples:
-    python scripts/ci_flow.py -m "Fix camera base64 import"
-    python scripts/ci_flow.py -m "Add CI" -b ci/add-workflow --base master
-    python scripts/ci_flow.py -m "wip" --staged --merge-method merge --no-sync
+    python scripts/ciFlow.py -m "Fix camera base64 import"
+    python scripts/ciFlow.py -m "Add CI" -b ci/add-workflow --base master
+    python scripts/ciFlow.py -m "wip" --staged --merge-method merge --no-sync
 """
 
 from __future__ import annotations
@@ -308,7 +308,7 @@ def main() -> int:
             "--base", base,
             "--head", branch,
             "--title", args.message,
-            "--body", f"Automated PR via ci_flow.py.\n\n{args.message}",
+            "--body", f"Automated PR via ciFlow.py.\n\n{args.message}",
         ])
         pr_created = True
         pr_url = out(["gh", "pr", "view", branch, "--repo", repo, "--json", "url", "-q", ".url"])
