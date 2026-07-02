@@ -349,6 +349,18 @@ def main() -> int:
             run(["git", "checkout", base])
             run(["git", "pull", "origin", base])
 
+        # gh's --delete-branch removes the remote branch and only deletes the
+        # local one when it can cleanly switch away from it. Delete it here as a
+        # best effort so a leftover local feature branch doesn't linger (and, on
+        # the next run, get auto-detected as the base).
+        if not args.no_delete_branch:
+            print(f"\n== Deleting local branch '{branch}' ==")
+            current = out(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            if current == branch:
+                # Still on the feature branch (e.g. --no-sync); step off it first.
+                best_effort(["git", "checkout", base])
+            best_effort(["git", "branch", "-D", branch])
+
         print("\nDone.")
         return 0
 
