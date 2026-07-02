@@ -19,7 +19,8 @@ Arguments (short):
   --no-sync            Don't checkout+pull the base after merge (default syncs).
   --timeout            Max seconds to wait for CI. Default: 1800 (30 min).
   --interval           Seconds between CI status polls. Default: 15.
-
+  --silent             Background the script and suppress output (for cron jobs). Default: False.
+  
 Requires the GitHub CLI (`gh`) to be installed and authenticated:
     winget install GitHub.cli
     gh auth login
@@ -34,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -75,6 +77,34 @@ def best_effort(cmd: list[str]) -> None:
     subprocess.run(cmd, text=True, capture_output=True)
 
 
+def relaunch_detached() -> str:
+    """Re-run this script in the background, logging to a file.
+
+    Used by --silent (e.g. cron jobs): the child runs the full flow detached
+    from the terminal while the caller returns immediately. Output goes to a
+    timestamped log file (not the terminal) so a failed background run is still
+    diagnosable. The --silent flag is stripped from the child's argv so it
+    doesn't background itself again. Returns the log file path.
+    """
+    argv = [a for a in sys.argv if a != "--silent"]
+
+    log_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime", "temp"
+    )
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, f"ciFlow_{datetime.now():%Y%m%d_%H%M%S}.log")
+    logfile = open(log_path, "wb")
+
+    kwargs: dict = {"stdin": subprocess.DEVNULL, "stdout": logfile, "stderr": subprocess.STDOUT}
+    if os.name == "nt":
+        # CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP: no console window, detached.
+        kwargs["creationflags"] = 0x08000000 | 0x00000200
+    else:
+        kwargs["start_new_session"] = True
+    subprocess.Popen([sys.executable, *argv], **kwargs)
+    return log_path
+
+
 # ----------------------------------------------------------------------------
 # Preflight
 # ----------------------------------------------------------------------------
@@ -111,6 +141,26 @@ def preflight() -> None:
 def slugify(text: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return (slug[:40] or "change").rstrip("-")
+
+
+def safe_branch_name(name: str) -> str:
+    """Avoid git ref conflicts before creating a branch.
+
+    Git stores refs as files, so a branch named ``ci`` (a file) blocks creating
+    ``ci/anything`` (which needs ``ci`` to be a directory) -> 'cannot lock ref'.
+    If any leading path segment of ``name`` already exists as a branch, flatten
+    the slashes to dashes so ``git checkout -b`` can't fail on the collision.
+    """
+    if "/" not in name:
+        return name
+    existing = set(
+        out(["git", "for-each-ref", "--format=%(refname:short)", "refs/heads"]).splitlines()
+    )
+    parts = name.split("/")
+    for i in range(1, len(parts)):
+        if "/".join(parts[:i]) in existing:
+            return name.replace("/", "-")
+    return name
 
 
 def gh_repo() -> str:
@@ -190,7 +240,16 @@ def main() -> int:
     p.add_argument("--no-sync", action="store_true", help="Don't checkout+pull the base branch after merge.")
     p.add_argument("--timeout", type=int, default=1800, help="Max seconds to wait for CI (default: 1800).")
     p.add_argument("--interval", type=int, default=15, help="Seconds between CI polls (default: 15).")
+    p.add_argument("--silent", action="store_true",
+                   help="Background the script and suppress output (for cron jobs).")
     args = p.parse_args()
+
+    # Detach into the background and return immediately (e.g. for cron jobs).
+    # The relaunched child runs without --silent, so it executes the flow below.
+    if args.silent:
+        log_path = relaunch_detached()
+        print(f"Backgrounded (pid detached). Logging to: {log_path}")
+        return 0
 
     preflight()
 
@@ -203,8 +262,11 @@ def main() -> int:
     repo = gh_repo()
     print(f"repo: {repo}  |  base: {base}")
 
-    # 1. Decide the branch name.
-    branch = args.branch or f"ci/{slugify(args.message)}-{datetime.now():%Y%m%d-%H%M%S}"
+    # 1. Decide the branch name. Auto-generated names are made ref-safe so an
+    # existing branch like 'ci' can't block creating 'ci/<slug>'.
+    branch = args.branch or safe_branch_name(
+        f"ci/{slugify(args.message)}-{datetime.now():%Y%m%d-%H%M%S}"
+    )
     if branch == base:
         die(f"new branch name ({branch}) matches the base branch; choose a different -b.")
 

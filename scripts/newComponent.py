@@ -1,16 +1,18 @@
 import os
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def main():
     # Get package name and category from user
     package_name = input("Enter the package name: ")
     category = input("Enter the category: ")
 
     # Create the directory path if it doesn't exist
-    directory_path = f"src/{category}/{package_name}"
+    directory_path = os.path.join(REPO_ROOT, "src", category, package_name)
     os.makedirs(directory_path, exist_ok=True)
 
     # Create the directory threads path if it doesn't exist
-    directory_path_threads = f"src/{category}/{package_name}/threads"
+    directory_path_threads = os.path.join(directory_path, "threads")
     os.makedirs(directory_path_threads, exist_ok=True)
 
     # Create and open the new Python file for the package
@@ -73,7 +75,7 @@ def main():
         file.write(f'        pass\n\n')
 
     # Read the main.py file
-    main_py_path = "main.py"
+    main_py_path = os.path.join(REPO_ROOT, "main.py")
     if not os.path.exists(main_py_path):
         print("The main.py file does not exist.")
         return
