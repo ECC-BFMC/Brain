@@ -29,6 +29,24 @@ jobs:
         # so Pi-only packages (picamera2) and system libs are irrelevant.
         run: python -m compileall -q main.py newComponent.py src
 
+  tests:
+    name: Python (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest
+
   frontend:
     name: Angular build
     runs-on: ubuntu-latest
