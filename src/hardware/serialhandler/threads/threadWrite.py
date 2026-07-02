@@ -123,10 +123,10 @@ class threadWrite(ThreadWithStop):
                         # Command history: log file only, keep it off the console.
                         self.logger.info(command_msg.strip(), extra={"file_only": True})
 
-            except Exception as e:
+            except Exception:
                 if self._should_send_error():
                     self.serialConnectionStateSender.send(False)
-                    self.logger.error(f"Failed to write to serial ({e})")
+                    self.logger.exception("Failed to write to serial")
 
     def load_config(self, configType):
         with open(self.configPath, "r") as file:
@@ -273,8 +273,8 @@ class threadWrite(ThreadWithStop):
                     command = {"action": "imu", "activate": int(imuRecv)}
                     self.send_to_serial(command)
 
-        except Exception as e:
-            self.logger.error(f"{e}")
+        except Exception:
+            self.logger.exception("Serial write loop failed")
             self.serialConnectionStateSender.send(False)
 
     # ==================================== START =========================================

@@ -60,10 +60,31 @@ def test_sender_puts_on_the_messages_queue(queues):
 
 
 def test_sender_does_not_touch_other_queues(queues):
+    # Config gets the feedback registration at construction; nothing else may.
     messageHandlerSender(queues, StateChange).send("STOP")
     for name, q in queues.items():
-        if name != StateChange.Queue.value:
+        if name not in (StateChange.Queue.value, "Config"):
             assert q.items == []
+
+
+def test_sender_registers_feedback_on_construction(queues):
+    messageHandlerSender(queues, StateChange)
+
+    assert len(queues["Config"].items) == 1
+    req = queues["Config"].items[0]
+    assert req["Subscribe/Unsubscribe"] == "senderFeedback"
+    assert req["Owner"] == StateChange.Owner.value
+    assert req["msgID"] == StateChange.msgID.value
+    assert "pipe" in req["To"]
+
+
+def test_has_subscribers_defaults_false_and_follows_feedback(queues):
+    sender = messageHandlerSender(queues, StateChange)
+    assert sender.hasSubscribers() is False
+    sender._pipeSend.send(2)
+    assert sender.hasSubscribers() is True
+    sender._pipeSend.send(0)
+    assert sender.hasSubscribers() is False
 
 
 def test_sender_preserves_value_object_identity(queues):

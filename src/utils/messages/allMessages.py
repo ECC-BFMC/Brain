@@ -33,13 +33,13 @@ class mainCamera(Enum):
     Queue = "General"
     Owner = "threadCamera"
     msgID = 1
-    msgType = "str"
+    msgType = "dict"
 
 class serialCamera(Enum):
     Queue = "General"
     Owner = "threadCamera"
     msgID = 2
-    msgType = "str"
+    msgType = "dict"
 
 class Recording(Enum):
     Queue = "General"
