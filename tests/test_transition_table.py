@@ -32,7 +32,7 @@ BUTTON_TARGET = {
 ALL_MODES = list(SystemMode)
 
 
-@pytest.mark.parametrize("mode,button", itertools.product(ALL_MODES, BUTTONS))
+@pytest.mark.parametrize("mode,button", list(itertools.product(ALL_MODES, BUTTONS)))
 def test_every_button_is_valid_from_every_mode(mode, button):
     """Each of the four buttons is accepted from every mode and lands on the
     mode that button represents."""
