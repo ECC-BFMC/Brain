@@ -35,6 +35,7 @@ try:
 except ImportError:
     HAS_PICAMERA2 = False
 import time
+from threading import Lock
 
 from src.hardware.camera.mock.offlineCamera import OfflineCamera
 from src.utils.messages.allMessages import (
@@ -77,6 +78,7 @@ class threadCamera(ThreadWithStop):
         self.recordingsDir = os.path.join("runtime", "recordings")
         self._nextRecordFrameDue = 0.0
         self._lastHousekeeping = 0.0
+        self._streamLock = Lock()
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -194,21 +196,27 @@ class threadCamera(ThreadWithStop):
     def _publishStream(self, name, frame):
         """Writes the raw frame into the stream's shared memory segment and
         notifies subscribers through the gateway."""
+        if self._blocker.is_set():
+            return
+
         stream = self._streams[name]
         try:
-            if stream["writer"] is None:
-                # created on first demand, sized from the actual frame
-                stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape, history=1)
-            timestamp = time.time()
-            seq = stream["writer"].write(frame, timestamp)
-            stream["sender"].send(
-                {
-                    "seq": seq,
-                    "timestamp": timestamp,
-                    "shm": stream["shm"],
-                    "shape": list(frame.shape),
-                }
-            )
+            with self._streamLock:
+                if self._blocker.is_set():
+                    return
+                if stream["writer"] is None:
+                    # created on first demand, sized from the actual frame
+                    stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape, history=1)
+                timestamp = time.time()
+                seq = stream["writer"].write(frame, timestamp)
+                stream["sender"].send(
+                    {
+                        "seq": seq,
+                        "timestamp": timestamp,
+                        "shm": stream["shm"],
+                        "shape": list(frame.shape),
+                    }
+                )
         except Exception:
             self.logger.exception(f"Failed to publish the {name} stream")
 
@@ -301,12 +309,13 @@ class threadCamera(ThreadWithStop):
 
     # =============================== STOP ================================================
     def stop(self):
+        super(threadCamera, self).stop()
         self.recording = False
         self._stopRecording()
         if self.camera is not None:
             self.camera.stop()
-        for stream in self._streams.values():
-            if stream["writer"] is not None:
-                stream["writer"].close()
-                stream["writer"] = None
-        super(threadCamera, self).stop()
+        with self._streamLock:
+            for stream in self._streams.values():
+                if stream["writer"] is not None:
+                    stream["writer"].close()
+                    stream["writer"] = None

@@ -90,3 +90,18 @@ def test_demand_stops_publishing_when_it_drops_to_zero(camera):
     cam.thread_work()
     with pytest.raises(queue_module.Empty):
         get_notification(queues, msg_id=2, timeout=0.3)
+
+
+def test_publish_after_stop_does_not_recreate_shared_memory(camera):
+    cam, queues = camera
+    set_demand(cam.serialCameraSender, 1)
+    cam.thread_work()
+    get_notification(queues, msg_id=2)
+    assert cam._streams["serialCamera"]["writer"] is not None
+
+    cam.stop()
+    assert cam._streams["serialCamera"]["writer"] is None
+
+    _, serial_frame = cam.offlineCamera.next_frame()
+    cam._publishStream("serialCamera", serial_frame)
+    assert cam._streams["serialCamera"]["writer"] is None

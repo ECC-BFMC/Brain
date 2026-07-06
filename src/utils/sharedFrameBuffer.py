@@ -171,7 +171,20 @@ class SharedFrameWriter(_FrameBufferBase):
         except FileNotFoundError:
             pass
 
-        self._shm = shared_memory.SharedMemory(name=name, create=True, size=self._size)
+        try:
+            self._shm = shared_memory.SharedMemory(name=name, create=True, size=self._size)
+        except FileExistsError:
+            # On Windows a segment remains named while any reader still has it
+            # open, and unlink() cannot remove it eagerly. Reuse a compatible
+            # leftover segment instead of failing during stream restart/shutdown.
+            self._shm = shared_memory.SharedMemory(name=name)
+            if self._shm.size < self._size:
+                size = self._shm.size
+                self.close()
+                raise ValueError(
+                    f"segment '{name}' is {size} bytes, expected >= {self._size}; "
+                    "stale writer geometry does not match"
+                )
         _U64.pack_into(self._shm.buf, 0, 0)
         _U32.pack_into(self._shm.buf, _SLOTS_OFFSET, self._slots)
         self._mapSlots()
