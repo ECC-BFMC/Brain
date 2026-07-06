@@ -74,6 +74,10 @@ class threadGateway(ThreadWithStop):
             self.sendingList[Owner][Id] = {}
         if not To in self.sendingList[Owner][Id].keys():
             self.sendingList[Owner][Id][To] = Pipe
+            self.logger.info(
+                f"Subscribed {To} to {Owner}/{Id}",
+                extra={"file_only": True},
+            )
         self.messageApproved.append((Owner, Id))
 
         self._notifySenders(Owner, Id)
@@ -99,6 +103,10 @@ class threadGateway(ThreadWithStop):
         pipes = self.sendingList.get(Owner, {}).get(Id, {})
         if To in pipes:
             del pipes[To]
+            self.logger.info(
+                f"Unsubscribed {To} from {Owner}/{Id}",
+                extra={"file_only": True},
+            )
         else:
             self.logger.warning(f"Unsubscribe for unknown subscription: {Owner}/{Id}/{To}")
         if (Owner, Id) in self.messageApproved:

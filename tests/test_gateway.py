@@ -6,6 +6,7 @@ This is the counterpart to the messageHandler tests and is exercised end-to-end
 with real pipes.
 """
 
+import logging
 from multiprocessing import Pipe, Queue
 
 import pytest
@@ -54,6 +55,20 @@ def test_unsubscribe_stops_delivery(gateway):
     assert gateway.messageApproved == []
     gateway.send(send_message("owner", 3, "dropped"))
     assert recv.poll() is False
+
+
+def test_subscribe_and_unsubscribe_are_logged_file_only(gateway, caplog):
+    recv, send = Pipe(duplex=False)
+    with caplog.at_level(logging.INFO, logger="Gateway"):
+        gateway.subscribe(sub_message("owner", 3, "A", send))
+        gateway.unsubscribe({"Owner": "owner", "msgID": 3, "To": {"receiver": "A"}})
+
+    records = [record for record in caplog.records if record.name == "Gateway"]
+    assert [record.getMessage() for record in records] == [
+        "Subscribed A to owner/3",
+        "Unsubscribed A from owner/3",
+    ]
+    assert all(getattr(record, "file_only", False) for record in records)
 
 
 def test_send_to_unapproved_pair_is_silently_dropped(gateway):
