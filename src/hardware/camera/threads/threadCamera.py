@@ -198,7 +198,7 @@ class threadCamera(ThreadWithStop):
         try:
             if stream["writer"] is None:
                 # created on first demand, sized from the actual frame
-                stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape)
+                stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape, history=1)
             timestamp = time.time()
             seq = stream["writer"].write(frame, timestamp)
             stream["sender"].send(

@@ -23,8 +23,8 @@ def make_frame(fill):
 
 @pytest.fixture
 def buffer_pair():
-    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, slots=3)
-    reader = SharedFrameReader(name=SHM_NAME, shape=SHAPE, slots=3)
+    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=1)
+    reader = SharedFrameReader(name=SHM_NAME, shape=SHAPE, history=1)
     yield writer, reader
     reader.close()
     writer.close()
@@ -74,12 +74,68 @@ def test_wrong_shape_or_dtype_is_rejected(buffer_pair):
 
 
 def test_reader_rejects_mismatched_geometry():
-    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, slots=3)
+    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=1)
     try:
         with pytest.raises(ValueError):
-            SharedFrameReader(name=SHM_NAME, shape=(1080, 2048, 3), slots=3)
+            SharedFrameReader(name=SHM_NAME, shape=(1080, 2048, 3), history=1)
     finally:
         writer.close()
+
+
+def test_reader_auto_discovers_writer_history():
+    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=4)
+    reader = SharedFrameReader(name=SHM_NAME, shape=SHAPE)
+    try:
+        assert reader.history == 4
+        for i in range(1, 6):
+            writer.write(make_frame(i), timestamp=float(i))
+
+        got_frame, timestamp, seq = reader.readBack(4)
+        assert seq == 1
+        assert timestamp == 1.0
+        assert np.array_equal(got_frame, make_frame(1))
+    finally:
+        reader.close()
+        writer.close()
+
+
+def test_read_back_uses_public_history_window():
+    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=2)
+    reader = SharedFrameReader(name=SHM_NAME, shape=SHAPE)
+    try:
+        for i in range(1, 5):
+            writer.write(make_frame(i))
+
+        latest_frame, _, latest_seq = reader.readBack(0)
+        assert latest_seq == 4
+        assert np.array_equal(latest_frame, make_frame(4))
+
+        previous_frame, _, previous_seq = reader.readBack(1)
+        assert previous_seq == 3
+        assert np.array_equal(previous_frame, make_frame(3))
+
+        oldest_frame, _, oldest_seq = reader.readBack(2)
+        assert oldest_seq == 2
+        assert np.array_equal(oldest_frame, make_frame(2))
+
+        assert reader.readBack(3) is None
+        assert reader.readSeq(1) is None
+    finally:
+        reader.close()
+        writer.close()
+
+
+def test_read_seq_rejects_never_written_and_future_sequences(buffer_pair):
+    writer, reader = buffer_pair
+    assert reader.readSeq(1) is None
+
+    writer.write(make_frame(1))
+    assert reader.readSeq(2) is None
+
+
+def test_invalid_buffer_size_is_rejected():
+    with pytest.raises(ValueError):
+        SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=-1)
 
 
 def notification(seq=1, shm=SHM_NAME):
@@ -119,9 +175,9 @@ def test_notified_reader_returns_none_while_segment_missing():
 )
 def test_writer_replaces_stale_segment():
     # a "crashed" writer that never unlinked must not block the next run
-    stale = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, slots=3)
-    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, slots=3)
-    reader = SharedFrameReader(name=SHM_NAME, shape=SHAPE, slots=3)
+    stale = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=1)
+    writer = SharedFrameWriter(name=SHM_NAME, shape=SHAPE, history=1)
+    reader = SharedFrameReader(name=SHM_NAME, shape=SHAPE, history=1)
     try:
         writer.write(make_frame(7))
         got_frame, _, _ = reader.readLatest()
