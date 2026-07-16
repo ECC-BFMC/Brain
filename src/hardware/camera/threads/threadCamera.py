@@ -29,15 +29,23 @@
 import cv2
 import os
 from datetime import datetime
-try:
-    import picamera2
-    HAS_PICAMERA2 = True
-except ImportError:
-    HAS_PICAMERA2 = False
 import time
 from threading import Lock
 
-from src.hardware.camera.mock.offlineCamera import OfflineCamera
+
+def _load_picamera2(use_simulator):
+    if use_simulator:
+        from sim import picamera2 as camera_module
+
+        return camera_module
+
+    try:
+        import picamera2 as camera_module
+    except ImportError:
+        return None
+    return camera_module
+
+
 from src.utils.messages.allMessages import (
     mainCamera,
     serialCamera,
@@ -66,12 +74,12 @@ class threadCamera(ThreadWithStop):
     """
 
     # ================================ INIT ===============================================
-    def __init__(self, queuesList, debugger, use_mock=False):
+    def __init__(self, queuesList, debugger, dev_mode=False):
         super(threadCamera, self).__init__(pause=0.001)
         self.queuesList = queuesList
         self.logger = get_logger("Camera")
         self.debugger = debugger
-        self.use_mock = use_mock
+        self.picamera2 = _load_picamera2(dev_mode)
         self.frame_rate = 15  # recording playback fps; frames are written on this cadence
         self.recording = False
         self.video_writer = None
@@ -152,14 +160,7 @@ class threadCamera(ThreadWithStop):
         raw pixels into shared memory, a small notification through the gateway."""
         self._housekeeping()
 
-        # If no real camera exists in dev mode, publish pre-built offline frames at 1 fps.
         if self.camera is None:
-            if hasattr(self, "offlineCamera"):
-                main_frame, serial_frame = self.offlineCamera.next_frame()
-                if self.mainCameraSender.hasSubscribers():
-                    self._publishStream("mainCamera", main_frame)
-                if self.serialCameraSender.hasSubscribers():
-                    self._publishStream("serialCamera", serial_frame)
             time.sleep(1)
             return
 
@@ -183,17 +184,17 @@ class threadCamera(ThreadWithStop):
                 if self.recording:
                     self._recordFrame(mainRequest)
                 if wantsMainStream:
-                    self._publishStream("mainCamera", mainRequest)
+                    self._publishStream("mainCamera", mainRequest, history=1)
 
             if wantsSerial:
                 serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
                 serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
-                self._publishStream("serialCamera", serialRequest)
+                self._publishStream("serialCamera", serialRequest, history=1)
         except Exception:
             self.logger.exception("Camera capture failed")
 
     # ============================ STREAM PUBLISHING ======================================
-    def _publishStream(self, name, frame):
+    def _publishStream(self, name, frame, history=1):
         """Writes the raw frame into the stream's shared memory segment and
         notifies subscribers through the gateway."""
         if self._blocker.is_set():
@@ -206,7 +207,7 @@ class threadCamera(ThreadWithStop):
                     return
                 if stream["writer"] is None:
                     # created on first demand, sized from the actual frame
-                    stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape, history=1)
+                    stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape, history=history)
                 timestamp = time.time()
                 seq = stream["writer"].write(frame, timestamp)
                 stream["sender"].send(
@@ -271,23 +272,19 @@ class threadCamera(ThreadWithStop):
     def _init_camera(self):
         """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
 
-        if self.use_mock:
-            self._init_offline_camera("Mock mode enabled")
-            return
-
-        if not HAS_PICAMERA2:
+        if self.picamera2 is None:
             self.camera = None
             get_logger("Camera Thread").error("No picamera2 available. Camera functionality will be disabled.")
             return
 
         try:
             # check if camera is available
-            if len(picamera2.Picamera2.global_camera_info()) == 0:
+            if len(self.picamera2.Picamera2.global_camera_info()) == 0:
                 self.camera = None
                 get_logger("Camera Thread").error(f"No camera detected. Camera functionality will be disabled.")
                 return
             
-            self.camera = picamera2.Picamera2()
+            self.camera = self.picamera2.Picamera2()
             config = self.camera.create_preview_configuration(
                 buffer_count=1,
                 queue=False,
@@ -301,11 +298,6 @@ class threadCamera(ThreadWithStop):
         except Exception as e:
             self.camera = None
             get_logger("Camera Thread").error(f"Failed to initialize camera: {e}")
-
-    def _init_offline_camera(self, reason):
-        self.offlineCamera = OfflineCamera()
-        self.camera = None
-        get_logger("Camera Thread").info(f"{reason}. Using OFFLINE placeholder sequence.")
 
     # =============================== STOP ================================================
     def stop(self):

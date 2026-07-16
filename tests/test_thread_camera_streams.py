@@ -3,13 +3,14 @@
 The camera publishes a stream (raw frame into shared memory + a notification
 dict through the gateway queues) only while the stream's sender reports
 hasSubscribers(), fed by the gateway through the sender's feedback pipe.
-Exercised in mock mode so no picamera2 is needed; demand is injected through
+Exercised with the development simulator so no installed picamera2 is needed; demand is injected through
 the senders' real feedback pipes.
 """
 
 import queue as queue_module
 from multiprocessing import Queue
 
+import numpy as np
 import pytest
 
 import src.hardware.camera.threads.threadCamera as thread_camera_module
@@ -19,10 +20,9 @@ from src.utils.sharedFrameBuffer import SharedFrameReader
 
 @pytest.fixture
 def camera(monkeypatch):
-    # the dev-mode branch sleeps 1s per frame; skip that in tests
     monkeypatch.setattr(thread_camera_module.time, "sleep", lambda seconds: None)
     queues = {name: Queue() for name in ("Critical", "Warning", "General", "Config")}
-    cam = threadCamera(queues, False, use_mock=True)
+    cam = threadCamera(queues, False, dev_mode=True)
     yield cam, queues
     cam.stop()
 
@@ -102,6 +102,6 @@ def test_publish_after_stop_does_not_recreate_shared_memory(camera):
     cam.stop()
     assert cam._streams["serialCamera"]["writer"] is None
 
-    _, serial_frame = cam.offlineCamera.next_frame()
+    serial_frame = np.zeros((270, 512, 3), dtype=np.uint8)
     cam._publishStream("serialCamera", serial_frame)
     assert cam._streams["serialCamera"]["writer"] is None
