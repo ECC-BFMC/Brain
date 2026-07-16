@@ -38,7 +38,7 @@ def make_frame(height=1080, width=2048):
 def camera(monkeypatch, tmp_path):
     monkeypatch.setattr(thread_camera_module.cv2, "VideoWriter", StubVideoWriter)
     queues = {name: Queue() for name in ("Critical", "Warning", "General", "Config")}
-    cam = threadCamera(queues, False, use_mock=True)
+    cam = threadCamera(queues, False, dev_mode=True)
     cam.recordingsDir = str(tmp_path)
     yield cam
     cam.stop()
