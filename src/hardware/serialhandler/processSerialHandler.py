@@ -31,13 +31,10 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 import re
-import serial
-import serial.tools.list_ports
 import threading
 from threading import Lock
 
 from src.templates.workerprocess import WorkerProcess
-from src.hardware.serialhandler.mock.nucleoMockSerial import NucleoMockSerial
 from src.hardware.serialhandler.threads.threadRead import threadRead
 from src.hardware.serialhandler.threads.threadWrite import threadWrite
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
@@ -45,6 +42,18 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.statemachine.systemMode import SystemMode
 from src.utils.messages.allMessages import StateChange, SerialConnectionState
 from src.utils.logConfig import get_logger
+
+
+def _load_serial(use_simulator):
+    if use_simulator:
+        from sim import serial as serial_module
+
+        return serial_module
+
+    import serial as serial_module
+
+    return serial_module
+
 
 class processSerialHandler(WorkerProcess):
     """This process handle connection between NUCLEO and Raspberry PI.\n
@@ -55,14 +64,15 @@ class processSerialHandler(WorkerProcess):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, queueList, ready_event=None, dashboard_ready=None, debugging=False, example=False, use_mock=False):
+    def __init__(self, queueList, ready_event=None, dashboard_ready=None, debugging=False, example=False, dev_mode=False):
         # devFile = "/dev/ttyACM0"
         self.logger = get_logger("Serial Handler")
         self.queuesList = queueList
         self.debugging = debugging
         self.example = example
         self.dashboard_ready = dashboard_ready
-        self.use_mock = use_mock
+        self.dev_mode = dev_mode
+        self.serial = None
 
         # comm init
         self.serialCon = None
@@ -88,43 +98,34 @@ class processSerialHandler(WorkerProcess):
         if self.serialCon and hasattr(self.serialCon, 'is_open') and self.serialCon.is_open:
             try:
                 self.serialCon.close()
-            except (OSError, serial.SerialException) as e:
+            except (OSError, self.serial.SerialException) as e:
                 self.logger.warning(f"Error closing serial connection: {e}")
             except Exception as e:
                 self.logger.error(f"Unexpected error closing serial: {e}")
 
     def _try_serial_connection(self):
         """Try to connect to the serial device."""
+        if self.serial is None:
+            self.serial = _load_serial(self.dev_mode)
         with self.serialLock:
-            if self.use_mock:
-                self._safe_close_serial()
-                self.serialDevice = "MOCK_NUCLEO"
-                self.serialCon = NucleoMockSerial()
-                self.serialConnected = True
-                self.logger.info(f"Connected to {self.serialDevice}")
-                return
-
             try:
                 # clean up existing connection safely
                 self._safe_close_serial()
 
-                self.serialDevice = next((port.device for port in serial.tools.list_ports.comports() if re.match(r"/dev/ttyACM\d+", port.device)), None)
-                self.serialCon = serial.Serial(self.serialDevice, 115200, timeout=0.1)
+                self.serialDevice = next((port.device for port in self.serial.tools.list_ports.comports() if re.match(r"/dev/ttyACM\d+", port.device)), None)
+                self.serialCon = self.serial.Serial(self.serialDevice, 115200, timeout=0.1)
                 self.serialCon.reset_input_buffer()
                 self.serialCon.reset_output_buffer()
                 self.serialConnected = True
                 self.logger.info(f"Connected to {self.serialDevice}")
 
-            except (serial.SerialException, FileNotFoundError):
+            except (self.serial.SerialException, FileNotFoundError):
                 self._safe_close_serial()
                 self.serialCon = None
                 self.serialConnected = False
 
     def _try_reconnect(self):
         """Try to reconnect to serial device (called by timer)."""
-        if self.use_mock:
-            return
-
         if self.reconnecting:
             return # another reconnection attempt is already in progress
 
@@ -159,9 +160,6 @@ class processSerialHandler(WorkerProcess):
 
     def _handle_serial_disconnection(self):
         """Handle serial disconnection by pausing threads and starting reconnection."""
-        if self.use_mock:
-            return
-
         with self.serialLock:
             # check if already handling disconnection
             if self.reconnecting or not self.serialConnected:
@@ -190,8 +188,7 @@ class processSerialHandler(WorkerProcess):
 
         if not self.serialConnected:
             self.logger.warning("No serial connection found")
-            if not self.use_mock:
-                threading.Timer(1, self._try_reconnect).start()
+            threading.Timer(1, self._try_reconnect).start()
 
         if self.dashboard_ready is not None:
             if self.dashboard_ready.is_set():

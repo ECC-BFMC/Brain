@@ -100,6 +100,7 @@ def manage_process_life(process_class, process_instance, process_args, enabled, 
             process_instance.start()
     else:
         if process_instance is not None and process_instance.is_alive():
+            process_instance.stop()
             shutdown_process(process_instance)
             allProcesses.remove(process_instance)
             process_instance = None
@@ -166,7 +167,7 @@ if __name__ == "__main__":
 
     # Initializing serial connection NUCLEO - > PI
     serial_handler_ready = Event()
-    processSerialHandler = processSerialHandler(queueList, serial_handler_ready, dashboard_ready, debugging = False, use_mock=args.dev)
+    processSerialHandler = processSerialHandler(queueList, serial_handler_ready, dashboard_ready, debugging=False, dev_mode=args.dev)
 
     # Adding all processes to the list
     allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])

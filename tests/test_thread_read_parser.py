@@ -37,7 +37,7 @@ def reader(monkeypatch):
     for name in ("currentSpeedSender", "currentSteerSender", "batteryLvlSender",
                  "instantConsumptionSender", "imuDataSender", "imuAckSender",
                  "calibRunDoneSender", "calibPWMDataSender", "steeringLimitsSender",
-                 "aliveSignalSender"):
+                 "aliveSignalSender", "warningSender"):
         setattr(tr, name, MagicMock())
     return tr
 
@@ -111,6 +111,12 @@ def test_message_without_at_or_colon_is_ignored(reader):
     reader.batteryLvlSender.send.assert_not_called()
 
 
+def test_firmware_warning_format_is_forwarded(reader):
+    reader.send_queue("@warning:0:4:17")
+    reader.warningSender.send.assert_called_once_with("0:4:17")
+
+
+
 # --------------------------------------------------------------------------- #
 # check_valid_value
 # --------------------------------------------------------------------------- #
@@ -122,3 +128,34 @@ def test_message_without_at_or_colon_is_ignored(reader):
 ])
 def test_check_valid_value(reader, value, expected):
     assert reader.check_valid_value("battery", value) is expected
+
+
+def test_enable_timer_is_daemon_and_cancelled_on_stop(monkeypatch):
+    timers = []
+
+    class FakeTimer:
+        def __init__(self, interval, callback):
+            self.interval = interval
+            self.callback = callback
+            self.daemon = False
+            self.started = False
+            self.cancelled = False
+            timers.append(self)
+
+        def start(self):
+            self.started = True
+
+        def cancel(self):
+            self.cancelled = True
+
+    monkeypatch.setattr(threadRead_mod.threading, "Timer", FakeTimer)
+    reader = threadRead(process=MagicMock(), queueList=_Queues(), debugger=False)
+
+    assert len(timers) == 1
+    assert timers[0].started
+    assert timers[0].daemon
+
+    reader.stop()
+
+    assert timers[0].cancelled
+    assert reader._queueTimer is None

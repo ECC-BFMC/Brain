@@ -87,6 +87,7 @@ class threadCamera(ThreadWithStop):
         self._nextRecordFrameDue = 0.0
         self._lastHousekeeping = 0.0
         self._streamLock = Lock()
+        self._cleanupDone = False
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -154,6 +155,12 @@ class threadCamera(ThreadWithStop):
             )
 
     # ================================ RUN ================================================
+    def run(self):
+        """Run capture work, then release camera resources on this same thread."""
+        try:
+            super(threadCamera, self).run()
+        finally:
+            self._cleanup()
     def thread_work(self):
         """This function will run while the running flag is True.
         It captures frames from the camera and publishes each demanded stream:
@@ -302,6 +309,14 @@ class threadCamera(ThreadWithStop):
     # =============================== STOP ================================================
     def stop(self):
         super(threadCamera, self).stop()
+        if not self.is_alive():
+            self._cleanup()
+
+    def _cleanup(self):
+        """Release resources only after the capture loop can no longer use them."""
+        if self._cleanupDone:
+            return
+        self._cleanupDone = True
         self.recording = False
         self._stopRecording()
         if self.camera is not None:
