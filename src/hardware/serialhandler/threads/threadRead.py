@@ -30,7 +30,6 @@ import time
 import threading
 import re
 import os
-import serial
 from datetime import datetime, timedelta
 
 from src.templates.threadwithstop import ThreadWithStop
@@ -71,13 +70,15 @@ class threadRead(ThreadWithStop):
         self.logger = get_logger("Serial Handler")
         self.debugger = debugger
         self.event = threading.Event()
+        self._queueTimerLock = threading.Lock()
+        self._queueTimer = None
         self._init_senders()
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25",
                                "speed": "between -500 and 500", "break": "between -250 and 250"}
 
-        self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
+        self.warningPattern = r'^(-?[0-9]+):(-?[0-5]?[0-9]):(-?[0-5]?[0-9])$'
         self.resourceMonitorPattern = r'Heap \((\d+\.\d+)\);Stack \((\d+\.\d+)\)'
 
         # error rate limiting
@@ -137,15 +138,27 @@ class threadRead(ThreadWithStop):
 
     # ==================================== SENDING =======================================
     def queue_sending(self):
-        """Callback function for enable button flag."""
-        self.enableButtonSender.send(True)
-        threading.Timer(1, self.queue_sending).start()
+        """Send the enable flag periodically without keeping the process alive."""
+        with self._queueTimerLock:
+            if self._blocker.is_set():
+                return
+            self.enableButtonSender.send(True)
+            self._queueTimer = threading.Timer(1, self.queue_sending)
+            self._queueTimer.daemon = True
+            self._queueTimer.start()
+
+    def stop(self):
+        super(threadRead, self).stop()
+        with self._queueTimerLock:
+            if self._queueTimer is not None:
+                self._queueTimer.cancel()
+                self._queueTimer = None
 
     def send_queue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
         if '@' in buff and ':' in buff:
-            action, value = buff.split(":")
+            action, value = buff.split(":", 1)
             action = re.sub(r'[^a-zA-Z0-9]', '', action)
             if self.debugger:
                 self.logger.info(buff)
@@ -220,7 +233,7 @@ class threadRead(ThreadWithStop):
                 data = re.match(self.warningPattern, value)
                 if data:
                     self.logger.warning(f"Shutdown in {data.group(1)}h {data.group(2)}m {data.group(3)}s")
-                    self.warningSender.send(data)
+                    self.warningSender.send(value)
                     
             elif action == "shutdown":
                 self.logger.warning("Shutting down now!")

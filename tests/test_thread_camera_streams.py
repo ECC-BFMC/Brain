@@ -9,6 +9,7 @@ the senders' real feedback pipes.
 
 import queue as queue_module
 from multiprocessing import Queue
+from threading import Event
 
 import numpy as np
 import pytest
@@ -105,3 +106,40 @@ def test_publish_after_stop_does_not_recreate_shared_memory(camera):
     serial_frame = np.zeros((270, 512, 3), dtype=np.uint8)
     cam._publishStream("serialCamera", serial_frame)
     assert cam._streams["serialCamera"]["writer"] is None
+
+
+class BlockingCamera:
+    def __init__(self):
+        self.capture_started = Event()
+        self.release_capture = Event()
+        self.stop_called = False
+
+    def capture_array(self, name):
+        self.capture_started.set()
+        if not self.release_capture.wait(2):
+            raise TimeoutError("Test did not release the simulated capture")
+        if self.stop_called:
+            raise RuntimeError("Camera was stopped during capture")
+        return np.zeros((405, 512), dtype=np.uint8)
+
+    def stop(self):
+        self.stop_called = True
+
+
+def test_stop_waits_for_active_capture_before_stopping_camera(camera):
+    cam, _ = camera
+    blocking_camera = BlockingCamera()
+    cam.camera.stop()
+    cam.camera = blocking_camera
+    set_demand(cam.serialCameraSender, 1)
+    cam.start()
+
+    assert blocking_camera.capture_started.wait(2)
+    cam.stop()
+    assert not blocking_camera.stop_called
+
+    blocking_camera.release_capture.set()
+    cam.join(2)
+
+    assert not cam.is_alive()
+    assert blocking_camera.stop_called
