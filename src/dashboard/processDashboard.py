@@ -435,7 +435,7 @@ class processDashboard(WorkerProcess):
         if self.ready_event:
             self.ready_event.set()
 
-        self.socketio.run(self.app, host='0.0.0.0', port=5005)
+        self.socketio.run(self.app, host='0.0.0.0', port=5005, allow_unsafe_werkzeug=True)
 
 
     def subscribe(self):

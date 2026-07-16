@@ -1,0 +1,28 @@
+services:
+  brain:
+    build: .
+    ports:
+      - "5005:5005"
+    depends_on:
+      - nucleo-sim
+    environment:
+      # where the brain's serial handler reaches the emulated NUCLEO
+      NUCLEO_SIM_HOST: nucleo-sim
+      NUCLEO_SIM_PORT: "3456"
+
+  frontend:
+    build: ./src/dashboard/frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      - brain
+
+  # Renode running the real robot_car.bin, exposing USART2 on TCP 3456.
+  nucleo-sim:
+    build: ./sim/nucleo
+    stdin_open: true          # keep Renode's monitor alive (no EOF quit)
+    tty: true
+    volumes:
+      - ./runtime/firmware:/firmware:ro   # live .bin, picked up on restart
+    ports:
+      - "3456:3456"           # published so you can probe it from the host too
