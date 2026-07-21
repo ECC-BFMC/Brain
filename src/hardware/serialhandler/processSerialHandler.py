@@ -50,8 +50,15 @@ def _load_serial(use_simulator):
 
         return serial_module
 
-    import serial as serial_module
+    try:
+        import serial as serial_module
+        import serial.tools as serial_tools
+        import serial.tools.list_ports as list_ports
+    except ImportError as exc:
+        raise ImportError("pyserial is required for hardware serial support. Install it with: pip install pyserial") from exc
 
+    serial_tools.list_ports = list_ports
+    serial_module.tools = serial_tools
     return serial_module
 
 
@@ -113,6 +120,9 @@ class processSerialHandler(WorkerProcess):
                 self._safe_close_serial()
 
                 self.serialDevice = next((port.device for port in self.serial.tools.list_ports.comports() if re.match(r"/dev/ttyACM\d+", port.device)), None)
+                if self.serialDevice is None:
+                    raise FileNotFoundError("No /dev/ttyACM* serial device found")
+
                 self.serialCon = self.serial.Serial(self.serialDevice, 115200, timeout=0.1)
                 self.serialCon.reset_input_buffer()
                 self.serialCon.reset_output_buffer()

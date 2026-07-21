@@ -47,6 +47,22 @@ def test_dev_selection_ignores_an_installed_serial_module(monkeypatch):
     assert selected_module is serial
 
 
+def test_hardware_serial_loader_attaches_pyserial_list_ports(monkeypatch):
+    installed_serial = types.ModuleType("serial")
+    installed_serial.__path__ = []
+    serial_tools = types.ModuleType("serial.tools")
+    list_ports = types.ModuleType("serial.tools.list_ports")
+
+    monkeypatch.setitem(sys.modules, "serial", installed_serial)
+    monkeypatch.setitem(sys.modules, "serial.tools", serial_tools)
+    monkeypatch.setitem(sys.modules, "serial.tools.list_ports", list_ports)
+
+    selected_module = serial_process_module._load_serial(use_simulator=False)
+
+    assert selected_module is installed_serial
+    assert selected_module.tools is serial_tools
+    assert selected_module.tools.list_ports is list_ports
+
 def test_simulated_port_discovery_and_connection_api():
     ports = serial.tools.list_ports.comports()
     assert [port.device for port in ports] == ["/dev/ttyACM0"]
