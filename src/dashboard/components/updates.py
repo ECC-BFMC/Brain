@@ -188,6 +188,24 @@ class UpdateManager:
         "switch to it -- this overwrites local changes to tracked files."
     )
 
+    PERMISSION_ERROR_MESSAGE = (
+        "Git cannot write to this checkout or one of its submodules. This usually "
+        "means part of the repository was cloned or updated with sudo/root. On the "
+        "Raspberry Pi, run: sudo chown -R $(id -u):$(id -g) ~/Documents/Brain"
+    )
+
+    @classmethod
+    def _is_permission_error(cls, text):
+        if not text:
+            return False
+        low = text.lower()
+        return 'permission denied' in low and (
+            'fetch_head' in low
+            or 'cannot open' in low
+            or 'unable to create' in low
+            or 'could not lock config file' in low
+        )
+
     @classmethod
     def _is_auth_error(cls, text):
         if not text:
@@ -526,7 +544,13 @@ class UpdateManager:
         """Build the JSON response for a failed fetch, distinguishing a private
         repo / auth problem (so the UI can show setup instructions) from a
         generic network error."""
-        if self._is_auth_error(fetch.stderr or fetch.stdout):
+        output = fetch.stderr or fetch.stdout
+        if self._is_permission_error(output):
+            return jsonify({
+                'success': False,
+                'error': self.PERMISSION_ERROR_MESSAGE,
+            }), 500
+        if self._is_auth_error(output):
             return jsonify({
                 'success': False,
                 'auth_required': True,

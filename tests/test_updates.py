@@ -6,6 +6,8 @@ security-relevant (the URL validator blocks transports that could run commands
 or read local files). Those are tested here; the git/network paths are not.
 """
 
+from types import SimpleNamespace
+
 import pytest
 from flask import Flask
 
@@ -82,6 +84,20 @@ def test_parse_github_repo_rejects_non_github(updates):
 ])
 def test_is_auth_error(updates, text, expected):
     assert updates._is_auth_error(text) is expected
+
+
+def test_fetch_failure_response_explains_submodule_permission_error(updates, app_context):
+    fetch = SimpleNamespace(
+        stderr="error: cannot open 'FETCH_HEAD': Permission denied\nErrors during submodule fetch:\nsrc/data",
+        stdout="",
+    )
+
+    response, status = updates._fetch_failure_response(fetch)
+    payload = response.get_json()
+
+    assert status == 500
+    assert "sudo chown -R" in payload["error"]
+    assert "submodules" in payload["error"]
 
 
 @pytest.mark.parametrize("files,expected", [
