@@ -50,21 +50,6 @@ else
   VENV_ARGS=(--system-site-packages)
 fi
 
-# --- Repository ownership (Linux / Raspberry Pi) -----------------------------
-if [ "$OS_TYPE" != "windows" ] && [ -d ".git" ]; then
-  REPO_UID="$(id -u)"
-  REPO_GID="$(id -g)"
-  OWNERSHIP_PATHS=(.git)
-  [ -e "src/data" ] && OWNERSHIP_PATHS+=(src/data)
-  [ -e "runtime" ] && OWNERSHIP_PATHS+=(runtime)
-
-  if [ -n "$(find "${OWNERSHIP_PATHS[@]}" \( -not -user "$REPO_UID" -o -not -writable \) -print -quit 2>/dev/null)" ]; then
-    echo "Repairing repository ownership for dashboard updates..."
-    sudo chown -R "$REPO_UID:$REPO_GID" "${OWNERSHIP_PATHS[@]}"
-    chmod -R u+rwX "${OWNERSHIP_PATHS[@]}"
-  fi
-fi
-
 # --- Git submodules (Cross-platform) ---
 if [ -f ".gitmodules" ]; then
   if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
