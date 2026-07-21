@@ -48,6 +48,16 @@ else
   PYTHON_ACTIVATE=".venv/bin/activate"
 fi
 
+# --- Git submodules (Cross-platform) ---
+if [ -f ".gitmodules" ]; then
+  if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
+    echo "Initializing git submodules..."
+    git submodule update --init --recursive
+  else
+    echo "Warning: .gitmodules exists, but git metadata is unavailable; skipping submodule setup."
+  fi
+fi
+
 # --- Python Virtual Environment (Cross-platform) ---
 if [ -f "$PYTHON_ACTIVATE" ]; then
   echo "Python virtual environment already exists, reusing it..."
