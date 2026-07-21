@@ -2,6 +2,8 @@
 @ goto startbatch
 
 # --- BASH CODE SECTION (Linux, macOS, and Windows under Git Bash) ---
+set -e
+
 # Detect operating system
 OS_TYPE="linux"
 if [[ "${OSTYPE:-}" == "msys" || "${OSTYPE:-}" == "cygwin" || "${OSTYPE:-}" == "win32" ]]; then
@@ -35,7 +37,7 @@ else
   sudo apt-get upgrade -y
   sudo apt-get install -y \
     python3-pip python3-dev build-essential pkg-config \
-    libgl1 libglib2.0-0 libssl-dev libffi-dev \
+    libgl1 libglib2.0-0 libssl-dev libffi-dev libcap-dev \
     python3-libcamera xdg-utils curl ca-certificates
 
   # --- Node.js (Linux / Raspberry Pi) ---------------------------------------

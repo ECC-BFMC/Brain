@@ -28,8 +28,7 @@
 #
 # To start the project: 
 #
-#       chmod +x setup.sh
-#       ./setup.sh
+#       bash setup.cmd
 #       cd src/dashboard/frontend
 #       npm start
 #       answer "y" to the popup
