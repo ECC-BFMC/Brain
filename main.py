@@ -28,7 +28,7 @@
 #
 # To start the project: 
 #
-#       bash setup.cmd
+#       sudo bash setup.cmd
 #       cd src/dashboard/frontend
 #       npm start
 #       answer "y" to the popup
