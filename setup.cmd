@@ -30,6 +30,7 @@ if [ "$OS_TYPE" == "windows" ]; then
   fi
 
   PYTHON_ACTIVATE=".venv/Scripts/activate"
+  VENV_ARGS=()
 else
   echo "Installing Linux system dependencies..."
   # --- APT base (Linux / Raspberry Pi) --------------------------------------
@@ -38,7 +39,7 @@ else
   sudo apt-get install -y \
     python3-pip python3-dev build-essential pkg-config \
     libgl1 libglib2.0-0 libssl-dev libffi-dev libcap-dev \
-    python3-libcamera xdg-utils curl ca-certificates
+    python3-libcamera python3-picamera2 xdg-utils curl ca-certificates
 
   # --- Node.js (Linux / Raspberry Pi) ---------------------------------------
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -46,6 +47,7 @@ else
 
   PYTHON_CMD="python3"
   PYTHON_ACTIVATE=".venv/bin/activate"
+  VENV_ARGS=(--system-site-packages)
 fi
 
 # --- Git submodules (Cross-platform) ---
@@ -63,9 +65,23 @@ if [ -f "$PYTHON_ACTIVATE" ]; then
   echo "Python virtual environment already exists, reusing it..."
 else
   echo "Setting up Python virtual environment..."
-  $PYTHON_CMD -m venv .venv
+  $PYTHON_CMD -m venv "${VENV_ARGS[@]}" .venv
 fi
+
+if [ "$OS_TYPE" != "windows" ] && [ -f ".venv/pyvenv.cfg" ]; then
+  if grep -q "^include-system-site-packages =" .venv/pyvenv.cfg; then
+    sed -i "s/^include-system-site-packages = .*/include-system-site-packages = true/" .venv/pyvenv.cfg
+  else
+    printf "\ninclude-system-site-packages = true\n" >> .venv/pyvenv.cfg
+  fi
+fi
+
 source "$PYTHON_ACTIVATE"
+
+if [ "$OS_TYPE" != "windows" ]; then
+  echo "Removing pip-installed picamera2 so Raspberry Pi OS camera bindings are used..."
+  pip uninstall -y picamera2 >/dev/null 2>&1 || true
+fi
 
 echo "Upgrading pip, setuptools, wheel..."
 $PYTHON_CMD -m pip install --upgrade pip setuptools wheel
