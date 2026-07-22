@@ -28,6 +28,7 @@ brain-autostart/
 
 - Monitors dashboard access on port 4200
 - Automatically starts the Python backend when dashboard is accessed
+- Runs the backend with `/home/pi/Documents/Brain/.venv/bin/python`
 - Prevents multiple brain instances
 - Customizable configuration via config file
 - Proper logging and error handling
@@ -119,6 +120,6 @@ sudo tail -f /var/log/brain-monitor.log
 If the brain doesn't start automatically:
 1. Check the service logs: `sudo tail -f /var/log/brain-monitor.log`
 2. Ensure the dashboard is accessible on port 4200
-3. Verify Python environment is properly set up
+3. Verify `/home/pi/Documents/Brain/.venv/bin/python` exists and is executable
 4. Check if brain processes are already running: `ps aux | grep main.py`
 5. Kill existing processes if needed: `./kill-brain.sh`
