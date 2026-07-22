@@ -84,17 +84,27 @@
 
   <!-- Confirmation Dialog -->
   <div *ngIf="showConfirmDialog" class="confirm-overlay" (click)="cancelDelete()">
-    <div class="confirm-dialog" (click)="$event.stopPropagation()">
-      <div class="confirm-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-        </svg>
+    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="remove-network-title"
+      aria-describedby="remove-network-description" (click)="$event.stopPropagation()">
+      <div class="confirm-header">
+        <h4 id="remove-network-title">Remove Network</h4>
+        <button type="button" class="confirm-close" (click)="cancelDelete()" aria-label="Close confirmation">
+          &times;
+        </button>
       </div>
-      <h4>Remove Network</h4>
-      <p class="confirm-text">Are you sure you want to remove <strong>"{{ confirmNetworkName }}"</strong>?</p>
+      <div class="confirm-body">
+        <div class="confirm-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+        </div>
+        <p id="remove-network-description" class="confirm-text">
+          Are you sure you want to remove <strong>"{{ confirmNetworkName }}"</strong>?
+        </p>
+      </div>
       <div class="confirm-actions">
-        <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
-        <button class="btn-confirm" (click)="confirmDelete()">Remove</button>
+        <button type="button" class="btn-cancel" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="btn-confirm" (click)="confirmDelete()">Remove</button>
       </div>
     </div>
   </div>
