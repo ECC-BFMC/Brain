@@ -70,7 +70,7 @@ export class ConsoleComponent implements OnInit, OnDestroy, OnChanges {
         // Basic parser for ANSI color codes
         // \x1b[...m
 
-        let html = text.replace(/\x1b\[([0-9;]*)m/g, (match, codes) => {
+        let html = this.escapeHtml(text).replace(/\x1b\[([0-9;]*)m/g, (match, codes) => {
             const style: string[] = [];
             const codeArray = codes.split(';').map(Number);
 
@@ -100,6 +100,19 @@ export class ConsoleComponent implements OnInit, OnDestroy, OnChanges {
         html += '</span>'.repeat(Math.max(0, openSpans - closeSpans));
 
         return this.sanitizer.bypassSecurityTrustHtml(html);
+    }
+
+    private escapeHtml(text: string): string {
+        return text.replace(/[&<>"']/g, (character) => {
+            const entities: Record<string, string> = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return entities[character];
+        });
     }
 
     private isUserNearBottom(): boolean {
