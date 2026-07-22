@@ -28,7 +28,7 @@
 
 from multiprocessing import Process, Event
 
-from src.utils.logConfig import get_logger
+from src.utils.logConfig import get_logger, configure_dashboard_output
 
 
 class WorkerProcess(Process):
@@ -71,10 +71,15 @@ class WorkerProcess(Process):
         """
         raise NotImplementedError
 
+    def _configure_dashboard_output(self):
+        configure_dashboard_output(self.queuesList.get("Log"))
+
+
     def run(self):
         """This method applies the initialization of the theards and starts all of them. The process ignores the keyboardInterruption signal and can terminate by applying the 'stop' method.
         The process will be blocked, until an other process use the 'stop' function. After appling the function it terminates all subthread.
         """
+        self._configure_dashboard_output()
         self._init_threads()
         for th in self.threads:
             th.daemon = self.daemon

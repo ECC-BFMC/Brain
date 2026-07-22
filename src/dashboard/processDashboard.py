@@ -38,6 +38,8 @@ import inspect
 import logging
 import os
 import time
+from collections import deque
+from threading import Lock
 
 import cv2
 
@@ -150,6 +152,7 @@ class processDashboard(WorkerProcess):
 
     def _setup_websocket_handlers(self):
         """Setup WebSocket event handlers."""
+        self.socketio.on_event('connect', self.handle_console_connect)
         self.socketio.on_event('message', self.handle_message)
         self.socketio.on_event('save', self.handle_save_table_state)
         self.socketio.on_event('load', self.handle_load_table_state)
@@ -374,23 +377,31 @@ class processDashboard(WorkerProcess):
         self.socketio.start_background_task(self.send_heartbeat)
         self.socketio.start_background_task(self.stream_console_logs)
 
+    def handle_console_connect(self, auth=None):
+        """Replay terminal lines emitted before this browser connected."""
+        with self.console_history_lock:
+            history = list(self.console_history)
+
+        for msg in history:
+            self.socketio.emit('console_log', {'data': msg}, room=request.sid)
+
+
 
     def stream_console_logs(self):
         """Monitor the Log queue and emit messages to frontend."""
         log_queue = self.queueList.get("Log")
-        if not log_queue:
+        if log_queue is None:
             return
 
         while self.running:
             try:
-                while not log_queue.empty():
-                    msg = log_queue.get_nowait()
-                    self.socketio.emit('console_log', {'data': msg})
-                    self.socketio.sleep(0)
-
-                self.socketio.sleep(0.1)
+                msg = log_queue.get(timeout=0.1)
+                with self.console_history_lock:
+                    self.console_history.append(msg)
+                self.socketio.emit('console_log', {'data': msg})
+                self.socketio.sleep(0)
             except queue.Empty:
-                self.socketio.sleep(0.1)
+                pass
             except Exception as e:
                 if self.debugging:
                     self.logger.error(f"Error streaming logs: {e}")
@@ -410,6 +421,9 @@ class processDashboard(WorkerProcess):
         repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
         # silence Werkzeug's per-request access logging
+        self._configure_dashboard_output()
+        self.console_history = deque(maxlen=500)
+        self.console_history_lock = Lock()
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
         # silence Flask's dev-server startup banner (" * Serving Flask app...",
