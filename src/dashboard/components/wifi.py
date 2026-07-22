@@ -1,5 +1,7 @@
 import os
 import subprocess
+import threading
+import time
 from flask import jsonify
 
 
@@ -60,37 +62,58 @@ class WifiManager:
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
+    def _remove_connection(self, name):
+        """Remove a profile after the HTTP response has had time to leave."""
+        time.sleep(2)
+
+        active = subprocess.run(
+            ['nmcli', '-t', '-f', 'NAME', 'connection', 'show', '--active'],
+            capture_output=True, text=True, timeout=10
+        )
+        active_names = set(active.stdout.strip().splitlines())
+        was_active = name in active_names
+
+        result = subprocess.run(
+            ['nmcli', 'connection', 'delete', name],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0 or not was_active:
+            return
+
+        fallback_script = os.path.join(
+            self.repo_path, 'services', 'rpi-wifi-fallback', 'fallback.sh'
+        )
+        if os.path.exists(fallback_script):
+            env = os.environ.copy()
+            env.setdefault('LOG', '/tmp/rpi-wifi-fallback.log')
+            env.setdefault('LOCK_FILE', '/tmp/rpi-wifi-fallback.lock')
+            subprocess.Popen(
+                ['/bin/bash', fallback_script, 'up'],
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+
     def handle_remove(self, name):
-        """Schedule removal of a saved WiFi network."""
-        try:
-            if not name:
-                return jsonify({'success': False, 'error': 'Network name is required'}), 400
+        """Schedule removal of a saved WiFi network without blocking HTTP."""
+        if not name:
+            return jsonify({'success': False, 'error': 'Network name is required'}), 400
 
-            if name in self.PROTECTED_CONNECTIONS:
-                return jsonify({'success': False, 'error': 'Cannot remove this connection'}), 400
+        if name in self.PROTECTED_CONNECTIONS:
+            return jsonify({'success': False, 'error': 'Cannot remove this connection'}), 400
 
-            script_path = os.path.join(
-                self.repo_path, 'services', 'rpi-wifi-fallback', 'remove-wifi.sh'
+        worker = threading.Thread(
+            target=self._remove_connection,
+            args=(name,),
+            daemon=True,
+        )
+        worker.start()
+
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Network "{name}" is being removed. '
+                'If it is active, the fallback hotspot will start shortly.'
             )
-            if not os.path.exists(script_path):
-                return jsonify({'success': False, 'error': 'WiFi removal script not found'}), 500
-
-            result = subprocess.run(
-                ['sudo', '-n', '/bin/bash', script_path, name],
-                capture_output=True, text=True, timeout=10
-            )
-            if result.returncode != 0:
-                error = (result.stderr or result.stdout or 'Failed to schedule network removal').strip()
-                return jsonify({'success': False, 'error': error}), 500
-
-            return jsonify({
-                'success': True,
-                'message': (
-                    f'Network "{name}" is being removed. '
-                    'If it is active, the fallback hotspot will start shortly.'
-                )
-            })
-        except subprocess.TimeoutExpired:
-            return jsonify({'success': False, 'error': 'Command timed out'}), 500
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+        })

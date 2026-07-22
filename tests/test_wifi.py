@@ -80,41 +80,57 @@ def test_remove_rejects_protected_connections(wifi, protected):
     assert "Cannot remove" in body(resp)["error"]
 
 
-def test_remove_fails_when_script_missing(wifi):
-    resp = wifi.handle_remove("HomeNet")
-    assert status(resp) == 500
-    assert "script not found" in body(resp)["error"]
-
-
-def test_remove_schedules_normal_connection(wifi, tmp_path):
-    script = tmp_path / "services" / "rpi-wifi-fallback" / "remove-wifi.sh"
-    script.parent.mkdir(parents=True)
-    script.write_text("#!/bin/bash\n")
-
-    with patch("src.dashboard.components.wifi.subprocess.run") as run:
-        run.return_value = MagicMock(returncode=0, stderr="", stdout="")
+def test_remove_schedules_background_worker(wifi):
+    with patch("src.dashboard.components.wifi.threading.Thread") as thread:
         resp = wifi.handle_remove("HomeNet")
 
     assert body(resp)["success"] is True
-    args = run.call_args[0][0]
-    assert args == ["sudo", "-n", "/bin/bash", str(script), "HomeNet"]
+    thread.assert_called_once_with(
+        target=wifi._remove_connection,
+        args=("HomeNet",),
+        daemon=True,
+    )
+    thread.return_value.start.assert_called_once_with()
 
 
-def test_remove_surfaces_scheduler_error(wifi, tmp_path):
-    script = tmp_path / "services" / "rpi-wifi-fallback" / "remove-wifi.sh"
-    script.parent.mkdir(parents=True)
-    script.write_text("#!/bin/bash\n")
+def test_remove_worker_uses_nmcli_without_sudo(wifi, tmp_path):
+    fallback = tmp_path / "services" / "rpi-wifi-fallback" / "fallback.sh"
+    fallback.parent.mkdir(parents=True)
+    fallback.write_text("#!/bin/bash\n")
 
-    with patch("src.dashboard.components.wifi.subprocess.run") as run:
-        run.return_value = MagicMock(
-            returncode=1,
-            stderr="sudo: a password is required\n",
-            stdout="",
-        )
-        resp = wifi.handle_remove("HomeNet")
+    active = MagicMock(stdout="HomeNet\n", returncode=0)
+    deleted = MagicMock(stdout="", stderr="", returncode=0)
+    with (
+        patch("src.dashboard.components.wifi.time.sleep"),
+        patch(
+            "src.dashboard.components.wifi.subprocess.run",
+            side_effect=[active, deleted],
+        ) as run,
+        patch("src.dashboard.components.wifi.subprocess.Popen") as popen,
+    ):
+        wifi._remove_connection("HomeNet")
 
-    assert status(resp) == 500
-    assert body(resp)["error"] == "sudo: a password is required"
+    assert run.call_args_list[1].args[0] == [
+        "nmcli", "connection", "delete", "HomeNet"
+    ]
+    popen.assert_called_once()
+    assert popen.call_args.args[0] == ["/bin/bash", str(fallback), "up"]
+
+
+def test_remove_worker_leaves_network_unchanged_for_inactive_profile(wifi):
+    active = MagicMock(stdout="OtherNet\n", returncode=0)
+    deleted = MagicMock(stdout="", stderr="", returncode=0)
+    with (
+        patch("src.dashboard.components.wifi.time.sleep"),
+        patch(
+            "src.dashboard.components.wifi.subprocess.run",
+            side_effect=[active, deleted],
+        ),
+        patch("src.dashboard.components.wifi.subprocess.Popen") as popen,
+    ):
+        wifi._remove_connection("HomeNet")
+
+    popen.assert_not_called()
 
 
 # --------------------------------------------------------------------------- #

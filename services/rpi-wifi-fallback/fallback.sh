@@ -31,13 +31,7 @@ NMCLI_BIN="${NMCLI_BIN:-nmcli}"
 LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback.lock}"
 
 run_nmcli() {
-  if (( EUID == 0 )); then
-    "$NMCLI_BIN" "$@"
-  elif command -v sudo &>/dev/null; then
-    sudo "$NMCLI_BIN" "$@"
-  else
-    "$NMCLI_BIN" "$@"
-  fi
+  "$NMCLI_BIN" "$@"
 }
 say() { echo "[$(date +'%F %T')] $*"; }
 
