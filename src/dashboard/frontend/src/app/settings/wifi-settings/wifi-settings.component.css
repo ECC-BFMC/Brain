@@ -382,3 +382,66 @@
 .btn-confirm:hover {
   background: #c82333;
 }
+/* Compact settings scale shared with Software Update and Local Firmware Upload. */
+.wifi-settings { padding: 0; gap: 8px; }
+.status-message { padding: 7px 9px; font-size: 10.5px; line-height: 1.45; }
+.add-wifi-form { gap: 6px; }
+.form-group { gap: 4px; }
+.form-group label { color: rgba(255, 255, 255, 0.62); font-size: 10px; font-weight: 600; }
+.form-group input {
+  min-height: 28px;
+  padding: 2px 8px;
+  border-color: rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+}
+.password-input-wrapper input { padding-right: 30px; }
+.password-toggle { right: 3px; width: 26px; height: 26px; padding: 5px; }
+.password-toggle svg,
+.info-note svg,
+.btn-refresh svg,
+.network-info svg,
+.btn-delete svg { width: 14px; height: 14px; }
+.btn-primary {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
+  color: #7df9ff;
+  font-size: 10.5px;
+  line-height: 1;
+}
+.btn-primary:hover:not(:disabled) {
+  border-color: rgba(125, 249, 255, 0.34);
+  background: rgba(125, 249, 255, 0.07);
+  color: #b9fdff;
+}
+.add-btn { margin-top: 2px; }
+.info-note { gap: 6px; padding: 7px 9px; font-size: 10.5px; line-height: 1.45; }
+.info-note svg { margin-top: 1px; }
+.section-title { min-height: 28px; margin-bottom: 6px; padding-bottom: 5px; }
+.section-title h4 { font-size: 12px; font-weight: 600; }
+.btn-refresh,
+.btn-delete { width: 28px; height: 28px; padding: 6px; border-radius: 6px; }
+.loading,
+.empty-list { padding: 9px; font-size: 10.5px; }
+.network-item { min-height: 34px; margin-bottom: 4px; padding: 4px 8px; }
+.network-info { gap: 6px; }
+.network-name { font-size: 10.5px; }
+.confirm-dialog { padding: 14px; }
+.confirm-icon { margin-bottom: 6px; }
+.confirm-icon svg { width: 28px; height: 28px; }
+.confirm-dialog h4 { margin-bottom: 8px; font-size: 12px; }
+.confirm-dialog p,
+.confirm-text { font-size: 10.5px !important; }
+.confirm-text { margin-bottom: 10px !important; }
+.confirm-actions { gap: 8px; }
+.btn-cancel,
+.btn-confirm {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10.5px;
+}

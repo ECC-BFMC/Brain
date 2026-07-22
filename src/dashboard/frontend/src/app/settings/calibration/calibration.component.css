@@ -249,100 +249,61 @@
 /* Button Styles */
 .btn-primary,
 .btn-secondary,
-.btn-success {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #0056b3;
-}
-
-.btn-primary:disabled {
-  background: #495057;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #545b62;
-}
-
-.btn-secondary:disabled {
-  background: #495057;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-success {
-  background: #28a745;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #1e7e34;
-}
-
-.btn-success:disabled {
-  background: #495057;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
+.btn-success,
 .btn-submit {
-  background: linear-gradient(135deg, #00acc1, #26a69a);
-  color: white;
-  border: none;
-  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0,172,193,0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  /* Prevent text selection/copy on mobile */
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: none;
+  text-transform: none;
+  transform: none;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-.btn-submit:hover {
-  background: linear-gradient(135deg, #0097a7, #00897b);
-  box-shadow: 0 4px 12px rgba(0,172,193,0.4);
-  transform: translateY(-1px);
+.btn-primary,
+.btn-submit {
+  color: #7df9ff;
+  border-color: rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
 }
 
-.btn-submit:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0,172,193,0.3);
+.btn-success {
+  color: #52d273;
+  border-color: rgba(82, 210, 115, 0.22);
+  background: rgba(82, 210, 115, 0.04);
 }
 
+.btn-primary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.btn-success:hover:not(:disabled),
+.btn-submit:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-success:disabled,
 .btn-submit:disabled {
-  background: #6c757d !important;
-  color: rgba(255,255,255,0.5) !important;
-  cursor: not-allowed !important;
-  transform: none !important;
-  box-shadow: none !important;
-  opacity: 0.6;
+  color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .form-input:disabled,
@@ -431,12 +392,6 @@
   .step-submit {
     gap: 0.5rem;
   }
-  
-  .btn-submit {
-    padding: 8px 12px;
-    font-size: 12px;
-    min-width: auto;
-  }
 }
 
 /* Very small screens - ultra-compact button layout */
@@ -444,13 +399,6 @@
   .input-submit,
   .step-submit {
     gap: 0.25rem;
-  }
-  
-  .btn-submit {
-    padding: 6px 8px;
-    font-size: 11px;
-    flex: 1;
-    max-width: calc(50% - 0.125rem);
   }
 }
 
@@ -703,11 +651,50 @@ body.modal-open {
     margin-bottom: 0.25rem; /* small consistent spacing like left side */
   }
 
-  .btn-primary,
-  .btn-secondary,
-  .btn-success {
-    padding: 6px 12px;
-    font-size: 12px;
+}
+
+/* Compact settings scale shared with Software Update and Local Firmware Upload. */
+.calibration-modal { padding: 9px; border-radius: 7px; }
+.step-header { min-height: 34px; margin-bottom: 8px; }
+.step-header h4 {
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+}
+.step-progress { height: 5px; }
+.step-content { gap: 8px; margin-bottom: 8px; }
+.step-visual { min-height: 180px; padding: 8px; border-radius: 7px; }
+.step-description { padding: 7px 9px; }
+.step-inputs { gap: 8px; }
+.inputs-container { gap: 6px; }
+.input-group { gap: 4px; }
+.input-submit { gap: 6px; margin-top: 2px; }
+.step-submit { gap: 6px; margin-top: 2px; padding-top: 8px; }
+.step-navigation {
+  min-height: 36px;
+  gap: 8px;
+  margin-bottom: 0;
+  padding-top: 8px;
+}
+.step-counter { font-size: 10.5px; }
+.polynomial-charts { gap: 8px; margin: 8px 0; }
+.saved-measurements-row button { min-width: 0; }
+
+@media (max-width: 768px) {
+  .calibration-modal { padding: 9px; }
+  .step-visual { min-height: 120px; }
+  .step-navigation {
+    min-height: 36px;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 0 0;
   }
 }
 
+@media (max-height: 500px) {
+  .step-visual { min-height: 100px; }
+}
+
+@media (max-height: 400px) {
+  .step-visual { min-height: 80px; }
+}

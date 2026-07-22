@@ -73,6 +73,18 @@
       </div>
     </div>
 
+    <!-- Keep the destructive-action confirmation next to the conflict it resolves. -->
+    <div *ngIf="showForceConfirm" class="card-alert error">
+      <div class="alert-content">
+        <span class="alert-title">Discard local changes?</span>
+        <span class="alert-text">This resets the codebase to the update and <strong>permanently discards local changes</strong> to tracked files (including any committed firmware/calibration that was modified locally). Continue?</span>
+        <div class="confirm-actions">
+          <button class="btn btn-danger" (click)="forceUpdate()">Yes, discard &amp; update</button>
+          <button class="btn btn-check" (click)="showForceConfirm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Branch selector -->
     <div *ngIf="isGitRepo && branches.length" class="card-details">
       <div class="detail-row">
@@ -160,18 +172,6 @@
         <div class="confirm-actions">
           <button class="btn btn-danger" (click)="adopt()">Yes, set up</button>
           <button class="btn btn-check" (click)="showAdoptConfirm = false">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Force confirmation -->
-    <div *ngIf="showForceConfirm" class="card-alert error">
-      <div class="alert-content">
-        <span class="alert-title">Discard local changes?</span>
-        <span class="alert-text">This resets the codebase to the update and <strong>permanently discards local changes</strong> to tracked files (including any committed firmware/calibration that was modified locally). Continue?</span>
-        <div class="confirm-actions">
-          <button class="btn btn-danger" (click)="forceUpdate()">Yes, discard &amp; update</button>
-          <button class="btn btn-check" (click)="showForceConfirm = false">Cancel</button>
         </div>
       </div>
     </div>
