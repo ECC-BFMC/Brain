@@ -193,6 +193,7 @@ class processSerialHandler(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
+        self._configure_dashboard_output()
         self.serialLock = Lock()
         self._try_serial_connection()
 

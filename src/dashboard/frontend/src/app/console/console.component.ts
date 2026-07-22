@@ -50,12 +50,10 @@ export class ConsoleComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     private addLog(message: string): void {
-        const timestamp = new Date().toLocaleTimeString();
-
         // Check if user is near bottom before adding log
         const isNearBottom = this.isUserNearBottom();
 
-        const formattedMessage = this.parseAnsi(`[${timestamp}] ${message}`);
+        const formattedMessage = this.parseAnsi(message);
         this.logs.push(formattedMessage);
 
         // Keep only last 500 logs to prevent memory issues

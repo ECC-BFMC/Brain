@@ -75,6 +75,48 @@ def get_logger(name):
     return logging.getLogger(name)
 
 
+def add_console_sink(sink):
+    """Mirror console-visible logging records to another file-like sink.
+
+    The sink is attached to the console handler rather than to a log file, so
+    records filtered with ``file_only=True`` remain absent from consumers such
+    as the dashboard console.
+    """
+    for handler in logging.getLogger().handlers:
+        if getattr(handler, "_brain_console_handler", False):
+            if not getattr(handler, "_brain_dashboard_sink", False):
+                from src.utils.outputWriters import MultiWriter
+                handler.setStream(MultiWriter(handler.stream, sink))
+                handler._brain_dashboard_sink = True
+            return
+
+    raise RuntimeError("Console logging is not configured")
+
+
+def configure_dashboard_output(log_queue):
+    """Mirror this process's terminal output to the dashboard log queue.
+
+    Multiprocessing children created with ``spawn`` or ``forkserver`` do not
+    inherit the parent's ``sys.stdout`` or logging handlers. Every process calls
+    this helper at the beginning of ``run()``; the markers keep it idempotent for
+    children created with ``fork`` where the configured streams are inherited.
+    """
+    if log_queue is None:
+        return
+
+    from src.utils.outputWriters import MultiWriter, QueueWriter
+    queue_writer = QueueWriter(log_queue)
+
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name)
+        if not getattr(stream, "_brain_dashboard_sink", False):
+            stream = MultiWriter(stream, queue_writer)
+            stream._brain_dashboard_sink = True
+            setattr(sys, stream_name, stream)
+
+    add_console_sink(queue_writer)
+
+
 class _ComponentFormatter(logging.Formatter):
     """Renders records as ``<time> [ Component ] : LEVEL - message``.
 
@@ -187,6 +229,7 @@ def setup_logging(level=logging.INFO):
     # Console handler binds to the *original* stderr (created before the tees
     # below), so logging records aren't double-written into the files.
     console = logging.StreamHandler()
+    console._brain_console_handler = True
     console.setLevel(level)
     console.setFormatter(console_formatter)
     console.addFilter(_NoFileOnlyFilter())
