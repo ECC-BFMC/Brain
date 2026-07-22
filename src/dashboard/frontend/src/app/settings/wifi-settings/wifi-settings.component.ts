@@ -102,7 +102,8 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                 }
             },
             error: (err) => {
-                this.showStatus('Failed to connect to server', 'error');
+                const message = err?.error?.error || 'Failed to connect to server';
+                this.showStatus(message, 'error');
             }
         });
     }

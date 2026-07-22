@@ -61,7 +61,7 @@ class WifiManager:
             return jsonify({'success': False, 'error': str(e)}), 500
 
     def handle_remove(self, name):
-        """Remove a saved WiFi network."""
+        """Schedule removal of a saved WiFi network."""
         try:
             if not name:
                 return jsonify({'success': False, 'error': 'Network name is required'}), 400
@@ -69,25 +69,27 @@ class WifiManager:
             if name in self.PROTECTED_CONNECTIONS:
                 return jsonify({'success': False, 'error': 'Cannot remove this connection'}), 400
 
+            script_path = os.path.join(
+                self.repo_path, 'services', 'rpi-wifi-fallback', 'remove-wifi.sh'
+            )
+            if not os.path.exists(script_path):
+                return jsonify({'success': False, 'error': 'WiFi removal script not found'}), 500
+
             result = subprocess.run(
-                ['sudo', 'nmcli', 'connection', 'delete', name],
+                ['sudo', '-n', '/bin/bash', script_path, name],
                 capture_output=True, text=True, timeout=10
             )
+            if result.returncode != 0:
+                error = (result.stderr or result.stdout or 'Failed to schedule network removal').strip()
+                return jsonify({'success': False, 'error': error}), 500
 
-            if result.returncode == 0:
-                fallback_script = os.path.join(
-                    self.repo_path, 'services', 'rpi-wifi-fallback', 'fallback.sh'
+            return jsonify({
+                'success': True,
+                'message': (
+                    f'Network "{name}" is being removed. '
+                    'If it is active, the fallback hotspot will start shortly.'
                 )
-                if os.path.exists(fallback_script):
-                    subprocess.Popen(
-                        ['sudo', fallback_script, 'up'],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        start_new_session=True
-                    )
-                return jsonify({'success': True, 'message': f'Network "{name}" removed. Hotspot activated.'})
-            else:
-                return jsonify({'success': False, 'error': result.stderr or 'Failed to remove network'}), 500
+            })
         except subprocess.TimeoutExpired:
             return jsonify({'success': False, 'error': 'Command timed out'}), 500
         except Exception as e:

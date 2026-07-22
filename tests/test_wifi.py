@@ -80,12 +80,41 @@ def test_remove_rejects_protected_connections(wifi, protected):
     assert "Cannot remove" in body(resp)["error"]
 
 
-def test_remove_deletes_normal_connection(wifi):
-    with patch("src.dashboard.components.wifi.subprocess.run") as run, \
-            patch("src.dashboard.components.wifi.subprocess.Popen"):
-        run.return_value = MagicMock(returncode=0, stderr="")
+def test_remove_fails_when_script_missing(wifi):
+    resp = wifi.handle_remove("HomeNet")
+    assert status(resp) == 500
+    assert "script not found" in body(resp)["error"]
+
+
+def test_remove_schedules_normal_connection(wifi, tmp_path):
+    script = tmp_path / "services" / "rpi-wifi-fallback" / "remove-wifi.sh"
+    script.parent.mkdir(parents=True)
+    script.write_text("#!/bin/bash\n")
+
+    with patch("src.dashboard.components.wifi.subprocess.run") as run:
+        run.return_value = MagicMock(returncode=0, stderr="", stdout="")
         resp = wifi.handle_remove("HomeNet")
+
     assert body(resp)["success"] is True
+    args = run.call_args[0][0]
+    assert args == ["sudo", "-n", "/bin/bash", str(script), "HomeNet"]
+
+
+def test_remove_surfaces_scheduler_error(wifi, tmp_path):
+    script = tmp_path / "services" / "rpi-wifi-fallback" / "remove-wifi.sh"
+    script.parent.mkdir(parents=True)
+    script.write_text("#!/bin/bash\n")
+
+    with patch("src.dashboard.components.wifi.subprocess.run") as run:
+        run.return_value = MagicMock(
+            returncode=1,
+            stderr="sudo: a password is required\n",
+            stdout="",
+        )
+        resp = wifi.handle_remove("HomeNet")
+
+    assert status(resp) == 500
+    assert body(resp)["error"] == "sudo: a password is required"
 
 
 # --------------------------------------------------------------------------- #
