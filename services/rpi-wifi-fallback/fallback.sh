@@ -1,10 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-LOG="/var/log/rpi-wifi-fallback.log"
+export LC_ALL=C
+
+LOG="${LOG:-/var/log/rpi-wifi-fallback.log}"
+mkdir -p "$(dirname "$LOG")"
+touch "$LOG"
 exec &> >(tee -a "$LOG")
 
-CONFIG_FILE="/opt/rpi-wifi-fallback/config.env"
+CONFIG_FILE="${CONFIG_FILE:-/opt/rpi-wifi-fallback/config.env}"
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
 
 # --- config (with CR/LF sanitizing) ---
@@ -18,47 +22,96 @@ CHANNEL=$(strip_crnl "${CHANNEL:-6}")
 
 # How long to wait at boot / when disconnected for client Wi-Fi to come up
 GRACE_CONNECT_SECONDS=${GRACE_CONNECT_SECONDS:-25}
+CLIENT_CONNECT_TIMEOUT=${CLIENT_CONNECT_TIMEOUT:-30}
 
 # Delete the AP profile on client connect? (true/false)
 DELETE_AP_ON_CLIENT=${DELETE_AP_ON_CLIENT:-true}
 
-run_nmcli() { command -v sudo &>/dev/null && sudo nmcli "$@" || nmcli "$@"; }
+NMCLI_BIN="${NMCLI_BIN:-nmcli}"
+LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback.lock}"
+
+run_nmcli() {
+  if (( EUID == 0 )); then
+    "$NMCLI_BIN" "$@"
+  elif command -v sudo &>/dev/null; then
+    sudo "$NMCLI_BIN" "$@"
+  else
+    "$NMCLI_BIN" "$@"
+  fi
+}
 say() { echo "[$(date +'%F %T')] $*"; }
 
 # single-instance lock
-mkdir -p /run
-exec 9>"/run/rpi-wifi-fallback.lock"
+mkdir -p "$(dirname "$LOCK_FILE")"
+exec 9>"$LOCK_FILE"
 if ! flock -n 9; then
   say "Another instance is running; exiting."
   exit 0
 fi
 
-nm_state() { nmcli -t -f STATE g 2>/dev/null || echo unknown; }
-dev_state() { nmcli -t -f GENERAL.STATE device show "$IFACE" 2>/dev/null | cut -d: -f2 || true; }
+nm_state() { run_nmcli -t -f STATE g 2>/dev/null || echo unknown; }
+dev_state() { run_nmcli -t -f GENERAL.STATE device show "$IFACE" 2>/dev/null | cut -d: -f2 || true; }
 
-check_wifi_state() {
-  local s1 s2
-  s1=$(nm_state); sleep 1; s2=$(nm_state)
-  [[ "$s1" == "connected" && "$s2" == "connected" ]] && echo connected || echo disconnected
+active_wifi_uuid() {
+  run_nmcli -t --escape no -f UUID,TYPE,DEVICE connection show --active 2>/dev/null |
+    awk -F: -v ifc="$IFACE" '($2=="802-11-wireless" || $2=="wifi") && $3==ifc {print $1; exit}'
+}
+
+client_wifi_connected() {
+  local uuid mode
+  uuid=$(active_wifi_uuid)
+  [[ -n "$uuid" ]] || return 1
+  mode=$(run_nmcli -g 802-11-wireless.mode connection show uuid "$uuid" 2>/dev/null || true)
+  [[ "$mode" != "ap" ]]
 }
 
 wait_for_client() {
-  say "Waiting up to ${GRACE_CONNECT_SECONDS}s for client Wi-Fi..."
-  # Prefer nm-online if available (quiet, succeed only if 'online')
-  if command -v nm-online >/dev/null 2>&1; then
-    if nm-online -q -t "$GRACE_CONNECT_SECONDS"; then
-      say "nm-online: system is online."
+  local remaining=$GRACE_CONNECT_SECONDS
+  say "Waiting up to ${GRACE_CONNECT_SECONDS}s for NetworkManager autoconnect..."
+  while (( remaining-- > 0 )); do
+    client_wifi_connected && return 0
+    sleep 1
+  done
+  say "No client Wi-Fi came up during the grace period."
+  return 1
+}
+
+saved_client_uuids() {
+  run_nmcli -t --escape no -f UUID,TYPE,AUTOCONNECT,AUTOCONNECT-PRIORITY connection show 2>/dev/null |
+    awk -F: '($2=="802-11-wireless" || $2=="wifi") && tolower($3)=="yes" {p=$4; if(p=="")p=0; print p "\t" $1}' |
+    sort -k1,1nr -k2,2 |
+    cut -f2
+}
+
+try_saved_clients() {
+  local uuid profile_name attempted=0
+  local -a saved_uuids=()
+
+  say "Trying saved autoconnect Wi-Fi profiles on $IFACE..."
+  run_nmcli radio wifi on || true
+  run_nmcli device set "$IFACE" managed yes || true
+  run_nmcli device set "$IFACE" autoconnect yes || true
+  run_nmcli connection reload || true
+
+  mapfile -t saved_uuids < <(saved_client_uuids)
+  for uuid in "${saved_uuids[@]}"; do
+    [[ -n "$uuid" ]] || continue
+    if [[ "$(run_nmcli -g 802-11-wireless.mode connection show uuid "$uuid" 2>/dev/null || true)" == "ap" ]]; then
+      continue
+    fi
+
+    attempted=1
+    profile_name=$(run_nmcli -g connection.id connection show uuid "$uuid" 2>/dev/null || echo "$uuid")
+    say "Activating saved Wi-Fi profile '$profile_name'..."
+    if run_nmcli -w "$CLIENT_CONNECT_TIMEOUT" connection up uuid "$uuid" ifname "$IFACE" &&
+        client_wifi_connected; then
+      say "Connected using saved Wi-Fi profile '$profile_name'."
       return 0
     fi
-  else
-    # Poll NM state
-    local t=$GRACE_CONNECT_SECONDS
-    while (( t-- > 0 )); do
-      [[ "$(check_wifi_state)" == "connected" ]] && return 0
-      sleep 1
-    done
-  fi
-  say "Client Wi-Fi did not come up within grace period."
+    say "Saved Wi-Fi profile '$profile_name' did not connect."
+  done
+
+  (( attempted )) || say "No saved autoconnect Wi-Fi profiles found."
   return 1
 }
 
@@ -129,14 +182,11 @@ bring_down_ap() {
     run_nmcli con modify "$CON_NAME" connection.autoconnect-priority 0 || true
   fi
 
-  # Deactivate any active AP on this iface by UUID
-  mapfile -t active_uuids < <( nmcli -t -f NAME,UUID,TYPE,DEVICE,ACTIVE con show --active \
-      | awk -F: -v ifc="$IFACE" '$3=="wifi" && $4==ifc && $5=="yes"{print $2}' || true )
-  for uuid in "${active_uuids[@]}"; do
-    [[ -z "$uuid" ]] && continue
-    say "Deactivating active AP UUID: $uuid"
-    run_nmcli -w 10 con down uuid "$uuid" || true
-  done
+  # Target only our named hotspot. Never disconnect a client profile.
+  if run_nmcli -t -f NAME connection show --active 2>/dev/null | grep -Fxq "$CON_NAME"; then
+    say "Deactivating hotspot '$CON_NAME'."
+    run_nmcli -w 10 connection down id "$CON_NAME" || true
+  fi
 
   delete_transient_hotspots
 
@@ -153,7 +203,7 @@ case "${1:-auto}" in
   down) bring_down_ap ;;
   auto)
     say "NM state: $(nm_state); device $IFACE state: $(dev_state || echo '?')"
-    if [[ "$(check_wifi_state)" == "connected" ]]; then
+    if client_wifi_connected; then
       say "Client Wi-Fi connected → ensure hotspot is down."
       bring_down_ap
       exit 0
@@ -163,8 +213,11 @@ case "${1:-auto}" in
     if wait_for_client; then
       say "Client Wi-Fi connected during grace period → ensure hotspot is down."
       bring_down_ap
+    elif try_saved_clients; then
+      say "Saved client Wi-Fi connected; ensure hotspot is down."
+      bring_down_ap
     else
-      say "Still not connected after grace → enable hotspot."
+      say "No saved client Wi-Fi profile connected → enable hotspot."
       bring_up_ap
     fi
     ;;

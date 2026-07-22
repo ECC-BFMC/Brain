@@ -14,8 +14,9 @@ if [[ -z "$TARGET_SSID" || -z "$TARGET_PSK" || -z "$AUTOCONNECT" ]]; then
 fi
 
 # ---------- detach so SSH drop won't kill the run ----------
+SCRIPT="$(realpath "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT")"
 if [[ "${ADDWIFI_DETACHED:-0}" != "1" ]]; then
-  SCRIPT="$(realpath "$0")"
   UNIT="rpi-add-wifi-$(date +%s)"
   LOG="/var/log/rpi-wifi-fallback.log"
   if ! sudo sh -c "mkdir -p /var/log && touch '$LOG' && chmod 0644 '$LOG'"; then
@@ -28,7 +29,8 @@ if [[ "${ADDWIFI_DETACHED:-0}" != "1" ]]; then
       -p StandardOutput=append:"$LOG" \
       -p StandardError=append:"$LOG" \
       -p WorkingDirectory="$(pwd)" \
-      /bin/bash -c "ADDWIFI_DETACHED=1 '$SCRIPT' \"$TARGET_SSID\" \"$TARGET_PSK\" \"$AUTOCONNECT\""
+      --setenv=ADDWIFI_DETACHED=1 \
+      "$SCRIPT" "$TARGET_SSID" "$TARGET_PSK" "$AUTOCONNECT"
     echo "[info] Launched: $UNIT"; echo "[info] Follow: sudo tail -f '$LOG'"
     exit 0
   else
@@ -46,13 +48,21 @@ mkdir -p /var/log
 touch "$LOG" 2>/dev/null || true
 exec &> >(tee -a "$LOG")
 
-CONFIG_FILE="/opt/rpi-wifi-fallback/config.env"
+CONFIG_FILE="${CONFIG_FILE:-/opt/rpi-wifi-fallback/config.env}"
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
 
 # --- helpers copied from fallback.sh style ---
 strip_crnl() { printf '%s' "$1" | tr -d '\r\n'; }
 say() { echo "[$(date +'%F %T')] $*"; }
-run_nmcli() { command -v sudo &>/dev/null && sudo nmcli "$@" || nmcli "$@"; }
+run_nmcli() {
+  if (( EUID == 0 )); then
+    nmcli "$@"
+  elif command -v sudo &>/dev/null; then
+    sudo nmcli "$@"
+  else
+    nmcli "$@"
+  fi
+}
 
 # --- config (with CR/LF sanitizing) ---
 IFACE=$(strip_crnl "${IFACE:-wlan0}")
@@ -89,19 +99,15 @@ ensure_iface_idle() {
 }
 
 restore_hotspot_on_failure() {
+  local fallback_script="$SCRIPT_DIR/fallback.sh"
+  [[ -f "$fallback_script" ]] || fallback_script="/opt/rpi-wifi-fallback/fallback.sh"
+
   say "Restoring hotspot '$AP_CON_NAME' for access..."
-  if ! nmcli -t -f NAME con show | grep -Fxq "$AP_CON_NAME"; then
-    run_nmcli con add type wifi ifname "$IFACE" con-name "$AP_CON_NAME" ssid "$HOTSPOT_SSID"
-    run_nmcli con modify "$AP_CON_NAME" \
-      connection.autoconnect no \
-      802-11-wireless.mode ap \
-      802-11-wireless.band bg \
-      ipv4.method shared \
-      ipv6.method ignore
-  fi
-  run_nmcli con modify "$AP_CON_NAME" connection.autoconnect no || true
-  if ! run_nmcli -w 20 -o con up "$AP_CON_NAME"; then
-    say "⚠ Failed to bring hotspot up automatically."
+  if [[ -f "$fallback_script" ]]; then
+    /bin/bash "$fallback_script" up
+  else
+    say "Fallback script not found; cannot restore hotspot."
+    return 1
   fi
 }
 
@@ -110,15 +116,15 @@ say "===== add-wifi start (iface:$IFACE target:'$TARGET_SSID' autoconnect:$AUTOC
 # 1) Idle interface & stop hotspot
 ensure_iface_idle
 
-# 2) Create/replace client profile (prefer 5 GHz)
-say "Creating Wi-Fi profile '$TARGET_SSID' (preferring 5 GHz)"
+# 2) Create/replace a persistent client profile
+say "Creating persistent Wi-Fi profile '$TARGET_SSID'"
 run_nmcli connection delete "$TARGET_SSID" 2>/dev/null || true
 run_nmcli connection add type wifi ifname "$IFACE" con-name "$TARGET_SSID" ssid "$TARGET_SSID"
 run_nmcli connection modify "$TARGET_SSID" \
   wifi-sec.key-mgmt wpa-psk \
   wifi-sec.psk "$TARGET_PSK" \
+  wifi-sec.psk-flags 0 \
   802-11-wireless.mode infrastructure \
-  802-11-wireless.band a \
   802-11-wireless.cloned-mac-address permanent \
   connection.autoconnect "$AUTOCONNECT" \
   connection.autoconnect-priority 20

@@ -1,5 +1,6 @@
 [Unit]
 Description=Wi-Fi Fallback Hotspot
+Wants=NetworkManager.service
 After=NetworkManager.service network.target
 # (remove) Wants=NetworkManager-wait-online.service
 

@@ -24,11 +24,11 @@ rpi-wifi-fallback/
 
 ## Features
 
-- Tries all saved Wi-Fi networks at boot using NetworkManager (default time, ~20 seconds)
+- Lets NetworkManager autoconnect during the grace period, then explicitly tries every saved autoconnect Wi-Fi profile by priority
 - If none work, starts a Wi-Fi hotspot with static IP (192.168.50.1) or default naming (raspberrypi.local)
 - Hotspot allows SSH/SFTP access to configure new networks and/or start the demo car
 - Customizable hotspot data via config file
-- Includes helper scripts to add Wi-Fi networks and prioritize connections
+- Includes a helper that stores system-wide Wi-Fi credentials for reboot-safe autoconnect
 
 ## Example workflow
 1. Boot the Pi with no known networks nearby  
@@ -103,3 +103,20 @@ sudo nmcli connection modify "HomeWiFi" connection.autoconnect-priority 10
 ```bash 
 journalctl -u rpi-wifi-fallback.service
 ```
+
+
+## Updating an existing installation
+
+After pulling changes to these scripts, reinstall the systemd copy and reboot:
+
+~~~bash
+cd services/rpi-wifi-fallback
+sudo ./install.sh
+sudo reboot
+~~~
+
+On boot, inspect the decision path with:
+
+~~~bash
+journalctl -b -u wifi-fallback.service --no-pager
+~~~
