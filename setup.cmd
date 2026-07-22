@@ -11,6 +11,11 @@ if [[ "${OSTYPE:-}" == "msys" || "${OSTYPE:-}" == "cygwin" || "${OSTYPE:-}" == "
 fi
 echo "OS detected: $OS_TYPE"
 
+if [ "$OS_TYPE" != "windows" ] && [ -d "services" ]; then
+  echo "Making service scripts executable..."
+  find services -type f -name '*.sh' -exec chmod +x {} +
+fi
+
 # --- Platform-specific dependencies ---
 if [ "$OS_TYPE" == "windows" ]; then
   echo "Checking Windows prerequisites..."

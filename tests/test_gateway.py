@@ -47,6 +47,24 @@ def test_send_reaches_all_subscribers(gateway):
     assert recv_b.recv()["value"] == "payload"
 
 
+def test_send_removes_dead_subscriber_and_continues_fanout(gateway):
+    dead_recv, dead_send = Pipe(duplex=False)
+    live_recv, live_send = Pipe(duplex=False)
+    gateway.subscribe(sub_message("owner", 6, "dead", dead_send))
+    gateway.subscribe(sub_message("owner", 6, "live", live_send))
+
+    feedback_recv, feedback_send = Pipe(duplex=False)
+    gateway.registerSender(feedback_message("owner", 6, feedback_send))
+    assert feedback_recv.recv() == 2
+
+    dead_recv.close()
+    gateway.send(send_message("owner", 6, "payload"))
+
+    assert live_recv.recv()["value"] == "payload"
+    assert list(gateway.sendingList["owner"][6]) == ["live"]
+    assert feedback_recv.recv() == 1
+
+
 def test_unsubscribe_stops_delivery(gateway):
     recv, send = Pipe(duplex=False)
     gateway.subscribe(sub_message("owner", 3, "A", send))

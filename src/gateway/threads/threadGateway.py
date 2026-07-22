@@ -156,13 +156,38 @@ class threadGateway(ThreadWithStop):
         Type = message["msgType"]
         Value = message["msgValue"]
         if (Owner, Id) in self.messageApproved:
-            for element in self.sendingList[Owner][Id]:
+            pipes = self.sendingList[Owner][Id]
+            removed_dead_pipe = False
+            for element, pipe in list(pipes.items()):
                 # We send a dictionary that contain the type of the message and message
-                self.sendingList[Owner][Id][element].send(
-                    {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
-                )
+                try:
+                    pipe.send(
+                        {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
+                    )
+                except (EOFError, OSError, ValueError) as exc:
+                    # A subscriber may disappear without sending an unsubscribe
+                    # request. Remove its stale pipe and continue delivering to
+                    # the remaining subscribers instead of killing the gateway.
+                    pipes.pop(element, None)
+                    removed_dead_pipe = True
+                    try:
+                        pipe.close()
+                    except OSError:
+                        pass
+                    self.logger.warning(
+                        f"Removed dead subscriber {element} from {Owner}/{Id}: {exc}"
+                    )
                 if self.debugging:
                     self.logger.warning(message)
+
+            if removed_dead_pipe:
+                if not pipes:
+                    self.messageApproved = [
+                        approved
+                        for approved in self.messageApproved
+                        if approved != (Owner, Id)
+                    ]
+                self._notifySenders(Owner, Id)
 
     # ====================================================================================
 
