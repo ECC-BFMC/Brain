@@ -44,26 +44,72 @@ def test_add_requires_ssid_and_password(wifi):
     assert status(wifi.handle_add({"ssid": "Net", "password": ""})) == 400
 
 
-def test_add_fails_when_script_missing(wifi):
-    # tmp repo has no services/rpi-wifi-fallback/add-wifi.sh
-    resp = wifi.handle_add({"ssid": "Net", "password": "secret"})
-    assert status(resp) == 500
-    assert body(resp)["success"] is False
-
-
-def test_add_launches_script_when_present(wifi, tmp_path):
-    script = tmp_path / "services" / "rpi-wifi-fallback" / "add-wifi.sh"
-    script.parent.mkdir(parents=True)
-    script.write_text("#!/bin/sh\n")
-
-    with patch("src.dashboard.components.wifi.subprocess.Popen") as popen:
-        resp = wifi.handle_add({"ssid": "Net", "password": "secret"})
+def test_add_schedules_background_worker_and_preserves_password(wifi):
+    with patch("src.dashboard.components.wifi.threading.Thread") as thread:
+        resp = wifi.handle_add({"ssid": " Net ", "password": "  secret  "})
 
     assert body(resp)["success"] is True
-    popen.assert_called_once()
-    # The ssid/password are passed through to the script.
-    args = popen.call_args[0][0]
-    assert args[2] == "Net" and args[3] == "secret"
+    thread.assert_called_once_with(
+        target=wifi._add_connection,
+        args=("Net", "  secret  "),
+        daemon=True,
+    )
+    thread.return_value.start.assert_called_once_with()
+
+
+def test_add_worker_uses_nmcli_without_sudo(wifi):
+    successful = MagicMock(returncode=0, stdout="", stderr="")
+    with (
+        patch("src.dashboard.components.wifi.time.sleep"),
+        patch(
+            "src.dashboard.components.wifi.subprocess.run",
+            return_value=successful,
+        ) as run,
+        patch.object(wifi, "_start_fallback") as fallback,
+    ):
+        wifi._add_connection("Net", "  secret  ")
+
+    commands = [call.args[0] for call in run.call_args_list]
+    assert commands
+    assert all(command[0] == "nmcli" for command in commands)
+    assert all("sudo" not in command for command in commands)
+
+    configured = next(
+        command for command in commands
+        if command[:4] == ["nmcli", "connection", "modify", "Net"]
+    )
+    password_index = configured.index("wifi-sec.psk") + 1
+    assert configured[password_index] == "  secret  "
+    assert "wifi-sec.psk-flags" in configured
+    assert configured[-4:] == [
+        "connection.autoconnect", "yes",
+        "connection.autoconnect-priority", "20",
+    ]
+    assert commands[-1] == ["nmcli", "connection", "delete", "rpi-hotspot"]
+    fallback.assert_not_called()
+
+
+def test_add_worker_restores_hotspot_when_connection_fails(wifi):
+    def nmcli_result(command, **_kwargs):
+        failed = "connection" in command and "up" in command
+        return MagicMock(returncode=10 if failed else 0, stdout="", stderr="")
+
+    with (
+        patch("src.dashboard.components.wifi.time.sleep"),
+        patch(
+            "src.dashboard.components.wifi.subprocess.run",
+            side_effect=nmcli_result,
+        ) as run,
+        patch.object(wifi, "_start_fallback") as fallback,
+    ):
+        wifi._add_connection("Net", "secret")
+
+    attempts = [
+        call.args[0] for call in run.call_args_list
+        if "connection" in call.args[0] and "up" in call.args[0]
+    ]
+    assert len(attempts) == 3
+    fallback.assert_called_once_with()
 
 
 # --------------------------------------------------------------------------- #
