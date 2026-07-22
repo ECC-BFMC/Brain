@@ -29,6 +29,7 @@ rpi-wifi-fallback/
 - Hotspot allows SSH/SFTP access to configure new networks and/or start the demo car
 - Customizable hotspot data via config file
 - Includes a helper that stores system-wide Wi-Fi credentials for reboot-safe autoconnect
+- Installs a scoped Polkit rule so the `pi` dashboard service can manage Wi-Fi without passwordless sudo
 
 ## Example workflow
 1. Boot the Pi with no known networks nearby  

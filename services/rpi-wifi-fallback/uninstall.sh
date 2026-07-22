@@ -7,10 +7,14 @@ DEST_DIR="/opt/rpi-wifi-fallback"
 SERVICE_PATH="/etc/systemd/system/wifi-fallback.service"
 DISPATCHER_PATH="/etc/NetworkManager/dispatcher.d/90-wifi-fallback"
 UDEV_RULE="/etc/udev/rules.d/70-wifi-regdom.rules"
+POLKIT_RULE_PATH="/etc/polkit-1/rules.d/49-brain-networkmanager.rules"
 
 # Stop and disable service
 sudo systemctl stop wifi-fallback.service 2>/dev/null || true
 sudo systemctl disable wifi-fallback.service 2>/dev/null || true
+
+# Remove the dashboard NetworkManager authorization rule
+sudo rm -f "$POLKIT_RULE_PATH"
 
 # Remove unit + reload
 sudo rm -f "$SERVICE_PATH"

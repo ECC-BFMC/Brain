@@ -9,10 +9,14 @@ SERVICE_PATH="/etc/systemd/system/wifi-fallback.service"
 DISPATCHER_PATH="/etc/NetworkManager/dispatcher.d/90-wifi-fallback"
 UDEV_RULE="/etc/udev/rules.d/70-wifi-regdom.rules"
 LOG_FILE="/var/log/rpi-wifi-fallback.log"
+POLKIT_RULE_PATH="/etc/polkit-1/rules.d/49-brain-networkmanager.rules"
 
 # Create app directory and copy files
 sudo mkdir -p "$DEST_DIR"
 sudo cp fallback.sh config.env "$DEST_DIR/"
+
+# Allow the non-interactive dashboard service user to manage NetworkManager.
+sudo install -D -o root -g root -m 0644 49-brain-networkmanager.rules "$POLKIT_RULE_PATH"
 
 # Normalize line endings (avoid hidden \r from Windows editors)
 sudo sed -i 's/\r$//' "$DEST_DIR/fallback.sh" "$DEST_DIR/config.env"

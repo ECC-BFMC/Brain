@@ -1,8 +1,12 @@
+import logging
 import os
 import subprocess
 import threading
 import time
 from flask import jsonify
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class WifiManager:
@@ -144,21 +148,33 @@ class WifiManager:
         """Remove a profile after the HTTP response has had time to leave."""
         time.sleep(2)
 
-        active = subprocess.run(
-            ['nmcli', '-t', '-f', 'NAME', 'connection', 'show', '--active'],
-            capture_output=True, text=True, timeout=10
-        )
-        active_names = set(active.stdout.strip().splitlines())
-        was_active = name in active_names
+        try:
+            active = subprocess.run(
+                ['nmcli', '-t', '-f', 'NAME', 'connection', 'show', '--active'],
+                capture_output=True, text=True, timeout=10
+            )
+            if active.returncode != 0:
+                error = (active.stderr or active.stdout or 'unknown nmcli error').strip()
+                LOGGER.error('Cannot inspect active WiFi connections: %s', error)
+                return
 
-        result = subprocess.run(
-            ['nmcli', 'connection', 'delete', name],
-            capture_output=True, text=True, timeout=10
-        )
-        if result.returncode != 0 or not was_active:
-            return
+            active_names = set(active.stdout.strip().splitlines())
+            was_active = name in active_names
 
-        self._start_fallback()
+            result = subprocess.run(
+                ['nmcli', 'connection', 'delete', name],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                error = (result.stderr or result.stdout or 'unknown nmcli error').strip()
+                LOGGER.error('Cannot remove WiFi profile %r: %s', name, error)
+                return
+
+            LOGGER.info('Removed WiFi profile %r', name)
+            if was_active:
+                self._start_fallback()
+        except (OSError, subprocess.TimeoutExpired):
+            LOGGER.exception('WiFi profile removal failed for %r', name)
 
     def handle_remove(self, name):
         """Schedule removal of a saved WiFi network without blocking HTTP."""

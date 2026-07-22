@@ -1,0 +1,21 @@
+// Allow the non-interactive Brain dashboard service to manage Wi-Fi through
+// NetworkManager without granting passwordless sudo or running the backend as root.
+polkit.addRule(function(action, subject) {
+    if (subject.user !== "pi" || !subject.local) {
+        return polkit.Result.NOT_HANDLED;
+    }
+
+    var allowed = [
+        "org.freedesktop.NetworkManager.enable-disable-wifi",
+        "org.freedesktop.NetworkManager.network-control",
+        "org.freedesktop.NetworkManager.settings.modify.own",
+        "org.freedesktop.NetworkManager.settings.modify.system",
+        "org.freedesktop.NetworkManager.wifi.scan"
+    ];
+
+    if (allowed.indexOf(action.id) !== -1) {
+        return polkit.Result.YES;
+    }
+
+    return polkit.Result.NOT_HANDLED;
+});
