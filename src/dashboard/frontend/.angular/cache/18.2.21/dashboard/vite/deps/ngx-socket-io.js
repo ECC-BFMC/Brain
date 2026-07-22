@@ -1,8 +1,6 @@
 import {
-  ApplicationRef,
   InjectionToken,
   NgModule,
-  makeEnvironmentProviders,
   setClassMetadata,
   ɵɵdefineInjector,
   ɵɵdefineNgModule
@@ -16,8 +14,6 @@ import {
 import {
   __commonJS,
   __export,
-  __objRest,
-  __spreadValues,
   __toESM
 } from "./chunk-N6ESDQJH.js";
 
@@ -3842,20 +3838,17 @@ Object.assign(lookup2, {
 });
 
 // node_modules/ngx-socket-io/fesm2022/ngx-socket-io.mjs
-var WrappedSocket = class _WrappedSocket {
+var WrappedSocket = class {
   config;
-  appRef;
   subscribersCounter = {};
   eventObservables$ = {};
-  namespaces = {};
   ioSocket;
   emptyConfig = {
     url: "",
     options: {}
   };
-  constructor(config, appRef) {
+  constructor(config) {
     this.config = config;
-    this.appRef = appRef;
     if (config === void 0) {
       config = this.emptyConfig;
     }
@@ -3864,89 +3857,29 @@ var WrappedSocket = class _WrappedSocket {
     const ioFunc = lookup2 ? lookup2 : esm_exports;
     this.ioSocket = ioFunc(url2, options);
   }
-  get auth() {
-    return this.ioSocket.auth;
-  }
-  set auth(value2) {
-    this.ioSocket.auth = value2;
-  }
-  /** readonly access to io manager */
-  get io() {
-    return this.ioSocket.io;
-  }
-  /** alias to connect */
-  get open() {
-    return this.connect;
-  }
-  /** alias to disconnect */
-  get close() {
-    return this.disconnect;
-  }
-  /**
-   * Gets a WrappedSocket for the given namespace.
-   *
-   * @note if an existing socket exists for the given namespace, it will be reused.
-   *
-   * @param namespace the namespace to create a new socket based on the current config.
-   *        If empty or `/`, then the current instance is returned.
-   * @returns a socket that is bound to the given namespace. If namespace is empty or `/`,
-   *          then `this` is returned, otherwise another instance is returned, creating
-   *          it if it's the first use of such namespace.
-   */
   of(namespace) {
-    if (!namespace || namespace === "/") {
-      return this;
-    }
-    const existing = this.namespaces[namespace];
-    if (existing) {
-      return existing;
-    }
-    const _a = this.config, {
-      url: url2
-    } = _a, rest = __objRest(_a, [
-      "url"
-    ]);
-    const config = __spreadValues({
-      url: !url2.endsWith("/") && !namespace.startsWith("/") ? `${url2}/${namespace}` : `${url2}${namespace}`
-    }, rest);
-    const created = new _WrappedSocket(config, this.appRef);
-    this.namespaces[namespace] = created;
-    return created;
+    this.ioSocket.of(namespace);
   }
   on(eventName, callback) {
     this.ioSocket.on(eventName, callback);
-    return this;
   }
   once(eventName, callback) {
     this.ioSocket.once(eventName, callback);
-    return this;
   }
-  connect() {
-    this.ioSocket.connect();
-    return this;
+  connect(callback) {
+    return this.ioSocket.connect(callback);
   }
-  disconnect() {
-    this.ioSocket.disconnect();
-    return this;
+  disconnect(_close) {
+    return this.ioSocket.disconnect.apply(this.ioSocket, arguments);
   }
-  emit(eventName, ...args) {
-    this.ioSocket.emit(eventName, ...args);
-    return this;
+  emit(_eventName, ..._args) {
+    return this.ioSocket.emit.apply(this.ioSocket, arguments);
   }
-  send(..._args) {
-    this.ioSocket.send.apply(this.ioSocket, arguments);
-    return this;
+  removeListener(_eventName, _callback) {
+    return this.ioSocket.removeListener.apply(this.ioSocket, arguments);
   }
-  emitWithAck(eventName, ...args) {
-    return this.ioSocket.emitWithAck(eventName, ...args);
-  }
-  removeListener(eventName, callback) {
-    this.ioSocket.removeListener(eventName, callback);
-    return this;
-  }
-  removeAllListeners(eventName) {
-    this.ioSocket.removeAllListeners(eventName);
-    return this;
+  removeAllListeners(_eventName) {
+    return this.ioSocket.removeAllListeners.apply(this.ioSocket, arguments);
   }
   fromEvent(eventName) {
     if (!this.subscribersCounter[eventName]) {
@@ -3957,7 +3890,6 @@ var WrappedSocket = class _WrappedSocket {
       this.eventObservables$[eventName] = new Observable((observer) => {
         const listener = (data) => {
           observer.next(data);
-          this.appRef.tick();
         };
         this.ioSocket.on(eventName, listener);
         return () => {
@@ -3977,9 +3909,6 @@ var WrappedSocket = class _WrappedSocket {
   listeners(eventName) {
     return this.ioSocket.listeners(eventName);
   }
-  hasListeners(eventName) {
-    return this.ioSocket.hasListeners(eventName);
-  }
   listenersAny() {
     return this.ioSocket.listenersAny();
   }
@@ -3987,63 +3916,35 @@ var WrappedSocket = class _WrappedSocket {
     return this.ioSocket.listenersAnyOutgoing();
   }
   off(eventName, listener) {
-    this.ioSocket.off(eventName, listener);
-    return this;
-  }
-  offAny(callback) {
-    this.ioSocket.offAny(callback);
-    return this;
-  }
-  offAnyOutgoing(callback) {
-    this.ioSocket.offAnyOutgoing(callback);
-    return this;
+    if (!eventName) {
+      return this.ioSocket.offAny();
+    }
+    if (eventName && !listener) {
+      return this.ioSocket.off(eventName);
+    }
+    return this.ioSocket.off(eventName, listener);
   }
   onAny(callback) {
-    this.ioSocket.onAny(callback);
-    return this;
+    return this.ioSocket.onAny(callback);
   }
   onAnyOutgoing(callback) {
-    this.ioSocket.onAnyOutgoing(callback);
-    return this;
+    return this.ioSocket.onAnyOutgoing(callback);
   }
   prependAny(callback) {
-    this.ioSocket.prependAny(callback);
-    return this;
+    return this.ioSocket.prependAny(callback);
   }
   prependAnyOutgoing(callback) {
-    this.ioSocket.prependAnyOutgoing(callback);
-    return this;
+    return this.ioSocket.prependAnyOutgoing(callback);
   }
   timeout(value2) {
-    this.ioSocket.timeout(value2);
-    return this;
+    return this.ioSocket.timeout(value2);
   }
-  get volatile() {
-    const _ = this.ioSocket.volatile;
-    return this;
-  }
-  get active() {
-    return this.ioSocket.active;
-  }
-  get connected() {
-    return this.ioSocket.connected;
-  }
-  get disconnected() {
-    return this.ioSocket.disconnected;
-  }
-  get recovered() {
-    return this.ioSocket.recovered;
-  }
-  get id() {
-    return this.ioSocket.id;
-  }
-  compress(value2) {
-    this.ioSocket.compress(value2);
-    return this;
+  volatile() {
+    return this.ioSocket.volatile;
   }
 };
-function SocketFactory(config, appRef) {
-  return new WrappedSocket(config, appRef);
+function SocketFactory(config) {
+  return new WrappedSocket(config);
 }
 var SOCKET_CONFIG_TOKEN = new InjectionToken("__SOCKET_IO_CONFIG__");
 var SocketIoModule = class _SocketIoModule {
@@ -4056,7 +3957,7 @@ var SocketIoModule = class _SocketIoModule {
       }, {
         provide: WrappedSocket,
         useFactory: SocketFactory,
-        deps: [SOCKET_CONFIG_TOKEN, ApplicationRef]
+        deps: [SOCKET_CONFIG_TOKEN]
       }]
     };
   }
@@ -4074,20 +3975,8 @@ var SocketIoModule = class _SocketIoModule {
     args: [{}]
   }], null, null);
 })();
-var provideSocketIo = (config) => {
-  return makeEnvironmentProviders([{
-    provide: SOCKET_CONFIG_TOKEN,
-    useValue: config
-  }, {
-    provide: WrappedSocket,
-    useFactory: SocketFactory,
-    deps: [SOCKET_CONFIG_TOKEN, ApplicationRef]
-  }]);
-};
 export {
-  SOCKET_CONFIG_TOKEN,
   WrappedSocket as Socket,
-  SocketIoModule,
-  provideSocketIo
+  SocketIoModule
 };
 //# sourceMappingURL=ngx-socket-io.js.map

@@ -4,17 +4,47 @@
   <div class="update-card">
     <div class="card-header">
       <span class="card-title">Brain Software</span>
-      <span class="card-source">ECC-BFMC/Brain</span>
+      <button type="button" class="card-source card-source-btn" [title]="sourceUrl || sourceOriginUrl || 'Change repository'"
+        (click)="showSourceEditor = !showSourceEditor">
+        {{ sourceRepoLabel }}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+        </svg>
+      </button>
     </div>
 
-    <!-- Validation Warning -->
-    <div *ngIf="validationError" class="card-alert warning">
+    <!-- Repository source editor (set your own fork / repo URL) -->
+    <div *ngIf="showSourceEditor" class="card-details source-editor">
+      <div class="detail-row">
+        <span class="detail-label">Repository</span>
+        <input class="source-input" type="text" [(ngModel)]="sourceUrl"
+          placeholder="https://github.com/your-user/your-fork.git"
+          [disabled]="isSavingSource" />
+      </div>
+      <span class="source-hint">
+        Paste your fork's URL to pull updates from it (https:// or git&#64; SSH).
+        Leave empty to update from the original repository
+        <span *ngIf="sourceOriginUrl">(<code>{{ sourceOriginUrl }}</code>)</span>.
+      </span>
+      <div class="confirm-actions">
+        <button class="btn btn-update" (click)="saveSource()" [disabled]="isSavingSource">
+          {{ isSavingSource ? 'Saving...' : 'Save repository' }}
+        </button>
+        <button class="btn btn-check" (click)="openTokenModal()" [disabled]="isSavingSource">
+          {{ hasToken ? 'Access token ✓' : 'Private repo? Add token' }}
+        </button>
+        <button class="btn btn-check" (click)="showSourceEditor = false" [disabled]="isSavingSource">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Not git-tracked (e.g. ZIP install) -->
+    <div *ngIf="hasChecked && !isGitRepo" class="card-alert warning">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
       </svg>
       <div class="alert-content">
-        <span class="alert-title">Updates Unavailable</span>
-        <span class="alert-text">{{ validationError }}</span>
+        <span class="alert-title">Not git-tracked</span>
+        <span class="alert-text">This install wasn't cloned with git, so it can't be updated incrementally. Set your repository URL above (the pencil next to the title), then set it up. This fetches that repo and <strong>overwrites local file changes</strong>.</span>
       </div>
     </div>
 
@@ -28,13 +58,55 @@
     <div *ngIf="needsRestart" class="card-alert restart">
       <div class="alert-content">
         <span class="alert-title">Restart Required</span>
-        <span class="alert-text">The car must be restarted for the update to take effect.</span>
+        <span class="alert-text">The car must be restarted for the update to take effect.<span *ngIf="depsChanged"> Dependencies changed, reinstall them first (<code>pip install -r requirements.txt</code>, and <code>npm install</code> in the frontend).</span></span>
+      </div>
+    </div>
+
+    <!-- Conflict panel -->
+    <div *ngIf="conflict" class="card-alert error">
+      <div class="alert-content">
+        <span class="alert-title">{{ conflict.diverged ? 'Cannot fast-forward' : 'Local changes block the update' }}</span>
+        <span class="alert-text">{{ conflict.message }}</span>
+        <ul class="conflict-files" *ngIf="conflict.files?.length">
+          <li *ngFor="let f of conflict.files">{{ f }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Keep the destructive-action confirmation next to the conflict it resolves. -->
+    <div *ngIf="showForceConfirm" class="card-alert error">
+      <div class="alert-content">
+        <span class="alert-title">Discard local changes?</span>
+        <span class="alert-text">This resets the codebase to the update and <strong>permanently discards local changes</strong> to tracked files (including any committed firmware/calibration that was modified locally). Continue?</span>
+        <div class="confirm-actions">
+          <button class="btn btn-danger" (click)="forceUpdate()">Yes, discard &amp; update</button>
+          <button class="btn btn-check" (click)="showForceConfirm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Branch selector -->
+    <div *ngIf="isGitRepo && branches.length" class="card-details">
+      <div class="detail-row">
+        <span class="detail-label">Track branch</span>
+        <select class="branch-select" [ngModel]="selectedBranch" (ngModelChange)="onBranchChange($event)"
+          [disabled]="isUpdating || isForcing || isChecking">
+          <option *ngFor="let b of branches" [value]="b">{{ b }}{{ b === defaultBranch ? ' (default)' : '' }}</option>
+        </select>
       </div>
     </div>
 
     <!-- Brain Actions Row -->
     <div class="card-actions">
-      <button class="btn btn-check" (click)="checkForUpdates()" [disabled]="isChecking || isUpdating">
+      <!-- Set up updates (adopt) for a non-git install -->
+      <button *ngIf="hasChecked && !isGitRepo" class="btn btn-update"
+        (click)="showAdoptConfirm = true" [disabled]="isAdopting">
+        <span>{{ isAdopting ? 'Setting up...' : 'Set up updates' }}</span>
+      </button>
+
+      <!-- Check -->
+      <button *ngIf="!hasChecked || isGitRepo" class="btn btn-check" (click)="checkForUpdates()"
+        [disabled]="isChecking || isUpdating || isForcing || isAdopting">
         <svg *ngIf="!isChecking" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
         </svg>
@@ -44,8 +116,9 @@
         <span>{{ isChecking ? 'Checking...' : 'Check' }}</span>
       </button>
 
-      <button *ngIf="updateAvailable && !validationError" class="btn btn-update"
-        (click)="performUpdate()" [disabled]="isUpdating || isChecking">
+      <!-- Pull update -->
+      <button *ngIf="isGitRepo && updateAvailable && !conflict" class="btn btn-update"
+        (click)="performUpdate()" [disabled]="isUpdating || isChecking || isForcing">
         <svg *ngIf="!isUpdating" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
         </svg>
@@ -55,11 +128,17 @@
         <span>{{ isUpdating ? 'Updating...' : 'Pull Update' }}</span>
       </button>
 
+      <!-- Force update / branch switch (when a clean fast-forward isn't possible) -->
+      <button *ngIf="isGitRepo && (conflict || canSwitchBranch)" class="btn btn-danger"
+        (click)="showForceConfirm = true" [disabled]="isForcing || isUpdating">
+        <span>{{ isForcing ? 'Switching...' : (conflict ? 'Discard local changes & update' : 'Switch to ' + selectedBranch) }}</span>
+      </button>
+
       <span *ngIf="lastChecked" class="meta-text">{{ lastChecked }}</span>
     </div>
 
     <!-- Brain Version Details -->
-    <div *ngIf="currentCommitShort && !validationError" class="card-details">
+    <div *ngIf="isGitRepo && currentCommitShort" class="card-details">
       <div *ngIf="currentBranch" class="detail-row">
         <span class="detail-label">Branch</span>
         <span class="detail-value tag tag-blue">{{ currentBranch }}</span>
@@ -68,32 +147,104 @@
         <span class="detail-label">Local</span>
         <span class="detail-value tag" [title]="currentCommit">{{ currentCommitShort }}</span>
       </div>
-      <div *ngIf="remoteCommitShort && updateAvailable" class="detail-row">
+      <div *ngIf="remoteCommitShort && (updateAvailable || canSwitchBranch)" class="detail-row">
         <span class="detail-label">Latest</span>
         <span class="detail-value tag tag-green" [title]="remoteCommit">{{ remoteCommitShort }}</span>
       </div>
-    </div>
-
-    <!-- Wrong branch info -->
-    <div *ngIf="validationError && isOfficialClone && !isValidBranch && currentBranch" class="card-details">
-      <div class="detail-row">
-        <span class="detail-label">Current</span>
-        <span class="detail-value tag tag-warn">{{ currentBranch }}</span>
+      <div *ngIf="behindBy > 0" class="detail-row">
+        <span class="detail-label">Behind by</span>
+        <span class="detail-value tag tag-warn">{{ behindBy }} commit{{ behindBy === 1 ? '' : 's' }}</span>
       </div>
-      <div class="detail-row">
-        <span class="detail-label">Required</span>
-        <span class="detail-value tag tag-blue">master</span>
+      <div *ngIf="remoteDate" class="detail-row">
+        <span class="detail-label">Released</span>
+        <span class="detail-value">{{ formatDate(remoteDate) }}</span>
       </div>
     </div>
 
-    <div class="card-footer">Official clones only, on master branch.</div>
+    <!-- Adopt confirmation -->
+    <div *ngIf="showAdoptConfirm" class="card-alert warning">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+      </svg>
+      <div class="alert-content">
+        <span class="alert-title">Set up updates?</span>
+        <span class="alert-text">This turns this folder into a git clone of the configured repo and <strong>overwrites any local edits</strong>. Continue?</span>
+        <div class="confirm-actions">
+          <button class="btn btn-danger" (click)="adopt()">Yes, set up</button>
+          <button class="btn btn-check" (click)="showAdoptConfirm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">Updates from your configured repository.</div>
   </div>
 
   <!-- ==================== NUCLEO FIRMWARE ==================== -->
   <div class="update-card">
     <div class="card-header">
       <span class="card-title">Nucleo Firmware</span>
-      <span class="card-source">ECC-BFMC/Embedded_Platform</span>
+      <button type="button" class="card-source card-source-btn" [title]="'Change firmware repository'"
+        (click)="fwShowSourceEditor = !fwShowSourceEditor; fwShowSourceEditor && !fwBranches.length && loadFirmwareBranches()">
+        {{ fwRepo || fwDefaultRepo || 'firmware source' }}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 000-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Firmware repository editor -->
+    <div *ngIf="fwShowSourceEditor" class="card-details source-editor">
+      <div class="detail-row">
+        <span class="detail-label">Repository</span>
+        <input class="source-input" type="text" [(ngModel)]="fwSourceUrl"
+          placeholder="https://github.com/owner/firmware-repo"
+          [disabled]="fwIsSavingSource" />
+      </div>
+      <span class="source-hint">
+        Public GitHub repo to pull firmware from. Leave empty for the default
+        (<code>{{ fwDefaultRepo }}</code>). The repo is only read over HTTP, it is never cloned.
+      </span>
+      <div class="confirm-actions">
+        <button class="btn btn-update" (click)="saveFirmwareSource()" [disabled]="fwIsSavingSource">
+          {{ fwIsSavingSource ? 'Saving...' : 'Save repository' }}
+        </button>
+        <button class="btn btn-check" (click)="openFirmwareTokenModal()" [disabled]="fwIsSavingSource">
+          {{ fwHasToken ? 'Access token ✓' : 'Private repo? Add token' }}
+        </button>
+        <button class="btn btn-check" (click)="fwShowSourceEditor = false" [disabled]="fwIsSavingSource">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Selected .bin file -->
+    <div class="card-details">
+      <div *ngIf="fwBranches.length" class="detail-row">
+        <span class="detail-label">Track branch</span>
+        <select class="branch-select" [ngModel]="fwSelectedBranch" (ngModelChange)="onFirmwareBranchChange($event)"
+          [disabled]="fwIsChecking || fwIsDownloading || fwBinsLoading">
+          <option *ngFor="let b of fwBranches" [value]="b">{{ b }}{{ b === fwDefaultBranch ? ' (default)' : '' }}</option>
+        </select>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Firmware file</span>
+        <button type="button" class="file-pick-btn" (click)="openFirmwareFilePicker()" [title]="fwFilePath">
+          {{ fwFileName || (fwFilePath ? (fwFilePath.split('/').pop()) : 'choose .bin') }}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+      </div>
+
+      <!-- .bin picker -->
+      <div *ngIf="fwShowFilePicker" class="bin-picker">
+        <div *ngIf="fwBinsLoading" class="bin-hint">Scanning repository for .bin files...</div>
+        <div *ngIf="!fwBinsLoading && !fwRepoBins.length" class="bin-hint">No .bin files found in this repository.</div>
+        <ul *ngIf="!fwBinsLoading && fwRepoBins.length" class="bin-list">
+          <li *ngFor="let b of fwRepoBins">
+            <button type="button" class="bin-item" [class.bin-selected]="b === fwFilePath" (click)="selectFirmwareFile(b)">
+              {{ b }}
+            </button>
+          </li>
+        </ul>
+        <div *ngIf="fwBinsTruncated" class="bin-hint">Repository is large; some files may be omitted.</div>
+      </div>
     </div>
 
     <!-- Firmware Status Message -->
@@ -115,7 +266,7 @@
         <span>{{ fwIsChecking ? 'Checking...' : 'Check' }}</span>
       </button>
 
-      <button *ngIf="fwHasLocalFile" class="btn btn-flash"
+      <button *ngIf="fwJustDownloaded && !fwUpdateAvailable" class="btn btn-flash"
         (click)="flashFirmware()" [disabled]="fwIsFlashing || fwIsDownloading || fwIsChecking">
         <svg *ngIf="!fwIsFlashing" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
@@ -138,23 +289,126 @@
       </button>
     </div>
 
-    <!-- Firmware Version Details -->
+    <!-- Firmware Version Details (mirrors the Brain card's layout) -->
     <div *ngIf="fwHasChecked && fwRemoteSha" class="card-details">
-      <div class="detail-row">
-        <span class="detail-label">Latest</span>
-        <span class="detail-value tag" [class.tag-green]="fwUpdateAvailable">{{ fwRemoteSha }}</span>
-      </div>
-      <div *ngIf="fwRemoteDate" class="detail-row">
-        <span class="detail-label">Released</span>
-        <span class="detail-value">{{ formatDate(fwRemoteDate) }}</span>
+      <div *ngIf="fwBranch" class="detail-row">
+        <span class="detail-label">Branch</span>
+        <span class="detail-value tag tag-blue">{{ fwBranch }}</span>
       </div>
       <div *ngIf="fwLocalSha" class="detail-row">
         <span class="detail-label">Local</span>
         <span class="detail-value tag">{{ fwLocalSha }}</span>
       </div>
+      <div *ngIf="fwUpdateAvailable" class="detail-row">
+        <span class="detail-label">Latest</span>
+        <span class="detail-value tag tag-green" [title]="fwRemoteMessage">{{ fwRemoteSha }}</span>
+      </div>
+      <div *ngIf="fwRemoteDate" class="detail-row">
+        <span class="detail-label">Released</span>
+        <span class="detail-value">{{ formatDate(fwRemoteDate) }}</span>
+      </div>
     </div>
 
-    <div class="card-footer">robot_car.bin from Embedded_Platform. Flash copies to Nucleo USB storage.</div>
+    <div class="card-footer">Downloads the selected .bin from your configured repo.</div>
+  </div>
+
+  <!-- ==================== ACCESS TOKEN (private Brain repo) ==================== -->
+  <div *ngIf="showTokenModal" class="modal-overlay" (click)="showTokenModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Access token for private repo</span>
+        <button type="button" class="modal-close" (click)="showTokenModal = false" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-intro">
+          To pull updates from a private repository, the car needs a read-only <strong>access token</strong>.
+          It's stored only on the car and sent straight to GitHub.
+        </p>
+
+        <div class="help-block">
+          <span class="help-block-title">1. Create a fine-grained token</span>
+          <p>Create a token, then give it access to your update repo
+            with <strong>Repository permissions → Contents: Read-only</strong>.</p>
+          <div class="confirm-actions">
+            <a class="btn btn-check footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create token</a>
+          </div>
+        </div>
+
+        <div class="help-block">
+          <span class="help-block-title">2. Paste it here</span>
+          <input class="source-input token-input" type="password" [(ngModel)]="tokenInput"
+            placeholder="github_pat_..." [disabled]="isSavingToken" spellcheck="false" autocomplete="off" />
+          <div *ngIf="tokenError" class="key-error">{{ tokenError }}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-update" (click)="saveToken()" [disabled]="isSavingToken">
+              {{ isSavingToken ? 'Verifying...' : (hasToken ? 'Replace token' : 'Save token') }}
+            </button>
+            <button *ngIf="hasToken" class="btn btn-danger" (click)="removeToken()" [disabled]="isSavingToken">Remove token</button>
+          </div>
+          <div *ngIf="hasToken" class="key-status">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            A token is stored on the car.
+          </div>
+        </div>
+
+        <p class="modal-outro">It's verified against the configured repo before being saved.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-update" (click)="showTokenModal = false; checkForUpdates()" [disabled]="isSavingToken">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIRMWARE ACCESS TOKEN (private repos) ==================== -->
+  <div *ngIf="fwShowTokenModal" class="modal-overlay" (click)="fwShowTokenModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Access token for private firmware</span>
+        <button type="button" class="modal-close" (click)="fwShowTokenModal = false" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-intro">
+          The firmware repo is read over HTTP (never cloned), so a private one needs a read-only
+          <strong>access token</strong>. It's stored only on the car and sent straight to GitHub.
+        </p>
+
+        <div class="help-block">
+          <span class="help-block-title">1. Create a fine-grained token</span>
+          <p>Create a token, then give it access to your firmware repo
+            with <strong>Repository permissions → Contents: Read-only</strong>.</p>
+          <div class="confirm-actions">
+            <a class="btn btn-check footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create token</a>
+          </div>
+        </div>
+
+        <div class="help-block">
+          <span class="help-block-title">2. Paste it here</span>
+          <input class="source-input token-input" type="password" [(ngModel)]="fwTokenInput"
+            placeholder="github_pat_..." [disabled]="fwIsSavingToken" spellcheck="false"
+            autocomplete="off" />
+          <div *ngIf="fwTokenError" class="key-error">{{ fwTokenError }}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-update" (click)="saveFirmwareToken()" [disabled]="fwIsSavingToken">
+              {{ fwIsSavingToken ? 'Verifying...' : (fwHasToken ? 'Replace token' : 'Save token') }}
+            </button>
+            <button *ngIf="fwHasToken" class="btn btn-danger" (click)="removeFirmwareToken()" [disabled]="fwIsSavingToken">Remove token</button>
+          </div>
+          <div *ngIf="fwHasToken" class="key-status">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            A token is stored on the car.
+          </div>
+        </div>
+
+        <p class="modal-outro">It's verified against the configured repo before being saved.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-update" (click)="fwShowTokenModal = false; checkFirmware()" [disabled]="fwIsSavingToken">Done</button>
+      </div>
+    </div>
   </div>
 
 </div>

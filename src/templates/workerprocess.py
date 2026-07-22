@@ -28,6 +28,8 @@
 
 from multiprocessing import Process, Event
 
+from src.utils.logConfig import get_logger, configure_dashboard_output
+
 
 class WorkerProcess(Process):
     def __init__(self, queuesList, ready_event=None, daemon=True):
@@ -69,10 +71,15 @@ class WorkerProcess(Process):
         """
         raise NotImplementedError
 
+    def _configure_dashboard_output(self):
+        configure_dashboard_output(self.queuesList.get("Log"))
+
+
     def run(self):
         """This method applies the initialization of the theards and starts all of them. The process ignores the keyboardInterruption signal and can terminate by applying the 'stop' method.
         The process will be blocked, until an other process use the 'stop' function. After appling the function it terminates all subthread.
         """
+        self._configure_dashboard_output()
         self._init_threads()
         for th in self.threads:
             th.daemon = self.daemon
@@ -103,8 +110,10 @@ class WorkerProcess(Process):
                     self._resume_event.clear()
                     
                 self._blocker.wait(0.1) # shorter wait for responsiveness
-            except KeyboardInterrupt as e:
-                print(e)
+            except KeyboardInterrupt:
+                # Ctrl+C is handled by the parent process, which shuts us down
+                # via stop(); ignore it here so shutdown stays coordinated.
+                continue
                 
         # cleanup section
         self.stop_threads()
@@ -120,13 +129,10 @@ class WorkerProcess(Process):
                 th.join(1)
 
                 if th.is_alive():
-                    print(
-                        "The thread %s cannot normally stop, it's blocked somewhere!"
-                        % (th)
-                    )
-                print("The thread %s stopped" % (th))
+                    get_logger("System").warning("The thread %s cannot normally stop, it's blocked somewhere!" % (th))
+                get_logger("System").info("The thread %s stopped" % (th))
             else:
-                print("The thread %s has no stop function" % (th))
+                get_logger("System").warning("The thread %s has no stop function" % (th))
 
             del th
 

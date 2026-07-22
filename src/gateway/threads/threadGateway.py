@@ -26,26 +26,34 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWITrueSE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+from multiprocessing import connection
+
 from src.templates.threadwithstop import ThreadWithStop
-import time
+from src.utils.logConfig import get_logger
 
 class threadGateway(ThreadWithStop):
     """Thread which will handle processGateway functionalities.\n
     Args:
         queuesList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-        logger (logging object): Made for debugging.
         debugger (bool): A flag for debugging.
     """
 
     # ===================================== INIT =========================================
 
-    def __init__(self, queueList, logger, debugging):
-        super(threadGateway, self).__init__(pause=0.001)
-        self.logger = logger
+    def __init__(self, queueList, debugging):
+        # pause=0: thread_work blocks on the queues themselves, no extra sleep needed
+        super(threadGateway, self).__init__(pause=0)
+        self.logger = get_logger("Gateway")
         self.debugging = debugging
         self.sendingList = {}
         self.queuesList = queueList
         self.messageApproved = []
+        self.senderFeedback = {}
+        self._queueReaders = [
+            self.queuesList[name]._reader
+            for name in ("Critical", "Warning", "General", "Config")
+            if name in self.queuesList
+        ]
 
     # =================================== SUBSCRIBE ======================================
 
@@ -66,7 +74,14 @@ class threadGateway(ThreadWithStop):
             self.sendingList[Owner][Id] = {}
         if not To in self.sendingList[Owner][Id].keys():
             self.sendingList[Owner][Id][To] = Pipe
+            self.logger.info(
+                f"Subscribed {To} to {Owner}/{Id}",
+                extra={"file_only": True},
+            )
         self.messageApproved.append((Owner, Id))
+
+        self._notifySenders(Owner, Id)
+
         # Debugging( you can comment this):
         if self.debugging:
             self.print_list()
@@ -83,11 +98,50 @@ class threadGateway(ThreadWithStop):
         Id = message["msgID"]
         To = message["To"]["receiver"]
 
-        # We delete the value from Dictionary
-        del self.sendingList[Owner][Id][To]
-        self.messageApproved.remove((Owner, Id))
+        # Guarded delete: an unsubscribe for something never subscribed must not
+        # raise here, it would kill message routing for the whole application.
+        pipes = self.sendingList.get(Owner, {}).get(Id, {})
+        if To in pipes:
+            del pipes[To]
+            self.logger.info(
+                f"Unsubscribed {To} from {Owner}/{Id}",
+                extra={"file_only": True},
+            )
+        else:
+            self.logger.warning(f"Unsubscribe for unknown subscription: {Owner}/{Id}/{To}")
+        if (Owner, Id) in self.messageApproved:
+            self.messageApproved.remove((Owner, Id))
+
+        self._notifySenders(Owner, Id)
+
         if self.debugging:
             self.print_list()
+
+    # ============================= SENDER FEEDBACK ======================================
+
+    def registerSender(self, message):
+        """Registers a sender's feedback pipe for its message. The gateway
+        immediately reports the current subscriber count (so senders created
+        after subscribers start correct) and pushes every later change; the
+        sender exposes it as hasSubscribers()."""
+        Owner = message["Owner"]
+        Id = message["msgID"]
+        pipe = message["To"]["pipe"]
+        self.senderFeedback.setdefault((Owner, Id), []).append(pipe)
+        self._notifySenders(Owner, Id)
+
+    def _notifySenders(self, owner, msgId):
+        """Pushes the current subscriber count of (owner, msgId) to all of its
+        registered senders."""
+        pipes = self.senderFeedback.get((owner, msgId))
+        if not pipes:
+            return
+        count = len(self.sendingList.get(owner, {}).get(msgId, {}))
+        for pipe in list(pipes):
+            try:
+                pipe.send(count)
+            except Exception:
+                pipes.remove(pipe)  # the sender's process is gone
 
     # =================================== SENDING ========================================
 
@@ -102,13 +156,38 @@ class threadGateway(ThreadWithStop):
         Type = message["msgType"]
         Value = message["msgValue"]
         if (Owner, Id) in self.messageApproved:
-            for element in self.sendingList[Owner][Id]:
+            pipes = self.sendingList[Owner][Id]
+            removed_dead_pipe = False
+            for element, pipe in list(pipes.items()):
                 # We send a dictionary that contain the type of the message and message
-                self.sendingList[Owner][Id][element].send(
-                    {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
-                )
+                try:
+                    pipe.send(
+                        {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
+                    )
+                except (EOFError, OSError, ValueError) as exc:
+                    # A subscriber may disappear without sending an unsubscribe
+                    # request. Remove its stale pipe and continue delivering to
+                    # the remaining subscribers instead of killing the gateway.
+                    pipes.pop(element, None)
+                    removed_dead_pipe = True
+                    try:
+                        pipe.close()
+                    except OSError:
+                        pass
+                    self.logger.warning(
+                        f"Removed dead subscriber {element} from {Owner}/{Id}: {exc}"
+                    )
                 if self.debugging:
                     self.logger.warning(message)
+
+            if removed_dead_pipe:
+                if not pipes:
+                    self.messageApproved = [
+                        approved
+                        for approved in self.messageApproved
+                        if approved != (Owner, Id)
+                    ]
+                self._notifySenders(Owner, Id)
 
     # ====================================================================================
 
@@ -123,28 +202,40 @@ class threadGateway(ThreadWithStop):
     def thread_work(self):
         """This function will take the messages in priority order form the queues.\n
         the prioirty is: Critical > Warning > General
+
+        It blocks until any queue has data (instead of polling every millisecond),
+        then drains everything that is available before blocking again.
         """
-        
-        # while self._running:
-        message = None
-        # We are using "elif" because we are processing one message at a time.
-        # We work with the queues in the priority order( We start from the high priority to low priority)
-        if not self.queuesList["Critical"].empty():
-            message = self.queuesList["Critical"].get()
-        elif not self.queuesList["Warning"].empty():
-            message = self.queuesList["Warning"].get()
-        elif not self.queuesList["General"].empty():
-            message = self.queuesList["General"].get()
-        if message is not None:
-            self.send(message)
-        if not self.queuesList["Config"].empty():
+
+        if not self._queueReaders:
+            self._blocker.wait(0.1)
+            return
+
+        # Sleep until at least one queue has data. The timeout only bounds how
+        # fast we notice a stop() request, not the message latency.
+        if not connection.wait(self._queueReaders, timeout=0.1):
+            return
+
+        # Handle subscriptions first so they apply before the data fan-out.
+        while not self.queuesList["Config"].empty():
             message2 = self.queuesList["Config"].get()
-            if str.lower(message2["Subscribe/Unsubscribe"]) == "subscribe":
+            action = str.lower(message2["Subscribe/Unsubscribe"])
+            if action == "subscribe":
                 self.subscribe(message2)
+            elif action == "senderfeedback":
+                self.registerSender(message2)
             else:
                 self.unsubscribe(message2)
 
-        # print(time.perf_counter_ns())
-
-
-# =====================================================================================
+        # Drain the data queues in priority order (Critical > Warning > General),
+        # re-checking the higher priority queues after every message.
+        while not self._blocker.is_set():
+            if not self.queuesList["Critical"].empty():
+                message = self.queuesList["Critical"].get()
+            elif not self.queuesList["Warning"].empty():
+                message = self.queuesList["Warning"].get()
+            elif not self.queuesList["General"].empty():
+                message = self.queuesList["General"].get()
+            else:
+                break
+            self.send(message)

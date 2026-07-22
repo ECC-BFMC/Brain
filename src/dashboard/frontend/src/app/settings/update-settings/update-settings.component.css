@@ -37,6 +37,138 @@
   font-family: 'Courier New', monospace;
 }
 
+.card-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 60%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.card-source-btn:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.card-source-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ===== Repository source editor ===== */
+.source-editor .detail-row {
+  gap: 0.6rem;
+}
+
+.source-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+}
+
+.source-input:focus {
+  outline: none;
+  border-color: rgba(0, 123, 255, 0.5);
+}
+
+.source-input:disabled {
+  opacity: 0.5;
+}
+
+.source-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+}
+
+/* ===== Firmware .bin file picker ===== */
+.file-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 70%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 5px;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.78rem;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-pick-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.file-pick-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.bin-picker {
+  margin-top: 0.45rem;
+}
+
+.bin-hint {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0.2rem 0;
+}
+
+.bin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 9rem;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+}
+
+.bin-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.82);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.74rem;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  word-break: break-all;
+}
+
+.bin-item:hover {
+  background: rgba(125, 249, 255, 0.06);
+}
+
+.bin-item.bin-selected {
+  color: #7df9ff;
+  background: rgba(125, 249, 255, 0.08);
+}
+
 /* ===== Alert Messages ===== */
 .card-alert {
   padding: 0.5rem 0.7rem;
@@ -170,6 +302,69 @@
   background: #bf360c;
 }
 
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b02a37;
+}
+
+/* ===== Branch selector ===== */
+.branch-select {
+  width: min(280px, 100%);
+  height: 28px;
+  min-height: 28px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.branch-select:focus {
+  outline: none;
+  border-color: #007bff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.branch-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.branch-select option {
+  background: #1f252b;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* ===== Conflict file list ===== */
+.conflict-files {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  max-height: 8rem;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.76rem;
+  opacity: 0.9;
+}
+
+.conflict-files li {
+  margin: 0.1rem 0;
+  word-break: break-all;
+}
+
+/* ===== Inline confirmation actions ===== */
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 .meta-text {
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.35);
@@ -236,6 +431,207 @@
 .tag-warn {
   color: #ffb74d;
   background: rgba(255, 152, 0, 0.12);
+}
+
+/* ===== Deploy key modal (matches the settings dialog look) ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;            /* above the settings dialog (z-index: 10000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal {
+  width: min(560px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgb(45, 54, 58);
+  color: white;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.modal-close {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.72);
+  width: 26px;
+  min-width: 26px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.modal-body {
+  padding: 14px;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.45;
+}
+
+.modal-body p {
+  margin: 0 0 8px;
+}
+
+.modal-intro code,
+.help-note code,
+.modal-body p code {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+  word-break: break-all;
+}
+
+.help-block {
+  margin: 9px 0;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+}
+
+.help-block-title {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 6px;
+}
+
+.help-block pre {
+  margin: 6px 0;
+  padding: 8px 9px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.help-block pre code {
+  font-family: 'Courier New', monospace;
+  font-size: 10.5px;
+  color: #7df9ff;
+  white-space: pre;
+}
+
+.help-note {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-outro {
+  margin-top: 9px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.key-status {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: #52d273;
+}
+
+.key-status svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.key-status code {
+  min-width: 0;
+  max-width: 100%;
+  background: rgba(82, 210, 115, 0.12);
+  color: #52d273;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.key-error {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: #f5747f;
+}
+
+/* Footer link styled to match the settings cyan buttons (ng-deep button theme
+   doesn't apply to anchors, so style it here). */
+.footer-link {
+  margin-right: auto;            /* push to the left, Done/Close stay right */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
+  color: #7df9ff;
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.footer-link:hover {
+  color: #b9fdff;
+  border-color: rgba(125, 249, 255, 0.34);
+  background: rgba(125, 249, 255, 0.07);
+}
+
+.token-input {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 /* ===== Card Footer ===== */

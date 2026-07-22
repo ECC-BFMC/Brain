@@ -12,25 +12,27 @@
     <div class="settings-body">
       <div class="settings-layout">
         <!-- Left Half - Calibration Section -->
-        <div class="calibration-section" [class.calibration-active]="showCalibration">
-          <div class="section-header">
-            <h3>Speed and Steer Calibration</h3>
-            <button *ngIf="!showCalibration" class="btn-primary" (click)="startCalibration()">
-              Open
-            </button>
-            <button *ngIf="showCalibration" class="btn-secondary" (click)="onCalibrationClose()">
-              Close
-            </button>
-          </div>
+        <div class="left-section">
+          <div class="subsection calibration-section" [class.calibration-active]="showCalibration">
+            <div class="section-header">
+              <h3>Speed and Steer Calibration</h3>
+              <button *ngIf="!showCalibration" class="btn-primary" (click)="startCalibration()">
+                Open
+              </button>
+              <button *ngIf="showCalibration" class="btn-secondary" (click)="onCalibrationClose()">
+                Close
+              </button>
+            </div>
 
-          <!-- Calibration Component -->
-          <app-calibration [show]="showCalibration" [shouldExit]="requestCalibrationExit" (close)="onCalibrationClose()"
-            (complete)="onCalibrationComplete()" (exited)="onCalibrationExited()">
-          </app-calibration>
+            <!-- Calibration Component -->
+            <app-calibration [show]="showCalibration" [shouldExit]="requestCalibrationExit" (close)="onCalibrationClose()"
+              (complete)="onCalibrationComplete()" (exited)="onCalibrationExited()">
+            </app-calibration>
 
-          <!-- Calibration Status when not active -->
-          <div *ngIf="!showCalibration" class="calibration-info">
-            <p>Tune steering and speed motor accuracy.</p>
+            <!-- Calibration Status when not active -->
+            <div *ngIf="!showCalibration" class="calibration-info">
+              <p>Tune steering and speed motor accuracy.</p>
+            </div>
           </div>
         </div>
 
@@ -71,6 +73,24 @@
             <!-- Info when closed -->
             <div *ngIf="!showUpdateSettings" class="calibration-info">
               <p>Check and install Brain software and Nucleo firmware updates.</p>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <div class="section-header">
+              <h3>Local Firmware Flash</h3>
+              <button *ngIf="!showLocalFirmwareSettings" class="btn-primary" (click)="showLocalFirmwareSettings = true">
+                Open
+              </button>
+              <button *ngIf="showLocalFirmwareSettings" class="btn-secondary" (click)="showLocalFirmwareSettings = false">
+                Close
+              </button>
+            </div>
+
+            <app-local-firmware-settings *ngIf="showLocalFirmwareSettings"></app-local-firmware-settings>
+
+            <div *ngIf="!showLocalFirmwareSettings" class="calibration-info">
+              <p>Flash any local <code>.bin</code> file already present in <code>runtime/firmware</code>.</p>
             </div>
           </div>
         </div>

@@ -40,6 +40,61 @@
       <p>Calibration files successfully generated and saved!</p>
     </div>
 
+    <div
+      *ngIf="calibrationMeasurementsMessage"
+      [class.success-message]="calibrationMeasurementsMessageType === 'success'"
+      [class.error-message]="calibrationMeasurementsMessageType === 'error'">
+      <p>{{ calibrationMeasurementsMessage }}</p>
+    </div>
+
+    <section *ngIf="currentStepIndex === 0" class="saved-measurements">
+      <div class="saved-measurements-group">
+        <label for="savedCalibrationId">Saved measurements</label>
+        <div class="saved-measurements-row">
+          <select
+            id="savedCalibrationId"
+            [(ngModel)]="selectedSavedMeasurementId"
+            [disabled]="isLoadingMeasurements || isSavingMeasurements"
+            class="form-select">
+            <option value="">Select measurements</option>
+            <option
+              *ngFor="let measurement of savedCalibrationMeasurements"
+              [value]="measurement.id">
+              {{ measurement.name }}
+            </option>
+          </select>
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="loadSavedCalibrationMeasurements()"
+            [disabled]="!selectedSavedMeasurementId || isLoadingMeasurements || isSavingMeasurements">
+            {{ isLoadingMeasurements ? 'Loading...' : 'Load' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="currentStepIndex === 7" class="saved-measurements">
+      <div *ngIf="currentStepIndex === 7" class="saved-measurements-group">
+        <label for="saveMeasurementName">Measurement name</label>
+        <div class="saved-measurements-row">
+          <input
+            id="saveMeasurementName"
+            type="text"
+            [(ngModel)]="saveMeasurementName"
+            [disabled]="isLoadingMeasurements || isSavingMeasurements"
+            class="form-input">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="saveCalibrationMeasurements()"
+            [disabled]="isSaveButtonDisabled() || !saveMeasurementName.trim() || isLoadingMeasurements || isSavingMeasurements">
+            {{ isSavingMeasurements ? 'Saving...' : 'Save Measurements' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- Step 5: 0 Offset Spline Visualization -->
     <div *ngIf="currentStepIndex === 4 && zeroOffsetSplineData" class="polynomial-charts">
       <div class="chart-container" (click)="openChartModal('zeroOffsetSpline')">

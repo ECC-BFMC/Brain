@@ -84,16 +84,75 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.4));
 }
  
-.button-container {
+/* In mobile driving mode the component root is stretched to cover the whole
+   cluster (see cluster.component.css). Let clicks pass through the empty
+   areas; only the control groups capture pointer events. */
+.state-switch.mobile-driving {
+  pointer-events: none;
+}
+
+.drive-container,
+.steer-container,
+.action-container {
   position: absolute;
-  width: 120%;
-  height: 150%;
-  left: -5%;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 3%;
-  margin-top: 5%;
+  pointer-events: auto;
+  z-index: 6;
+}
+
+/* Forward / backward, horizontal pair on the left (backward on the left). */
+.drive-container {
+  left: 2%;
+  top: 75%;
+  width: 32%;
+  height: 16%;
+  flex-direction: row-reverse;
+  gap: 6%;
+}
+
+/* Steering, horizontal pair on the right, same button size and level. */
+.steer-container {
+  left: 66%;
+  top: 75%;
+  width: 32%;
+  height: 16%;
+  flex-direction: row;
+  gap: 6%;
+}
+
+/* Centre block: record + stop share the top row (record left, stop right),
+   brake spans the full width below as a taller bar. Record is positioned from
+   cluster.component.css; stop/brake are pinned within this block. */
+.action-container {
+  left: 41%;
+  top: 70%;
+  width: 18%;
+  height: 19%;
+}
+
+.drive-container .control-button,
+.steer-container .control-button {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Stop: right half of the top row (mirrors the record button on the left). */
+.action-container .stop-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44.4%;
+  height: 36.8%;
+}
+
+/* Brake: full-width bar on the second row, with a bigger height. */
+.action-container .brake-button {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 52.6%;
 }
 
 .control-button {
@@ -112,6 +171,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   cursor: pointer;
   transition: background-color 0.3s ease;
   padding: 0;
+  /* Don't let the browser treat presses as scroll/zoom gestures — keeps a held
+     steer button from being cancelled and allows simultaneous multi-touch. */
+  touch-action: none;
   /* Prevent text selection/copy on mobile */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -150,26 +212,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   font-size: 2.6vw;
 }
 
-.stop-button-container {
-  position: absolute;
-  top: 250%;
-  left: 6.25%;
-  width: 27.5%;
-  height: 85%;
-}
-
-.stop-button { 
+.stop-button,
+.brake-button {
   width: 100%;
   height: 100%;
   font-size: 0.9vw;
   text-shadow: 0 0 0.3vw rgba(0, 0, 0, 1);
   filter: drop-shadow(0 0 0.3vw rgb(0, 0, 0, 0.3));
-  background-color: #d9534f;
   color: white;
   border: none;
   border-radius: 0.3vw;
   z-index: 10;
   cursor: pointer;
+  /* Centre the label so a wrapped two-line text (e.g. "stop car") stays put. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  overflow: hidden;
   text-align: center;
   transition: background-color 0.3s ease;
   /* Prevent text selection/copy on mobile */
@@ -178,6 +238,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
   -ms-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+}
+
+.stop-button {
+  background-color: #d9534f;
+}
+
+.brake-button {
+  background-color: #e67e22;
 }
 
 .full-width-button:hover {

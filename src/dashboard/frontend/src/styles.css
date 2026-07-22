@@ -5,6 +5,12 @@
     --cluster-width: 80vw;
 }
 
+@media (max-width: 768px) {
+    :root {
+        --cluster-width: 100vw;
+    }
+}
+
 * {
     box-sizing: border-box;
 }

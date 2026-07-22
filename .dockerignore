@@ -1,0 +1,10 @@
+.venv/
+src/dashboard/frontend/node_modules/
+src/dashboard/frontend/.angular/
+src/dashboard/frontend/dist/
+__pycache__/
+**/*.pyc
+.git/
+.github/
+docs/
+.vscode/

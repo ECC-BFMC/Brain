@@ -1,0 +1,95 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .axis-label {
+      font-family: sans-serif;
+      font-size: 16px;
+      fill: white;
+      text-anchor: middle;
+    }
+  </style>
+  
+  <!-- Nicer background -->
+  <rect width="100%" height="100%" fill="#2C3E50"/>
+
+  <!-- Y Axis -->
+  <g stroke="white" stroke-width="1.5">
+    <!-- Axis line -->
+    <line x1="194" y1="34" x2="194" y2="174" />
+    <!-- Arrowhead -->
+    <path d="M 194 34 L 189 44" fill="none" />
+    <path d="M 194 34 L 199 44" fill="none" />
+  </g>
+  
+  <!-- Y Axis Label -->
+  <text x="209" y="45" class="axis-label">Y</text>
+
+  <!-- X Axis -->
+  <g stroke="white" stroke-width="1.5">
+    <!-- Axis line -->
+    <line x1="73" y1="152" x2="214" y2="152" />
+    <!-- Arrowhead -->
+    <path d="M 73 152 L 83 147" fill="none" />
+    <path d="M 73 152 L 83 157" fill="none" />
+  </g>
+
+  <!-- X Axis Label -->
+  <text x="78" y="176" class="axis-label">-X</text>
+
+  <!-- 0 Axis Label -->
+  <text x="214" y="169" class="axis-label">(0,0)</text>
+  
+  <!-- Wheel points -->
+  <circle cx="101" cy="59" r="5" fill="red" />
+  <circle cx="123" cy="86" r="5" fill="red" />
+
+  <!-- Wheel arrows -->
+  <!-- Top wheel -->
+  <g>
+    <!-- Arrow line -->
+    <line x1="107" y1="57" x2="191" y2="57" stroke="red" stroke-width="2" fill="none"/>
+    <!-- Arrowhead -->
+    <path d="M 191 57 L 181 52" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 191 57 L 181 62" stroke="red" stroke-width="2" fill="none" />
+    <!-- New arrowhead at the other end of the line -->
+    <path d="M 107 57 L 117 52" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 107 57 L 117 62" stroke="red" stroke-width="2" fill="none" />
+  </g>
+
+  <!-- Bottom wheel -->
+  <g>
+    <!-- Arrow line -->
+    <line x1="129" y1="84" x2="192" y2="84" stroke="red" stroke-width="2" fill="none"/>
+    <!-- Arrowhead -->
+    <path d="M 192 84 L 182 79" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 192 84 L 182 89" stroke="red" stroke-width="2" fill="none" />
+    <!-- New arrowhead at the other end of the line -->
+    <path d="M 129 84 L 139 79" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 129 84 L 139 89" stroke="red" stroke-width="2" fill="none" />
+  </g>
+
+  <g>
+    <!-- Arrow line -->
+    <line x1="206" y1="88" x2="206" y2="148" stroke="red" stroke-width="2" fill="none"/>
+    <!-- Arrowhead -->
+    <!-- Arrowhead at the top of the vertical line (pointing up) -->
+    <path d="M 206 88 L 201 98" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 206 88 L 211 98" stroke="red" stroke-width="2" fill="none" />
+    <!-- Arrowhead at the bottom of the vertical line (pointing down) -->
+    <path d="M 206 148 L 201 138" stroke="red" stroke-width="2" fill="none" />
+    <path d="M 206 148 L 211 138" stroke="red" stroke-width="2" fill="none" />
+  </g>
+
+  <!-- Car image from map-cursor, rotated and moved -->
+  <image width="64" height="64" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAD9UlEQVR4nO2ZX2/TVhjGcwnjezC1TeyGsDQtZeQYsat9hu0jcMHN8reloWzqoMA2BqwTJT6+4hIuYdod4rqJnTYtNJRWrfzfTNqoBHonxySx45PENgER5Ff63USK3ud5z3NyfJxIJKywwgorrLA+YtE/CEosUzXGCvxUZBSLzggQy/IQzVb/joy0gVwVJnKVdGSUDYzl14a3Cqn7cJTBxu+IfaUw+BV8WAzfIKy/ZrDxF8LGl0QDCBt/fipimX6weuPbO3tfOMSfY/ePIdY4HCQmvapBYn4TJjOCb8zvnbmr+hCr9+QsVr93GGC4f5DXiSKPJmgbXy0+B1TWA4llSLD6Y6cBbJwnTvyuCtPLL915LOuQWnoBJ4obLrEtzM9PzG3AzI1ds6FLLGI1SC41IL2q+DaAWO3QTI09/7+R8jp786ApZPrqTsDMkgWYg0mUNoHK8jB768CHeK0Nwvo3HQOs/pAkIHV1pz3R1PLuUCJw+g8R6OJ6UzyV5WH6+su+QnvCaRdsEdKfkoQlf9oGOsO3MVfEd167xFN5S3iL5NK2N8FdIFa9bd8DmyQDidIW0Fm+TaJUfy8DiUtWbExi70gsbgU10DkEGayLpIbx+Q3HtOicECivLaicKbrqIH5x3WNkVAeIUwX7HjBIIuxZbeFVLIlu8bFsFei5Wl+hvUCc+sK2Atp/RAMFgWDA/3L3MhDNVSFWFDyLdhjAimL7GdXekqZK5awHLwuraWADnNoU3E0szwc0IB/aIqS+IU6MkNkgeW0R3IDiwmGAYbV/iZuuIAw24GNqTvEViyLfV2gvEJZtEWI1nWSALloG7I2DLHeLiVzFRWxO8CW8bYCT7ZtYFUlTpS+uDyWvrabRQvMW5oBeqAUwIAPipM7PKMMpm6TG8Ut1h4FJ8yALkNcW8cW6y0D8cn2gWBKIkzsHGcLqE5KYxNKzdlbNZjO39zyLJXF6ZR8mClUYz1XanPz5WV+hfQx0HiUQVh6QDCSXG+1JJa81AmW1m9mVfYjO8zCerzSZutHwLd5C6jzMIU75lTTVmVt7QxDvbp6+J8Lk5XUYz6/BqTu7foVbsPI52yaWz5Oam42mrrvFp1kZTl55DtE5wYpC3s1Efg2oBQGmfmkAgyV3BLAEiStbkC6Lg8V2gbDovNAwnIS8TjRdloBaqNnErvVk7B2TP9YhzbpNMB7EkhGdV0rzlm+ebIMiYE6LKtV6Cu1HrFSDr1cPfAqVyCvAyt85DFj7QF4JtpmGNVXJG1jaTt3fOeoycGZ1+wjDyTcRJ8mfjFjOnnvpNcLio7Nl8Xjks3y1+LHq83m5mx3R1+tUhpej2ao+sn9whBVWWGFF7PU/0VDmX1XdcCAAAAAASUVORK5CYII=" transform="translate(94, 129) rotate(-130)"/>
+
+  <line x1="194" y1="84" x2="214" y2="84" stroke="white" stroke-width="1.5" fill="none"/>
+  <!-- <line x1="127" y1="84" x2="127" y2="100" stroke="white" stroke-width="1.5" fill="none"/>
+  <line x1="106" y1="57" x2="106" y2="41" stroke="white" stroke-width="1.5" fill="none"/> -->
+
+  <text x="149" y="52" class="axis-label">d3</text>
+  <text x="157" y="80" class="axis-label">d2</text>
+  <text x="218" y="123" class="axis-label">d1</text>
+
+  <circle cx="105" cy="57" r="1.5" fill="white" />
+  <circle cx="127" cy="84" r="1.5" fill="white" />
+</svg>

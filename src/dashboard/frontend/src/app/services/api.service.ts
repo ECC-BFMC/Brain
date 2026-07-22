@@ -30,25 +30,108 @@ export interface SerialStatusResponse {
     connected: boolean;
 }
 
+export interface UpdateConflict {
+    files: string[];
+    raw: string;
+    diverged?: boolean;
+    message?: string;
+}
+
 export interface UpdateStatusResponse {
     success: boolean;
+    is_git_repo?: boolean;
     current_commit?: string;
     current_commit_short?: string;
     remote_commit?: string;
     remote_commit_short?: string;
+    remote_date?: string;
     update_available?: boolean;
+    diverged?: boolean;
     branch?: string;
     remote?: string;
     remote_branch?: string;
-    is_official_clone?: boolean;
-    valid_branch?: boolean;
-    validation_error?: string;
+    source?: string;
+    configured_branch?: string;
+    behind_by?: number;
+    deps_changed?: boolean;
+    via?: string;
     message?: string;
+    auth_required?: boolean;
     error?: string;
 }
 
 export interface UpdateActionResponse {
     success: boolean;
+    message?: string;
+    deps_changed?: boolean;
+    conflict?: UpdateConflict;
+    is_git_repo?: boolean;
+    auth_required?: boolean;
+    error?: string;
+}
+
+export interface UpdateBranchesResponse {
+    success: boolean;
+    branches?: string[];
+    default_branch?: string;
+    selected_branch?: string;
+    error?: string;
+}
+
+export interface UpdateSourceResponse {
+    success: boolean;
+    url?: string;
+    branch?: string;
+    remote_name?: string;
+    origin_url?: string;
+    is_git_repo?: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface UpdateTokenResponse {
+    success: boolean;
+    has_token?: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface CalibrationMeasurementSummary {
+    id: string;
+    name: string;
+    mode: 'basic';
+    modeLabel: string;
+    measurementMode: 'manual';
+    measurementModeLabel: string;
+    savedAt?: string;
+}
+
+export interface CalibrationMeasurementState {
+    mode: 'basic';
+    modeLabel: string;
+    measurementMode: 'manual';
+    measurementModeLabel: string;
+    useDummyData?: boolean;
+    forward: boolean;
+    left: boolean;
+    right: boolean;
+    backward: boolean;
+    testRun: boolean;
+    steeringOffset: number;
+    maxAngleLeft?: number | null;
+    maxAngleRight?: number | null;
+}
+
+export interface CalibrationMeasurementsResponse {
+    success: boolean;
+    measurements?: CalibrationMeasurementSummary[];
+    error?: string;
+}
+
+export interface CalibrationMeasurementResponse {
+    success: boolean;
+    measurement?: CalibrationMeasurementSummary;
+    calibration?: CalibrationMeasurementState;
     message?: string;
     error?: string;
 }
@@ -62,12 +145,71 @@ export interface FirmwareCheckResponse {
     remote_message?: string;
     local_sha?: string;
     local_date?: string;
+    source?: string;
+    branch?: string;
+    file_path?: string;
+    file_name?: string;
     error?: string;
 }
 
 export interface FirmwareActionResponse {
     success: boolean;
     message?: string;
+    error?: string;
+}
+
+export interface FirmwareSourceResponse {
+    success: boolean;
+    url?: string;
+    branch?: string;
+    file_path?: string;
+    repo?: string;
+    default_repo?: string;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareRepoBinsResponse {
+    success: boolean;
+    files?: string[];
+    selected_file?: string;
+    repo?: string;
+    branch?: string;
+    truncated?: boolean;
+    auth_required?: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareTokenResponse {
+    success: boolean;
+    has_token?: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface FirmwareBranchesResponse {
+    success: boolean;
+    branches?: string[];
+    default_branch?: string;
+    selected_branch?: string;
+    repo?: string;
+    auth_required?: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface LocalFirmwareFile {
+    name: string;
+    size: number;
+    modified_at: string;
+    is_default: boolean;
+}
+
+export interface LocalFirmwareFilesResponse {
+    success: boolean;
+    files?: LocalFirmwareFile[];
+    selected_file?: string;
     error?: string;
 }
 
@@ -101,6 +243,25 @@ export class ApiService {
         return this.http.post<TableResponse>(`${this.baseUrl}/api/table`, data);
     }
 
+    // Calibration Measurement Persistence
+    listCalibrationMeasurements(): Observable<CalibrationMeasurementsResponse> {
+        return this.http.get<CalibrationMeasurementsResponse>(`${this.baseUrl}/api/calibration/measurements`);
+    }
+
+    saveCalibrationMeasurements(name: string): Observable<CalibrationMeasurementResponse> {
+        return this.http.post<CalibrationMeasurementResponse>(
+            `${this.baseUrl}/api/calibration/measurements`,
+            { name }
+        );
+    }
+
+    loadCalibrationMeasurements(id: string): Observable<CalibrationMeasurementResponse> {
+        return this.http.post<CalibrationMeasurementResponse>(
+            `${this.baseUrl}/api/calibration/measurements/load`,
+            { id }
+        );
+    }
+
     // Serial Connection Status
     getSerialStatus(): Observable<SerialStatusResponse> {
         return this.http.get<SerialStatusResponse>(`${this.baseUrl}/api/serial/status`);
@@ -115,6 +276,42 @@ export class ApiService {
         return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/pull`, {});
     }
 
+    forceUpdate(): Observable<UpdateActionResponse> {
+        return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/force`, {});
+    }
+
+    adoptRepo(): Observable<UpdateActionResponse> {
+        return this.http.post<UpdateActionResponse>(`${this.baseUrl}/api/update/adopt`, {});
+    }
+
+    listUpdateBranches(): Observable<UpdateBranchesResponse> {
+        return this.http.get<UpdateBranchesResponse>(`${this.baseUrl}/api/update/branches`);
+    }
+
+    setUpdateBranch(branch: string): Observable<UpdateBranchesResponse> {
+        return this.http.post<UpdateBranchesResponse>(`${this.baseUrl}/api/update/branch`, { branch });
+    }
+
+    getUpdateSource(): Observable<UpdateSourceResponse> {
+        return this.http.get<UpdateSourceResponse>(`${this.baseUrl}/api/update/source`);
+    }
+
+    setUpdateSource(url: string): Observable<UpdateSourceResponse> {
+        return this.http.post<UpdateSourceResponse>(`${this.baseUrl}/api/update/source`, { url });
+    }
+
+    getUpdateToken(): Observable<UpdateTokenResponse> {
+        return this.http.get<UpdateTokenResponse>(`${this.baseUrl}/api/update/token`);
+    }
+
+    setUpdateToken(token: string): Observable<UpdateTokenResponse> {
+        return this.http.post<UpdateTokenResponse>(`${this.baseUrl}/api/update/token`, { token });
+    }
+
+    deleteUpdateToken(): Observable<UpdateTokenResponse> {
+        return this.http.delete<UpdateTokenResponse>(`${this.baseUrl}/api/update/token`);
+    }
+
     // Firmware Update Management
     checkFirmware(): Observable<FirmwareCheckResponse> {
         return this.http.get<FirmwareCheckResponse>(`${this.baseUrl}/api/firmware/check`);
@@ -126,5 +323,49 @@ export class ApiService {
 
     flashFirmware(): Observable<FirmwareActionResponse> {
         return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/flash`, {});
+    }
+
+    listLocalFirmwareFiles(): Observable<LocalFirmwareFilesResponse> {
+        return this.http.get<LocalFirmwareFilesResponse>(`${this.baseUrl}/api/firmware/files`);
+    }
+
+    flashSelectedFirmware(filename: string): Observable<FirmwareActionResponse> {
+        return this.http.post<FirmwareActionResponse>(`${this.baseUrl}/api/firmware/flash-selected`, { filename });
+    }
+
+    getFirmwareSource(): Observable<FirmwareSourceResponse> {
+        return this.http.get<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/source`);
+    }
+
+    setFirmwareSource(url: string): Observable<FirmwareSourceResponse> {
+        return this.http.post<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/source`, { url });
+    }
+
+    listFirmwareRepoBins(): Observable<FirmwareRepoBinsResponse> {
+        return this.http.get<FirmwareRepoBinsResponse>(`${this.baseUrl}/api/firmware/repo-files`);
+    }
+
+    setFirmwareFile(filePath: string): Observable<FirmwareSourceResponse> {
+        return this.http.post<FirmwareSourceResponse>(`${this.baseUrl}/api/firmware/file`, { file_path: filePath });
+    }
+
+    listFirmwareBranches(): Observable<FirmwareBranchesResponse> {
+        return this.http.get<FirmwareBranchesResponse>(`${this.baseUrl}/api/firmware/branches`);
+    }
+
+    setFirmwareBranch(branch: string): Observable<FirmwareBranchesResponse> {
+        return this.http.post<FirmwareBranchesResponse>(`${this.baseUrl}/api/firmware/branch`, { branch });
+    }
+
+    getFirmwareToken(): Observable<FirmwareTokenResponse> {
+        return this.http.get<FirmwareTokenResponse>(`${this.baseUrl}/api/firmware/token`);
+    }
+
+    setFirmwareToken(token: string): Observable<FirmwareTokenResponse> {
+        return this.http.post<FirmwareTokenResponse>(`${this.baseUrl}/api/firmware/token`, { token });
+    }
+
+    deleteFirmwareToken(): Observable<FirmwareTokenResponse> {
+        return this.http.delete<FirmwareTokenResponse>(`${this.baseUrl}/api/firmware/token`);
     }
 }

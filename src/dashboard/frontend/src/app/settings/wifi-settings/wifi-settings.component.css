@@ -306,79 +306,183 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   z-index: 10001;
 }
 
 .confirm-dialog {
+  width: min(380px, 95vw);
+  overflow: hidden;
   background: rgb(45, 54, 58);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  padding: 1.5rem 2rem;
-  max-width: 360px;
-  width: 90%;
-  text-align: center;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm-header {
+  min-height: 30px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.confirm-header h4 {
+  margin: 0;
+  font-size: 15px;
+  color: #fff;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+}
+
+.confirm-close {
+  width: 26px;
+  min-width: 26px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.confirm-close:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: white;
+}
+
+.confirm-body {
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .confirm-icon {
-  margin-bottom: 0.5rem;
-  color: #ffc107;
-}
-
-.confirm-dialog h4 {
-  margin: 0 0 1rem 0;
-  font-size: 1.15rem;
-  color: #fff;
-  font-weight: 500;
-}
-
-.confirm-dialog p {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.5;
-}
-
-.confirm-dialog p strong {
-  color: #fff;
+  color: #ffb74d;
+  flex: 0 0 auto;
+  display: inline-flex;
+  margin-top: 1px;
 }
 
 .confirm-text {
-  font-size: 1rem !important;
-  /* color: rgba(255, 255, 255, 0.5) !important; */
-  margin-bottom: 1.5rem !important;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.confirm-text strong {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .confirm-actions {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .btn-cancel,
 .btn-confirm {
-  padding: 8px 20px;
-  border: none;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 10.5px;
+  line-height: 1;
   font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.btn-cancel {
-  background: #6c757d;
-  color: white;
+  letter-spacing: 0.02em;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .btn-cancel:hover {
-  background: #545b62;
-}
-
-.btn-confirm {
-  background: #dc3545;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
   color: white;
 }
 
-.btn-confirm:hover {
-  background: #c82333;
+.btn-confirm {
+  color: #f5747f;
+  border-color: rgba(245, 116, 127, 0.28);
+  background: rgba(245, 116, 127, 0.06);
 }
+
+.btn-confirm:hover {
+  color: #ff9aa3;
+  border-color: rgba(245, 116, 127, 0.42);
+  background: rgba(245, 116, 127, 0.1);
+}
+
+.confirm-close:focus-visible,
+.btn-cancel:focus-visible,
+.btn-confirm:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(125, 249, 255, 0.18);
+}
+
+/* Compact settings scale shared with Software Update and Local Firmware Upload. */
+.wifi-settings { padding: 0; gap: 8px; }
+.status-message { padding: 7px 9px; font-size: 10.5px; line-height: 1.45; }
+.add-wifi-form { gap: 6px; }
+.form-group { gap: 4px; }
+.form-group label { color: rgba(255, 255, 255, 0.62); font-size: 10px; font-weight: 600; }
+.form-group input {
+  min-height: 28px;
+  padding: 2px 8px;
+  border-color: rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+}
+.password-input-wrapper input { padding-right: 30px; }
+.password-toggle { right: 3px; width: 26px; height: 26px; padding: 5px; }
+.password-toggle svg,
+.info-note svg,
+.btn-refresh svg,
+.network-info svg,
+.btn-delete svg { width: 14px; height: 14px; }
+.btn-primary {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(125, 249, 255, 0.22);
+  background: rgba(125, 249, 255, 0.04);
+  color: #7df9ff;
+  font-size: 10.5px;
+  line-height: 1;
+}
+.btn-primary:hover:not(:disabled) {
+  border-color: rgba(125, 249, 255, 0.34);
+  background: rgba(125, 249, 255, 0.07);
+  color: #b9fdff;
+}
+.add-btn { margin-top: 2px; }
+.info-note { gap: 6px; padding: 7px 9px; font-size: 10.5px; line-height: 1.45; }
+.info-note svg { margin-top: 1px; }
+.section-title { min-height: 28px; margin-bottom: 6px; padding-bottom: 5px; }
+.section-title h4 { font-size: 12px; font-weight: 600; }
+.btn-refresh,
+.btn-delete { width: 28px; height: 28px; padding: 6px; border-radius: 6px; }
+.loading,
+.empty-list { padding: 9px; font-size: 10.5px; }
+.network-item { min-height: 34px; margin-bottom: 4px; padding: 4px 8px; }
+.network-info { gap: 6px; }
+.network-name { font-size: 10.5px; }

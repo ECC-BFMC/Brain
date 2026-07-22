@@ -30,13 +30,18 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
+import base64
 import queue
 import psutil
 import json
 import inspect
-import eventlet
+import logging
 import os
 import time
+from collections import deque
+from threading import Lock
+
+import cv2
 
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
@@ -54,6 +59,8 @@ from src.dashboard.components.updates import UpdateManager
 from src.dashboard.components.firmware import FirmwareManager
 
 import src.utils.messages.allMessages as allMessages
+from src.utils.logConfig import get_logger
+from src.utils.sharedFrameBuffer import NotifiedFrameReader
 
 
 class processDashboard(WorkerProcess):
@@ -61,15 +68,19 @@ class processDashboard(WorkerProcess):
     
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-        logging (logging object): Made for debugging.
         debugging (bool): Enable debugging mode.
     """
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, ready_event=None, debugging = False):
+    def __init__(self, queueList, ready_event=None, debugging = False):
+        self.fast_stream_interval = 0.03
+        self.default_stream_interval = 0.1
+        self.fast_stream_candidates = ("serialCamera", "mainCamera")
+
+        self.cameraFrameReader = NotifiedFrameReader()
 
         self.running = True
         self.queueList = queueList
-        self.logger = logging
+        self.logger = get_logger("Dashboard")
         self.debugging = debugging
 
         # state machine
@@ -102,24 +113,25 @@ class processDashboard(WorkerProcess):
 
         # configuration
         self.table_state_file = self._get_table_state_path()
-        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-        # setup flask and socketio
-        self.app = Flask(__name__)
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='eventlet')
-        CORS(self.app, supports_credentials=True)
+        # setup flask and socketio (deferred to run)
+        self.app = None
+        self.socketio = None
 
         # components
-        self.calibration = Calibration(self.queueList, self.socketio)
-        self.wifi = WifiManager(repo_path)
-        self.updates = UpdateManager(repo_path)
-        self.firmware = FirmwareManager(repo_path)
+        self.calibration = None
+        self.wifi = None
+        self.updates = None
+        self.firmware = None
 
         # initialize message handling
         self._initialize_messages()
-        self._setup_websocket_handlers()
-        self._setup_rest_routes()
-        self._start_background_tasks()
+        self.fast_stream_messages = tuple(
+            name for name in self.fast_stream_candidates if name in self.messages
+        )
+        self.default_stream_messages = tuple(
+            name for name in self.messages if name not in self.fast_stream_messages
+        )
 
         super(processDashboard, self).__init__(self.queueList, ready_event)
     
@@ -140,6 +152,7 @@ class processDashboard(WorkerProcess):
 
     def _setup_websocket_handlers(self):
         """Setup WebSocket event handlers."""
+        self.socketio.on_event('connect', self.handle_console_connect)
         self.socketio.on_event('message', self.handle_message)
         self.socketio.on_event('save', self.handle_save_table_state)
         self.socketio.on_event('load', self.handle_load_table_state)
@@ -186,6 +199,48 @@ class processDashboard(WorkerProcess):
                 return jsonify({'success': True, 'message': 'Table state saved'})
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
+
+        # Calibration Measurement Persistence
+        @self.app.route('/api/calibration/measurements', methods=['GET'])
+        def api_list_calibration_measurements():
+            try:
+                measurements = self.calibration.list_saved_measurements()
+                return jsonify({'success': True, 'measurements': measurements})
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/api/calibration/measurements', methods=['POST'])
+        def api_save_calibration_measurements():
+            try:
+                data = flask_request.get_json() or {}
+                result = self.calibration.save_measurements(
+                    data.get('name', ''),
+                    data.get('requestedSteeringLimit')
+                )
+                return jsonify({
+                    'success': True,
+                    'message': 'Calibration measurements saved',
+                    **result
+                })
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 400
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/api/calibration/measurements/load', methods=['POST'])
+        def api_load_calibration_measurements():
+            try:
+                data = flask_request.get_json() or {}
+                result = self.calibration.load_measurements(data.get('id', ''))
+                return jsonify({
+                    'success': True,
+                    'message': 'Calibration measurements loaded',
+                    **result
+                })
+            except (ValueError, FileNotFoundError) as e:
+                return jsonify({'success': False, 'error': str(e)}), 400
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # Serial Connection Status
         @self.app.route('/api/serial/status', methods=['GET'])
@@ -200,6 +255,45 @@ class processDashboard(WorkerProcess):
         @self.app.route('/api/update/pull', methods=['POST'])
         def api_pull_updates():
             return self.updates.handle_pull()
+
+        @self.app.route('/api/update/force', methods=['POST'])
+        def api_force_update():
+            return self.updates.handle_force_pull()
+
+        @self.app.route('/api/update/adopt', methods=['POST'])
+        def api_adopt_update():
+            return self.updates.handle_adopt()
+
+        @self.app.route('/api/update/branches', methods=['GET'])
+        def api_update_branches():
+            return self.updates.handle_list_branches()
+
+        @self.app.route('/api/update/branch', methods=['POST'])
+        def api_set_update_branch():
+            data = flask_request.get_json() or {}
+            return self.updates.handle_set_branch(data.get('branch', ''))
+
+        @self.app.route('/api/update/source', methods=['GET'])
+        def api_get_update_source():
+            return self.updates.handle_get_source()
+
+        @self.app.route('/api/update/source', methods=['POST'])
+        def api_set_update_source():
+            data = flask_request.get_json() or {}
+            return self.updates.handle_set_source(data.get('url', ''))
+
+        @self.app.route('/api/update/token', methods=['GET'])
+        def api_get_update_token():
+            return self.updates.handle_get_token()
+
+        @self.app.route('/api/update/token', methods=['POST'])
+        def api_set_update_token():
+            data = flask_request.get_json() or {}
+            return self.updates.handle_set_token(data.get('token', ''))
+
+        @self.app.route('/api/update/token', methods=['DELETE'])
+        def api_delete_update_token():
+            return self.updates.handle_delete_token()
         
         # Firmware Update Management
         @self.app.route('/api/firmware/check', methods=['GET'])
@@ -209,42 +303,109 @@ class processDashboard(WorkerProcess):
         @self.app.route('/api/firmware/download', methods=['POST'])
         def api_download_firmware():
             return self.firmware.handle_download()
-        
+
+        @self.app.route('/api/firmware/files', methods=['GET'])
+        def api_list_firmware_files():
+            return self.firmware.handle_list_local_files()
+
         @self.app.route('/api/firmware/flash', methods=['POST'])
         def api_flash_firmware():
             return self.firmware.handle_flash()
+
+        @self.app.route('/api/firmware/flash-selected', methods=['POST'])
+        def api_flash_selected_firmware():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_flash_selected(data.get('filename', ''))
+
+        @self.app.route('/api/firmware/source', methods=['GET'])
+        def api_get_firmware_source():
+            return self.firmware.handle_get_source()
+
+        @self.app.route('/api/firmware/source', methods=['POST'])
+        def api_set_firmware_source():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_source(data.get('url', ''))
+
+        @self.app.route('/api/firmware/repo-files', methods=['GET'])
+        def api_list_firmware_repo_bins():
+            return self.firmware.handle_list_repo_bins()
+
+        @self.app.route('/api/firmware/file', methods=['POST'])
+        def api_set_firmware_file():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_file(data.get('file_path', ''))
+
+        @self.app.route('/api/firmware/branches', methods=['GET'])
+        def api_list_firmware_branches():
+            return self.firmware.handle_list_branches()
+
+        @self.app.route('/api/firmware/branch', methods=['POST'])
+        def api_set_firmware_branch():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_branch(data.get('branch', ''))
+
+        @self.app.route('/api/firmware/token', methods=['GET'])
+        def api_get_firmware_token():
+            return self.firmware.handle_get_token()
+
+        @self.app.route('/api/firmware/token', methods=['POST'])
+        def api_set_firmware_token():
+            data = flask_request.get_json() or {}
+            return self.firmware.handle_set_token(data.get('token', ''))
+
+        @self.app.route('/api/firmware/token', methods=['DELETE'])
+        def api_delete_firmware_token():
+            return self.firmware.handle_delete_token()
+
+
+    def _spawn_after(self, delay, target, *args):
+        """Run target(*args) after delay seconds in a SocketIO background task."""
+        def runner():
+            self.socketio.sleep(delay)
+            target(*args)
+        self.socketio.start_background_task(runner)
 
 
     def _start_background_tasks(self):
         """Start background monitoring tasks."""
         psutil.cpu_percent(interval=1, percpu=False)
 
-        eventlet.spawn(self.update_hardware_data)
-        eventlet.spawn(self.send_continuous_messages)
-        eventlet.spawn(self.send_hardware_data_to_frontend)
-        eventlet.spawn(self.send_heartbeat)
-        eventlet.spawn(self.stream_console_logs)
+        self.socketio.start_background_task(self.update_hardware_data)
+        self.socketio.start_background_task(self.send_continuous_messages, self.fast_stream_messages, self.fast_stream_interval)
+        self.socketio.start_background_task(self.send_continuous_messages, self.default_stream_messages, self.default_stream_interval)
+        self.socketio.start_background_task(self.send_hardware_data_to_frontend)
+        self.socketio.start_background_task(self.send_heartbeat)
+        self.socketio.start_background_task(self.stream_console_logs)
+
+    def handle_console_connect(self, auth=None):
+        """Replay terminal lines emitted before this browser connected."""
+        with self.console_history_lock:
+            history = list(self.console_history)
+
+        for msg in history:
+            self.socketio.emit('console_log', {'data': msg}, room=request.sid)
+
+
 
     def stream_console_logs(self):
         """Monitor the Log queue and emit messages to frontend."""
         log_queue = self.queueList.get("Log")
-        if not log_queue:
+        if log_queue is None:
             return
 
         while self.running:
             try:
-                while not log_queue.empty():
-                    msg = log_queue.get_nowait()
-                    self.socketio.emit('console_log', {'data': msg})
-                    eventlet.sleep(0)
-                
-                eventlet.sleep(0.1)
+                msg = log_queue.get(timeout=0.1)
+                with self.console_history_lock:
+                    self.console_history.append(msg)
+                self.socketio.emit('console_log', {'data': msg})
+                self.socketio.sleep(0)
             except queue.Empty:
-                eventlet.sleep(0.1)
+                pass
             except Exception as e:
                 if self.debugging:
                     self.logger.error(f"Error streaming logs: {e}")
-                eventlet.sleep(1)
+                self.socketio.sleep(1)
 
 
     # ===================================== STOP ==========================================
@@ -257,10 +418,38 @@ class processDashboard(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing method."""
+        repo_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        # silence Werkzeug's per-request access logging
+        self._configure_dashboard_output()
+        self.console_history = deque(maxlen=500)
+        self.console_history_lock = Lock()
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+        # silence Flask's dev-server startup banner (" * Serving Flask app...",
+        # " * Debug mode: ...") which is printed directly, not via logging.
+        import flask.cli
+        flask.cli.show_server_banner = lambda *args, **kwargs: None
+
+        # setup flask and socketio
+        self.app = Flask(__name__)
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading')
+        CORS(self.app, supports_credentials=True)
+
+        # components
+        self.calibration = Calibration(self.queueList, self.socketio)
+        self.wifi = WifiManager(repo_path)
+        self.updates = UpdateManager(repo_path)
+        self.firmware = FirmwareManager(repo_path)
+
+        self._setup_websocket_handlers()
+        self._setup_rest_routes()
+        self._start_background_tasks()
+
         if self.ready_event:
             self.ready_event.set()
 
-        self.socketio.run(self.app, host='0.0.0.0', port=5005)
+        self.socketio.run(self.app, host='0.0.0.0', port=5005, allow_unsafe_werkzeug=True)
 
 
     def subscribe(self):
@@ -304,7 +493,7 @@ class processDashboard(WorkerProcess):
             if dataName == "SessionAccess":
                 self.handle_single_user_session(socketId)
             elif self.sessionActive and self.activeUser != socketId:
-                print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;93mWARNING\033[0m - Message received from unauthorized user \033[94m{socketId}\033[0m")
+                get_logger("Dashboard").warning(f"Message received from unauthorized user {socketId}")
                 return
 
             if dataName == "Heartbeat":
@@ -353,14 +542,14 @@ class processDashboard(WorkerProcess):
         if not self.sessionActive:
             self.sessionActive = True
             self.activeUser = socketId
-            print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;92mINFO\033[0m - Session access granted to \033[94m{socketId}\033[0m")
+            get_logger("Dashboard").info(f"Session access granted to {socketId}")
             self.socketio.emit('session_access', {'data': True}, room=socketId)
             self.send_message_to_brain("RequestSteerLimits", {"Value": True})
         elif self.activeUser == socketId:
             self.socketio.emit('session_access', {'data': True}, room=socketId)
             self.send_message_to_brain("RequestSteerLimits", {"Value": True})
         else:
-            print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;92mINFO\033[0m - Session access denied to \033[94m{socketId}\033[0m")
+            get_logger("Dashboard").info(f"Session access denied to {socketId}")
             self.socketio.emit('session_access', {'data': False}, room=socketId)
 
 
@@ -409,11 +598,23 @@ class processDashboard(WorkerProcess):
 
     def update_hardware_data(self):
         """Monitor and update hardware metrics periodically."""
-        self.cpuCoreUsage = psutil.cpu_percent(interval=None, percpu=False)
-        self.memoryUsage = psutil.virtual_memory().percent
-        self.cpuTemperature = round(psutil.sensors_temperatures()['cpu_thermal'][0].current)
+        try:
+            self.cpuCoreUsage = psutil.cpu_percent(interval=None, percpu=False)
+        except Exception:
+            self.cpuCoreUsage = 0
 
-        eventlet.spawn_after(1, self.update_hardware_data)
+        try:
+            self.memoryUsage = psutil.virtual_memory().percent
+        except Exception:
+            self.memoryUsage = 0
+            
+        try:
+            temps = psutil.sensors_temperatures()
+            self.cpuTemperature = round(temps["cpu_thermal"][0].current) if temps.get("cpu_thermal") else 0
+        except Exception:
+            self.cpuTemperature = 0
+
+        self._spawn_after(1, self.update_hardware_data)
 
 
     def send_heartbeat(self):
@@ -426,26 +627,36 @@ class processDashboard(WorkerProcess):
             if self.heartbeat_retries < self.heartbeat_max_retries:
                 self.socketio.emit('heartbeat', {'data': 'Heartbeat'})
             else:
-                print(f"\033[1;97m[ Dashboard ] :\033[0m \033[1;93mWARNING\033[0m - Connection lost with peer \033[94m{self.activeUser}\033[0m")
+                get_logger("Dashboard").warning(f"Connection lost with peer {self.activeUser}")
                 self.socketio.emit('heartbeat_disconnect', {'data': 'Heartbeat timeout'})
                 self.sessionActive = False
                 self.activeUser = None
                 self.heartbeat_retries = 0
 
-            eventlet.spawn_after(self.heartbeat_time_between_retries, self.send_heartbeat)
+            self._spawn_after(self.heartbeat_time_between_retries, self.send_heartbeat)
         else:
             self.heartbeat_received = False
-            eventlet.spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
+            self._spawn_after(self.heartbeat_time_between_heartbeats, self.send_heartbeat)
 
 
-    def send_continuous_messages(self):
+    def send_continuous_messages(self, message_names, interval):
         """Process and send subscriber messages to the frontend."""
         if not self.running:
             return
 
-        for msg, subscriber in self.messages.items():
+        for msg in message_names:
+            subscriber = self.messages.get(msg)
+            if subscriber is None:
+                continue
+
             resp = subscriber["obj"].receive()
             if resp is not None:
+                if msg == "serialCamera":
+                    # camera messages carry a shared-memory notification, not
+                    # pixels: read the frame and encode it here
+                    self._emitCameraFrame(resp)
+                    continue
+
                 if msg == "SerialConnectionState":
                     self.serialConnected = resp
 
@@ -453,7 +664,23 @@ class processDashboard(WorkerProcess):
                 if self.debugging:
                     self.logger.info(f"{msg}: {resp}")
 
-        eventlet.spawn_after(0.1, self.send_continuous_messages)
+        self._spawn_after(interval, self.send_continuous_messages, message_names, interval)
+
+
+    def _emitCameraFrame(self, notification):
+        """Reads the newest camera frame from shared memory, JPEG/base64 encodes
+        it and emits it to the frontend."""
+        try:
+            result = self.cameraFrameReader.read(notification)
+            if result is None:
+                return  # no new frame since the last emit
+            frame, _, _ = result
+
+            _, encoded = cv2.imencode(".jpg", frame)
+            data = base64.b64encode(encoded).decode("utf-8")
+            self.socketio.emit("serialCamera", {"value": data})
+        except Exception:
+            self.logger.exception("Failed to emit the camera frame")
 
 
     def send_hardware_data_to_frontend(self):
@@ -469,4 +696,4 @@ class processDashboard(WorkerProcess):
             }
         })
 
-        eventlet.spawn_after(1.0, self.send_hardware_data_to_frontend)
+        self._spawn_after(1.0, self.send_hardware_data_to_frontend)

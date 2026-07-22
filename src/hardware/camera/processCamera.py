@@ -30,7 +30,6 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
-from cv2 import meanShift
 from src.templates.workerprocess import WorkerProcess
 from src.hardware.camera.threads.threadCamera import threadCamera
 from src.statemachine.stateMachine import StateMachine
@@ -43,15 +42,14 @@ class processCamera(WorkerProcess):
     """This process handle camera.\n
     Args:
             queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-            logging (logging object): Made for debugging.
             debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, ready_event=None, debugging=False):
+    def __init__(self, queueList, ready_event=None, debugging=False, dev_mode=False):
         self.queuesList = queueList
-        self.logging = logging
         self.debugging = debugging
+        self.dev_mode = dev_mode
         self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
         super(processCamera, self).__init__(self.queuesList, ready_event)
@@ -70,9 +68,7 @@ class processCamera(WorkerProcess):
     # ===================================== INIT TH ======================================
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
-        camTh = threadCamera(
-         self.queuesList, self.logging, self.debugging
-        )
+        camTh = threadCamera(self.queuesList, self.debugging, self.dev_mode)
         self.threads.append(camTh)
 
 
@@ -80,14 +76,13 @@ class processCamera(WorkerProcess):
 #             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
 #                  in terminal:    python3 processCamera.py
 if __name__ == "__main__":
-    from multiprocessing import Queue, Event
+    from multiprocessing import Queue
     import time
-    import logging
     import cv2
-    import base64
-    import numpy as np
 
-    allProcesses = list()
+    from src.gateway.processGateway import processGateway
+    from src.utils.messages.allMessages import serialCamera
+    from src.utils.sharedFrameBuffer import NotifiedFrameReader
 
     debugg = True
 
@@ -98,28 +93,35 @@ if __name__ == "__main__":
         "Config": Queue(),
     }
 
-    logger = logging.getLogger()
+    # the gateway is needed: it routes the frame notifications and tells the
+    # camera that someone subscribed (otherwise no stream is produced)
+    gateway = processGateway(queueList)
+    gateway.start()
 
-    process = processCamera(queueList, logger, debugg)
+    subscriber = messageHandlerSubscriber(queueList, serialCamera, "lastOnly", True)
 
+    process = processCamera(queueList, debugg)
     process.daemon = True
     process.start()
 
-    time.sleep(4)
     if debugg:
-        logger.warning("getting")
-    img = {"msgValue": 1}
-    while not isinstance(img["msgValue"], str):
-        img = queueList["General"].get()
-    
-    msg_value = img["msgValue"]
-    if isinstance(msg_value, str):
-        image_data = base64.b64decode(msg_value)
-    else:
-        raise ValueError("Expected string for base64 decoding")
-    img = np.frombuffer(image_data, dtype=np.uint8)
-    image = cv2.imdecode(img, cv2.IMREAD_COLOR)
+        print("getting")
+    frameReader = NotifiedFrameReader()
+    result = None
+    deadline = time.time() + 10
+    while result is None and time.time() < deadline:
+        notification = subscriber.receive()
+        if notification is not None:
+            result = frameReader.read(notification)
+        time.sleep(0.05)
+    if result is None:
+        raise TimeoutError("No camera frame received")
+
+    frame, timestamp, seq = result
     if debugg:
-        logger.warning("got")
-    cv2.imwrite("test.jpg", image)
+        print(f"got frame {seq} at {timestamp}")
+    cv2.imwrite("test.jpg", frame)
+    frameReader.close()
+
     process.stop()
+    gateway.stop()

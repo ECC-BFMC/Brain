@@ -49,15 +49,18 @@ export class InstantConsumptionComponent {
   private angleAmplifier: number = 0.5;
   private instantSubscription: Subscription | undefined;
   private klSubscription: Subscription | undefined;
+  private mobileDrivingSubscription: Subscription | undefined;
   private _currentValueAh: number = 0;
   private _showWarning: boolean = false;
-  
+  private _isMobileDriving: boolean = false;
+
   get currentValueAh(): number {
     return this._currentValueAh;
   }
-  
+
   get showWarning(): boolean {
-    return this._showWarning;
+    // Suppress the high-consumption warning while driving on mobile.
+    return this._showWarning && !this._isMobileDriving;
   }
   
   constructor( private  webSocketService: WebSocketService, private clusterService: ClusterService) { }
@@ -86,6 +89,13 @@ export class InstantConsumptionComponent {
       }
     });
 
+    // Hide the warning while in mobile driving mode.
+    this.mobileDrivingSubscription = this.clusterService.isMobileDriving$.subscribe({
+      next: (isMobileDriving) => {
+        this._isMobileDriving = isMobileDriving;
+      }
+    });
+
     // Listen for KL state changes
     this.klSubscription = this.clusterService.kl$.subscribe({
       next: (klState) => {
@@ -111,6 +121,9 @@ export class InstantConsumptionComponent {
     }
     if (this.klSubscription) {
       this.klSubscription.unsubscribe();
+    }
+    if (this.mobileDrivingSubscription) {
+      this.mobileDrivingSubscription.unsubscribe();
     }
     this.webSocketService.disconnectSocket();
   }

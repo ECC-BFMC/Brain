@@ -50,6 +50,7 @@ from src.utils.messages.allMessages import (
 )
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.logConfig import get_logger
 
 
 class threadWrite(ThreadWithStop):
@@ -58,18 +59,16 @@ class threadWrite(ThreadWithStop):
     Args:
         queues (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
         process (processSerialHandler): ProcessSerialHandler object.
-        logFile (FileHandler): The path to the history file where you can find the logs from the connection.
         example (bool, optional): Flag for exmaple activation. Defaults to False.
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, process, logFile, queues, logger, debugger = False, example=False):
+    def __init__(self, process, queues, debugger = False, example=False):
         super(threadWrite, self).__init__(pause=0.001)
         self.process = process
         self.queuesList = queues
-        self.logFile = logFile
         self.exampleFlag = example
-        self.logger = logger
+        self.logger = get_logger("Serial Handler")
         self.debugger = debugger
 
         self.running = False
@@ -121,12 +120,13 @@ class threadWrite(ThreadWithStop):
                     serialCon = self.process.serialCon
                     if serialCon and self.process.serialConnected and serialCon.is_open:
                         serialCon.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
+                        # Command history: log file only, keep it off the console.
+                        self.logger.info(command_msg.strip(), extra={"file_only": True})
 
-            except Exception as e:
+            except Exception:
                 if self._should_send_error():
                     self.serialConnectionStateSender.send(False)
-                    print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - Failed to write to serial ({e})")
+                    self.logger.exception("Failed to write to serial")
 
     def load_config(self, configType):
         with open(self.configPath, "r") as file:
@@ -273,8 +273,8 @@ class threadWrite(ThreadWithStop):
                     command = {"action": "imu", "activate": int(imuRecv)}
                     self.send_to_serial(command)
 
-        except Exception as e:
-            print(f"\033[1;97m[ Serial Handler ] :\033[0m \033[1;91mERROR\033[0m - {e}")
+        except Exception:
+            self.logger.exception("Serial write loop failed")
             self.serialConnectionStateSender.send(False)
 
     # ==================================== START =========================================

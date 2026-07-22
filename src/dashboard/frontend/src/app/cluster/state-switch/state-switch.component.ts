@@ -194,7 +194,15 @@ export class StateSwitchComponent implements OnInit {
     return `calc(${percentage}%)`;
   }
 
-  public onButtonPress(direction: string): void {
+  public onButtonPress(event: PointerEvent, direction: string): void {
+    // Capture the pointer so this button keeps receiving the matching
+    // pointerup even if the finger drifts off it — this lets the user hold a
+    // steer button reliably (and steer + change speed with another finger).
+    const target = event.target as Element;
+    if (target && target.setPointerCapture) {
+      try { target.setPointerCapture(event.pointerId); } catch { }
+    }
+
     if (direction == "left") {
       this.stopDecreasingSteering();
       this.startSteeringLeft();
@@ -208,6 +216,10 @@ export class StateSwitchComponent implements OnInit {
   public onButtonRelease(): void {
     this.stopSteering();
     this.startDecreasingSteer();
+  }
+
+  public brake(): void {
+    this.brakeReset();
   }
 
   public increaseSpeed(): void {

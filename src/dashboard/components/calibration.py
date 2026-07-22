@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import copy
+import json
 import math
 import numpy as np
 import warnings
@@ -34,8 +35,9 @@ import re
 import zipfile
 import os
 import base64
+from datetime import datetime
 from io import BytesIO
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 
 from string import Template
 
@@ -43,6 +45,7 @@ from src.utils.messages.allMessages import ControlCalib, CalibPWMData, CalibRunD
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.statemachine.stateMachine import StateMachine
+from src.utils.logConfig import get_logger
 
 
 class Calibration():
@@ -62,6 +65,15 @@ class Calibration():
 
         self.current_step = 0
         self.socketio = socketio
+        self.steer_point_merge_tolerance_deg = 0.8
+        self.steer_synthetic_endpoint_deg = 27.2
+        self.steer_synthetic_gap_tolerance_deg = 0.5
+        self.steer_synthetic_slope_damping = 0.75
+        self.steer_synthetic_pwm_margin = 5.0
+        self.speed_synthetic_endpoint_mm_s = 550.0
+        self.speed_synthetic_gap_tolerance_mm_s = 20.0
+        self.speed_synthetic_slope_damping = 0.75
+        self.speed_synthetic_pwm_margin = 5.0
         
         self.valid_angles = []  # store all angles that fall within tolerance range
         self.max_angle_left = None  # store the final max angle for left steering
@@ -167,7 +179,7 @@ class Calibration():
                 'success': True,
                 'zipData': zip_data
             }, room=socketId)
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;92mCalibration files successfully generated and saved\033[0m")
+            get_logger("Calibration").info(f"Calibration files successfully generated and saved")
 
         elif action == 'get_status':
             self.send_calibration_status(socketId)
@@ -205,19 +217,23 @@ class Calibration():
         }
         
         if len(speed_points) >= 2:
-            spline_data, err = self.fit_cubic_spline(speed_points, "Speed")
+            spline_data, err, filtered_speed_points, synthetic_speed_points = self.fit_cubic_spline(speed_points, "Speed")
             if spline_data is not None:
                 response['speedData'] = {
                     'points': speed_points,
+                    'filteredPoints': filtered_speed_points,
+                    'syntheticPoints': synthetic_speed_points,
                     'spline': spline_data,
                     'error': err
                 }
         
         if len(steer_points) >= 2:
-            spline_data, err = self.fit_cubic_spline(steer_points, "Steer")
+            spline_data, err, filtered_steer_points, synthetic_steer_points = self.fit_cubic_spline(steer_points, "Steer")
             if spline_data is not None:
                 response['steerData'] = {
                     'points': steer_points,
+                    'filteredPoints': filtered_steer_points,
+                    'syntheticPoints': synthetic_steer_points,
                     'spline': spline_data,
                     'error': err
                 }
@@ -225,24 +241,14 @@ class Calibration():
                 # Evaluate adjusted limit points for display
                 limit_points = []
                 if self.max_angle_left is not None or self.max_angle_right is not None:
-                    # Recreate cs for evaluation
-                    grouped_points = {}
-                    for x, y in steer_points:
-                        if y not in grouped_points:
-                            grouped_points[y] = []
-                        grouped_points[y].append(x)
-
-                    filtered_points = []
-                    for y, x_values in grouped_points.items():
-                        avg_x = np.mean(x_values)
-                        filtered_points.append([avg_x, y])
-
-                    filtered_points.sort(key=lambda p: p[0])
-                    x_all, y_all = zip(*filtered_points)
+                    fit_points = filtered_steer_points
+                    if synthetic_steer_points:
+                        fit_points = sorted(fit_points + synthetic_steer_points, key=lambda point: point[0])
+                    x_all, y_all = zip(*fit_points)
                     x_all, y_all = np.array(x_all), np.array(y_all)
 
                     try:
-                        cs = CubicSpline(x_all, y_all, bc_type='natural')
+                        cs = PchipInterpolator(x_all, y_all)
 
                         # Adjust limits by steering offset
                         if self.max_angle_left is not None:
@@ -258,7 +264,7 @@ class Calibration():
                             limit_points.append([scaled, int(pwm)])
 
                     except Exception as e:
-                        print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Could not evaluate limit points: {e}")
+                        get_logger("Calibration").error(f"Could not evaluate limit points: {e}")
 
                 response['limitPointsData'] = {
                     'points': limit_points,
@@ -275,10 +281,6 @@ class Calibration():
             'zeroOffsetData': self.zero_offset_spline_data_for_frontend
         }
         self.socketio.emit('Calibration', response, room=socketId)
-        # if self.zero_offset_spline_data_for_frontend:
-        #     print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mZero offset spline data sent to frontend\033[0m")
-        # else:
-        #     print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - No zero offset spline data to send")
 
 
     def send_current_run_value(self, direction, socketId):
@@ -349,7 +351,7 @@ class Calibration():
 
         # a cubic spline requires at least 4 points
         if len(focused_points) < 4:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough points for cubic spline interpolation ({len(focused_points)} found), using 0° as fallback. At least 4 are needed.")
+            get_logger("Calibration").warning(f"Not enough points for cubic spline interpolation ({len(focused_points)} found), using 0° as fallback. At least 4 are needed.")
             corrected_steer = 0
             self.zero_offset_spline_data_for_frontend = None
         else:
@@ -358,7 +360,7 @@ class Calibration():
             
             actual_steers = [p[1] for p in focused_points]
             if not (any(s < 0 for s in actual_steers) and any(s > 0 for s in actual_steers)):
-                print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Focused calibration points do not bracket actual_steer=0. Cannot interpolate accurately. Using 0° as fallback.")
+                get_logger("Calibration").warning(f"Focused calibration points do not bracket actual_steer=0. Cannot interpolate accurately. Using 0° as fallback.")
                 corrected_steer = 0
                 self.zero_offset_spline_data_for_frontend = None
             else:
@@ -376,7 +378,7 @@ class Calibration():
                     unique_points.append([sum(desireds) / len(desireds), actual])
 
                 if len(unique_points) < 4:
-                    print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough unique points for cubic spline ({len(unique_points)} found), using 0° as fallback. At least 4 are needed.")
+                    get_logger("Calibration").warning(f"Not enough unique points for cubic spline ({len(unique_points)} found), using 0° as fallback. At least 4 are needed.")
                     corrected_steer = 0
                     self.zero_offset_spline_data_for_frontend = None
                 else:
@@ -408,14 +410,14 @@ class Calibration():
                         }
 
                     except Exception as e:
-                        print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Cubic spline interpolation failed: {e}. Using 0° as fallback.")
+                        get_logger("Calibration").error(f"Cubic spline interpolation failed: {e}. Using 0° as fallback.")
                         corrected_steer = 0
                         self.zero_offset_spline_data_for_frontend = None
         
         # store the steering offset for limit adjustment
         self.steering_offset = corrected_steer
 
-        print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;94mCorrected steer: {corrected_steer}\033[0m")
+        get_logger("Calibration").info(f"Corrected steer: {corrected_steer}")
         self.controlCalibSender.send({
             'Time': self.test_run['time'], 
             'Speed': self.test_run['speed'], 
@@ -456,7 +458,7 @@ class Calibration():
         # we need to use current_step - 1 to get the command that was just executed
         command_index = self.current_step - 1
         if command_index < 0 or command_index >= len(self.commands[direction]):
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Invalid command index {command_index}")
+            get_logger("Calibration").error(f"Invalid command index {command_index}")
             return
         
         target_command = self.commands[direction][command_index]
@@ -604,41 +606,162 @@ class Calibration():
         return res // scale, False
 
 
-    def fit_cubic_spline(self, points, type):
-        """Fit a cubic spline to the calibration points."""
-
+    def _merge_points_by_x_tolerance(self, points, tolerance):
+        """Merge adjacent points whose measured x values are effectively equal."""
         if len(points) < 2:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough points to calculate spline for {type}")
-            return None, None
+            return points
 
+        merged_points = []
+        cluster = [points[0]]
+        for point in points[1:]:
+            cluster_mean = float(np.mean([item[0] for item in cluster]))
+            if abs(point[0] - cluster_mean) <= tolerance:
+                cluster.append(point)
+            else:
+                merged_points.append([
+                    float(np.mean([item[0] for item in cluster])),
+                    float(np.mean([item[1] for item in cluster])),
+                ])
+                cluster = [point]
+        merged_points.append([
+            float(np.mean([item[0] for item in cluster])),
+            float(np.mean([item[1] for item in cluster])),
+        ])
+        return merged_points
+
+    def _prepare_curve_points(self, points, type):
         grouped_points = {}
         for x, y in points:
-            if y not in grouped_points:
-                grouped_points[y] = []
-            grouped_points[y].append(x)
-        
+            grouped_points.setdefault(y, []).append(x)
+
         filtered_points = []
         for y, x_values in grouped_points.items():
-            avg_x = np.mean(x_values)
-            filtered_points.append([avg_x, y])
-        
-        # sort the points by the x-value after averaging
+            filtered_points.append([float(np.mean(x_values)), float(y)])
         filtered_points.sort(key=lambda p: p[0])
 
-        if len(filtered_points) < 2:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;93mWARNING\033[0m - Not enough unique points after filtering to calculate spline for {type}")
-            return None, None
+        merged = []
+        for point in filtered_points:
+            if merged and math.isclose(point[0], merged[-1][0], abs_tol=1e-9):
+                merged[-1][1] = (merged[-1][1] + point[1]) / 2.0
+            else:
+                merged.append(point)
 
-        x_all, y_all = zip(*filtered_points)
+        if type == "Steer" and len(merged) >= 2:
+            merged = self._merge_points_by_x_tolerance(
+                merged,
+                self.steer_point_merge_tolerance_deg * self.STEER_SCALING_FACTOR,
+            )
+        return merged
+
+    def _estimate_tail_pwm_slope(self, tail_points, expected_sign=None):
+        if tail_points is None or len(tail_points) < 2:
+            return None
+
+        ordered = sorted([[float(x), float(y)] for x, y in tail_points], key=lambda point: point[0])
+        slopes = []
+        for first, second in zip(ordered, ordered[1:]):
+            dx = second[0] - first[0]
+            if abs(dx) <= 1e-9:
+                continue
+            slope = (second[1] - first[1]) / dx
+            if expected_sign is None or slope * expected_sign > 0:
+                slopes.append(float(slope))
+
+        span_dx = ordered[-1][0] - ordered[0][0]
+        if abs(span_dx) > 1e-9:
+            span_slope = (ordered[-1][1] - ordered[0][1]) / span_dx
+            if expected_sign is None or span_slope * expected_sign > 0:
+                slopes.append(float(span_slope))
+        return float(np.median(slopes)) if slopes else None
+
+    def _build_synthetic_endpoint_points(self, filtered_points, endpoint_x, gap_tolerance_x,
+                                         slope_damping, pwm_margin, monotonic_sign):
+        if filtered_points is None or len(filtered_points) < 2:
+            return []
+
+        synthetic_points = []
+        side_configs = (
+            ("left", [point for point in filtered_points if point[0] <= 0], -endpoint_x),
+            ("right", [point for point in filtered_points if point[0] >= 0], endpoint_x),
+        )
+        for side, side_points, target_x in side_configs:
+            if len(side_points) < 2:
+                continue
+            if side == "left":
+                edge_point = side_points[0]
+                tail_points = side_points[:min(3, len(side_points))]
+                gap_to_target = edge_point[0] - target_x
+            else:
+                edge_point = side_points[-1]
+                tail_points = side_points[-min(3, len(side_points)):]
+                gap_to_target = target_x - edge_point[0]
+
+            if gap_to_target <= gap_tolerance_x:
+                continue
+            slope = self._estimate_tail_pwm_slope(tail_points, expected_sign=monotonic_sign)
+            if slope is None:
+                continue
+
+            synthetic_y = edge_point[1] + (slope * slope_damping) * (target_x - edge_point[0])
+            if monotonic_sign >= 0:
+                synthetic_y = (min(synthetic_y, edge_point[1] - pwm_margin) if side == "left"
+                               else max(synthetic_y, edge_point[1] + pwm_margin))
+            else:
+                synthetic_y = (max(synthetic_y, edge_point[1] + pwm_margin) if side == "left"
+                               else min(synthetic_y, edge_point[1] - pwm_margin))
+            if math.isfinite(synthetic_y):
+                synthetic_points.append([float(target_x), float(synthetic_y)])
+        return sorted(synthetic_points, key=lambda point: point[0])
+
+    def _build_steering_synthetic_points(self, filtered_points):
+        return self._build_synthetic_endpoint_points(
+            filtered_points,
+            self.steer_synthetic_endpoint_deg * self.STEER_SCALING_FACTOR,
+            self.steer_synthetic_gap_tolerance_deg * self.STEER_SCALING_FACTOR,
+            self.steer_synthetic_slope_damping,
+            self.steer_synthetic_pwm_margin,
+            1,
+        )
+
+    def _build_speed_synthetic_points(self, filtered_points):
+        if filtered_points is None or len(filtered_points) < 2:
+            return []
+        monotonic_sign = 1 if filtered_points[-1][1] >= filtered_points[0][1] else -1
+        return self._build_synthetic_endpoint_points(
+            filtered_points,
+            self.speed_synthetic_endpoint_mm_s,
+            self.speed_synthetic_gap_tolerance_mm_s,
+            self.speed_synthetic_slope_damping,
+            self.speed_synthetic_pwm_margin,
+            monotonic_sign,
+        )
+
+    def fit_cubic_spline(self, points, type):
+        """Fit a shape-preserving piecewise cubic curve with guarded endpoint extension."""
+        if len(points) < 2:
+            get_logger("Calibration").warning(f"Not enough points to calculate spline for {type}")
+            return None, None, None, []
+
+        filtered_points = self._prepare_curve_points(points, type)
+        if len(filtered_points) < 2:
+            get_logger("Calibration").warning(f"Not enough unique points after filtering to calculate spline for {type}")
+            return None, None, filtered_points, []
+
+        synthetic_points = []
+        if type == "Steer":
+            synthetic_points = self._build_steering_synthetic_points(filtered_points)
+        elif type == "Speed":
+            synthetic_points = self._build_speed_synthetic_points(filtered_points)
+        spline_points = sorted(filtered_points + synthetic_points, key=lambda point: point[0])
+
+        x_all, y_all = zip(*spline_points)
         x_all, y_all = np.array(x_all), np.array(y_all)
 
-        # create cubic spline interpolation
-        # use natural boundary conditions (second derivative = 0 at boundaries)
         try:
-            cs = CubicSpline(x_all, y_all, bc_type='natural')
+            cs = PchipInterpolator(x_all, y_all)
         except Exception as e:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mERROR\033[0m - Could not create cubic spline for {type}: {e}")
-            return None, None
+            get_logger("Calibration").error(f"Could not create cubic spline for {type}: {e}")
+            return None, None, filtered_points, synthetic_points
         
         # extract spline coefficients for each segment
         # CubicSpline stores coefficients in shape (n_segments, 4) where each row is [a, b, c, d]
@@ -649,11 +772,11 @@ class Calibration():
             'n_segments': len(x_all) - 1
         }
         
-        # calculate error by evaluating spline at original points
-        y_pred = cs(x_all)
-        err = np.mean((y_all - y_pred)**2)
-        
-        return spline_data, err
+        filtered_x, filtered_y = zip(*filtered_points)
+        y_pred = cs(np.array(filtered_x))
+        err = np.mean((np.array(filtered_y) - y_pred)**2)
+
+        return spline_data, err, filtered_points, synthetic_points
 
 
     def generate_code_from_spline(self, spline_data, type):
@@ -729,9 +852,9 @@ class Calibration():
     def write_calibration_to_file(self, new_code, type):
         """Write the generated calibration code to the appropriate file."""
         if type == "Speed":
-            filename = "calibration/templates/speedingmotor.cpp"
+            filename = "runtime/calibration/templates/speedingmotor.cpp"
         elif type == "Steer":
-            filename = "calibration/templates/steeringmotor.cpp"
+            filename = "runtime/calibration/templates/steeringmotor.cpp"
         
         start_marker = "// POLYNOMIAL CODE START"
         end_marker = "// POLYNOMIAL CODE END"
@@ -762,7 +885,7 @@ class Calibration():
                     f"#define calib_sup_limit {adjusted_sup_limit}",
                     new_content
                 )
-                print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mSet calib_sup_limit to {adjusted_sup_limit} (original: {sup_limit}, offset: {offset_scaled})")
+                get_logger("Calibration").info(f"Set calib_sup_limit to {adjusted_sup_limit} (original: {sup_limit}, offset: {offset_scaled})")
             
             if self.max_angle_left is not None:
                 inf_limit = int(-self.max_angle_left * self.STEER_SCALING_FACTOR)
@@ -772,7 +895,7 @@ class Calibration():
                     f"#define calib_inf_limit {adjusted_inf_limit}",
                     new_content
                 )
-                print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;96mSet calib_inf_limit to {adjusted_inf_limit} (original: {inf_limit}, offset: {offset_scaled})")
+                get_logger("Calibration").info(f"Set calib_inf_limit to {adjusted_inf_limit} (original: {inf_limit}, offset: {offset_scaled})")
 
         output_dir = "calibration/source/drivers"
         if not os.path.exists(output_dir):
@@ -794,7 +917,7 @@ class Calibration():
         if len(points) < 2:
             return
 
-        spline_data, err = self.fit_cubic_spline(points, type)
+        spline_data, err, _, _ = self.fit_cubic_spline(points, type)
         if spline_data is None:
             return
 
@@ -909,12 +1032,259 @@ class Calibration():
         self.zero_offset_spline_data_for_frontend = None
 
 
+    def _get_saved_measurements_dir(self):
+        measurements_dir = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            '..',
+            '..',
+            'runtime',
+            'calibration',
+            'measurements'
+        )
+        return os.path.abspath(measurements_dir)
+
+
+    def _normalize_measurement_id(self, name):
+        normalized = re.sub(r'[^a-zA-Z0-9._-]+', '_', (name or '').strip().lower())
+        normalized = normalized.strip('._-')
+        return normalized or 'calibration'
+
+
+    def _build_saved_measurement_path(self, measurement_id):
+        return os.path.join(
+            self._get_saved_measurements_dir(),
+            f"{self._normalize_measurement_id(measurement_id)}.json"
+        )
+
+
+    def _build_saved_measurement_summary(self, payload, fallback_id=None, fallback_name=None):
+        measurement_id = (
+            payload.get('id')
+            or fallback_id
+            or self._normalize_measurement_id(payload.get('name', fallback_name or 'calibration'))
+        )
+        return {
+            'id': self._normalize_measurement_id(measurement_id),
+            'name': payload.get('name') or fallback_name or 'Calibration',
+            'mode': 'basic',
+            'modeLabel': '1D cubic spline',
+            'measurementMode': 'manual',
+            'measurementModeLabel': 'Manual measurements',
+            'savedAt': payload.get('savedAt')
+        }
+
+
+    def _build_calibration_state_response(self):
+        return {
+            'mode': 'basic',
+            'modeLabel': '1D cubic spline',
+            'measurementMode': 'manual',
+            'measurementModeLabel': 'Manual measurements',
+            'useDummyData': False,
+            'forward': False,
+            'left': self.left_completed,
+            'right': self.right_completed,
+            'backward': self.backward_completed,
+            'testRun': self.test_run_completed,
+            'steeringOffset': self.steering_offset,
+            'maxAngleLeft': self.max_angle_left,
+            'maxAngleRight': self.max_angle_right
+        }
+
+
+    def _serialize_saved_measurement(self, name):
+        return {
+            'schemaVersion': 2,
+            'id': self._normalize_measurement_id(name),
+            'name': name.strip(),
+            'savedAt': datetime.now().astimezone().isoformat(timespec='seconds'),
+            'calibrationMode': 'basic',
+            'modeLabel': '1D cubic spline',
+            'measurementMode': 'manual',
+            'measurementModeLabel': 'Manual measurements',
+            'useDummyData': False,
+            'commands': copy.deepcopy(self.commands),
+            'testRun': copy.deepcopy(self.test_run),
+            'completion': {
+                'forward': False,
+                'left': self.left_completed,
+                'right': self.right_completed,
+                'backward': self.backward_completed,
+                'testRun': self.test_run_completed
+            },
+            'derived': {
+                'maxAngleLeft': self.max_angle_left,
+                'maxAngleRight': self.max_angle_right,
+                'steeringOffset': self.steering_offset,
+                'zeroOffsetSplineData': copy.deepcopy(self.zero_offset_spline_data_for_frontend)
+            }
+        }
+
+
+    def list_saved_measurements(self):
+        measurements_dir = self._get_saved_measurements_dir()
+        if not os.path.isdir(measurements_dir):
+            return []
+
+        measurements = []
+        for filename in os.listdir(measurements_dir):
+            if not filename.lower().endswith('.json'):
+                continue
+
+            file_path = os.path.join(measurements_dir, filename)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as json_file:
+                    payload = json.load(json_file)
+                self._validate_saved_measurement(payload)
+                measurements.append(
+                    self._build_saved_measurement_summary(
+                        payload,
+                        fallback_id=os.path.splitext(filename)[0],
+                        fallback_name=os.path.splitext(filename)[0]
+                    )
+                )
+            except Exception as exc:
+                get_logger("Calibration").warning(
+                    f"Skipping incompatible saved calibration '{filename}': {exc}"
+                )
+
+        measurements.sort(
+            key=lambda item: (item.get('savedAt') or '', item.get('name') or ''),
+            reverse=True
+        )
+        return measurements
+
+
+    def save_measurements(self, name, requested_limit=None):
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("A calibration measurement name is required.")
+
+        payload = self._serialize_saved_measurement(name)
+        measurements_dir = self._get_saved_measurements_dir()
+        os.makedirs(measurements_dir, exist_ok=True)
+
+        with open(self._build_saved_measurement_path(payload['id']), 'w', encoding='utf-8') as json_file:
+            json.dump(payload, json_file, indent=2)
+
+        return {
+            'measurement': self._build_saved_measurement_summary(payload),
+            'calibration': self._build_calibration_state_response()
+        }
+
+
+    def _validate_saved_measurement(self, payload):
+        if not isinstance(payload, dict):
+            raise ValueError("Saved calibration must contain a JSON object.")
+
+        calibration_mode = payload.get('calibrationMode', 'basic')
+        if calibration_mode != 'basic':
+            raise ValueError(
+                f"Unsupported calibration mode '{calibration_mode}'. "
+                "This repository supports basic measurement-based calibration only."
+            )
+
+        measurement_mode = payload.get('measurementMode', 'manual')
+        if measurement_mode != 'manual':
+            raise ValueError(
+                f"Unsupported measurement mode '{measurement_mode}'. "
+                "This repository supports manual measurements only."
+            )
+
+        commands = payload.get('commands')
+        if not isinstance(commands, dict):
+            raise ValueError("Saved calibration file is missing the command measurements.")
+
+        for direction in ('left', 'right', 'backward'):
+            direction_commands = commands.get(direction)
+            if not isinstance(direction_commands, list) or not direction_commands:
+                raise ValueError(f"Saved calibration is missing '{direction}' measurements.")
+
+            expected_count = len(self.commands_template[direction])
+            if len(direction_commands) != expected_count:
+                raise ValueError(
+                    f"Saved calibration has {len(direction_commands)} '{direction}' measurements; "
+                    f"this calibration expects {expected_count}."
+                )
+
+            for command in direction_commands:
+                if not isinstance(command, dict):
+                    raise ValueError(f"Invalid command entry in '{direction}' measurements.")
+                for field in ('desiredSpeed', 'desiredSteer', 'time', 'actualSpeed', 'actualSpeedPWM'):
+                    if field not in command:
+                        raise ValueError(f"Saved '{direction}' measurement is missing '{field}'.")
+                if direction != 'backward':
+                    for field in ('actualSteer', 'actualSteerPWM'):
+                        if field not in command:
+                            raise ValueError(f"Saved '{direction}' measurement is missing '{field}'.")
+
+        return commands
+
+
+    def _apply_loaded_measurements(self, payload):
+        commands = self._validate_saved_measurement(payload)
+        completion = payload.get('completion') or {}
+        derived = payload.get('derived') or {}
+
+        self.commands = copy.deepcopy(self.commands_template)
+        for direction in ('left', 'right', 'backward'):
+            self.commands[direction] = copy.deepcopy(commands[direction])
+        if isinstance(commands.get('zero'), list):
+            self.commands['zero'] = copy.deepcopy(commands['zero'])
+
+        self.test_run = copy.deepcopy(payload.get('testRun', self.test_run))
+        self.left_completed = bool(completion.get('left', True))
+        self.right_completed = bool(completion.get('right', True))
+        self.backward_completed = bool(completion.get('backward', True))
+        self.test_run_completed = bool(completion.get('testRun', bool(self.commands.get('zero'))))
+        self.max_angle_left = derived.get('maxAngleLeft')
+        self.max_angle_right = derived.get('maxAngleRight')
+        self.steering_offset = float(derived.get('steeringOffset') or 0)
+        self.zero_offset_spline_data_for_frontend = copy.deepcopy(
+            derived.get('zeroOffsetSplineData')
+        )
+
+        self.current_step = 0
+        self.current_command = None
+        self.valid_angles = []
+
+
+    def load_measurements(self, measurement_id):
+        normalized_id = self._normalize_measurement_id(measurement_id)
+        measurement_path = self._build_saved_measurement_path(normalized_id)
+        if not os.path.isfile(measurement_path):
+            raise FileNotFoundError(
+                f"No saved calibration measurements found for '{measurement_id}'."
+            )
+
+        with open(measurement_path, 'r', encoding='utf-8') as json_file:
+            payload = json.load(json_file)
+
+        self._apply_loaded_measurements(payload)
+        return {
+            'measurement': self._build_saved_measurement_summary(
+                payload,
+                fallback_id=normalized_id,
+                fallback_name=measurement_id
+            ),
+            'calibration': self._build_calibration_state_response()
+        }
+
+
     def create_source_zip(self):
         """Create a zip file of the source folder and return as base64 string."""
         try:
             zip_buffer = BytesIO()
             
-            source_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'source')
+            source_path = os.path.join(
+                os.path.dirname(__file__),
+                '..',
+                '..',
+                '..',
+                'runtime',
+                'calibration',
+                'source'
+            )
             source_path = os.path.abspath(source_path)
             
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
@@ -929,7 +1299,7 @@ class Calibration():
             return zip_base64
             
         except Exception as e:
-            print(f"\033[1;97m[ Calibration ] :\033[0m \033[1;91mError creating zip file: {str(e)}\033[0m")
+            get_logger("Calibration").info(f"Error creating zip file: {str(e)}")
             return None
 
     

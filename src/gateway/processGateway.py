@@ -32,18 +32,17 @@ if __name__ == "__main__":
 
 from src.templates.workerprocess import WorkerProcess
 from src.gateway.threads.threadGateway import threadGateway
+from src.utils.logConfig import get_logger
 
 
 class processGateway(WorkerProcess):
     """This process handle all the data distribution\n
     Args:
         queueList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-        logger (logging object): Made for debugging.
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logger, ready_event=None, debugging=False):
-        self.logger = logger
+    def __init__(self, queueList, ready_event=None, debugging=False):
         self.debugging = debugging
         super(processGateway, self).__init__(queueList, ready_event)
 
@@ -51,7 +50,7 @@ class processGateway(WorkerProcess):
     def _init_threads(self):
         """Initializes the gateway thread."""
         
-        gatewayThread = threadGateway(self.queuesList, self.logger, self.debugging)
+        gatewayThread = threadGateway(self.queuesList, self.debugging)
         self.threads.append(gatewayThread)
 
 
@@ -62,7 +61,6 @@ class processGateway(WorkerProcess):
 if __name__ == "__main__":
     from multiprocessing import Pipe, Queue, Event
     import time
-    import logging
 
     allProcesses = list()
     # We have a list of multiprocessing.Queue() which individualy represent a priority for processes.
@@ -72,8 +70,7 @@ if __name__ == "__main__":
         "General": Queue(),
         "Config": Queue(),
     }
-    logging = logging.getLogger()
-    process = processGateway(queueList, logging, debugging=True)
+    process = processGateway(queueList, debugging=True)
     process.daemon = True
     process.start()
 

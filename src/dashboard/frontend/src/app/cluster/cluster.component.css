@@ -97,12 +97,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     height: 45%;
 }
 
-.cluster-map { 
+.cluster-map {
     position: absolute;
     top: 3%;
     left: 20%;
     width: 60%;
     height: 47%;
+}
+
+/* Hidden (not destroyed) in mobile driving mode so the map component's
+   ngOnDestroy — which tears down the shared WebSocket — does not fire. */
+.cluster-hidden {
+    display: none;
 }
 
 .cluster-digital-container { 
@@ -160,12 +166,84 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     z-index: 5;
 }
 
-.cluster-live-camera { 
+.cluster-live-camera {
     position: absolute;
     top: 76.5%;
     left: 75%;
     width: 22%;
     height: auto;
+}
+
+/* In mobile driving mode (manual + KL30), the map is hidden and the camera
+   footage takes over the map's position. */
+.cluster-live-camera-map {
+    top: 4%;
+    left: 29%;
+    width: 42%;
+    height: auto;
+}
+
+/* ===================== Mobile driving layout ===================== */
+/* Speed and battery gauges keep their normal size but are nudged outward
+   toward the sides so they clear the centred camera. */
+.mobile-driving .cluster-instruments-main {
+    left: 1%;
+    width: 98%;
+    gap: 32%;
+}
+
+/* Instant consumption (and its indicator SVG) is pinned to its normal box here
+   because its parent .cluster-instruments-secondary is repurposed below as the
+   full-screen driving-controls overlay, which would otherwise stretch it. */
+.mobile-driving .cluster-instant-consumption {
+    position: absolute;
+    top: 50%;
+    left: -2%;
+    width: 20%;
+    height: 30%;
+}
+
+/* Expand the switches subtree to cover the whole cluster so the driving
+   controls (rendered inside app-state-switch) can be placed anywhere. */
+.mobile-driving .cluster-instruments-secondary {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    gap: 0;
+    padding: 0;
+}
+
+.mobile-driving .cluster-instruments-switches {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.mobile-driving .cluster-state-switch {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* KL switch has no mobile UI; keep it out of the overlay. */
+.mobile-driving .cluster-kl-switch {
+    display: none;
+}
+
+/* Record shares the top row with the stop button (record on the left, stop on
+   the right); the brake bar spans the full width below (see state-switch). */
+.mobile-driving .cluster-record {
+    top: 70%;
+    left: 41%;
+    width: 8%;
+    height: 7%;
+    z-index: 10;
 }
 
 .cluster-warning-light { 

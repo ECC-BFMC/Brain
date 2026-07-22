@@ -26,7 +26,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, HostListener, ViewChild, OnDestroy } from '@angular/core';
+import { Component, HostListener, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { ClusterComponent } from './cluster/cluster.component';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -63,6 +63,7 @@ export class AppComponent implements OnDestroy {
   title: string = 'dashboard';
   backendConnected: boolean = true;
   showSettingsModal: boolean = false;
+  isMobileDriving: boolean = false;
 
   // Cluster component variables
   cursorRotationSliderValue: number = 0;
@@ -82,11 +83,12 @@ export class AppComponent implements OnDestroy {
   private connectionCheckInterval: any;
   private autoReconnectInterval: any;
   private currentSerialConnectionStateSubscription: Subscription | undefined;
+  private isMobileDrivingSubscription: Subscription | undefined;
   @ViewChild(ClusterComponent) clusterComponent!: ClusterComponent;
   @ViewChild(TableComponent) tableComponent!: TableComponent;
   @ViewChild('stateSwitch') stateSwitchComponent!: StateSwitchComponent;
 
-  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService, private apiService: ApiService) { }
+  constructor(private webSocketService: WebSocketService, private clusterService: ClusterService, private apiService: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     //To enable all the NUCLEO futures uncomment this fc:
@@ -153,7 +155,21 @@ export class AppComponent implements OnDestroy {
         //   this.webSocketService.reconnect();
         // }
       }
+
+      // Reconcile within the current tick to avoid NG0100 (the status subject
+      // can emit synchronously on subscribe, during change detection).
+      this.cdr.detectChanges();
     });
+
+    this.isMobileDrivingSubscription = this.clusterService.isMobileDriving$.subscribe(
+      (isMobileDriving) => {
+        this.isMobileDriving = isMobileDriving;
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        console.error('Error receiving mobile driving state:', error);
+      }
+    );
   }
 
   submitPassword() {
@@ -265,6 +281,10 @@ export class AppComponent implements OnDestroy {
 
     if (this.heartbeatDisconnectSubscription) {
       this.heartbeatDisconnectSubscription.unsubscribe();
+    }
+
+    if (this.isMobileDrivingSubscription) {
+      this.isMobileDrivingSubscription.unsubscribe();
     }
   }
 

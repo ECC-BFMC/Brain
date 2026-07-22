@@ -26,16 +26,45 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
+from multiprocessing import Pipe
+
+
 class messageHandlerSender:
     """Class which will handle sender functionalities.\n
     Args:
         queuesList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
         message (enum): A specific message
     """
-        
+
     def __init__(self, queuesList, message):
         self.queuesList = queuesList
         self.message = message
+
+        # Feedback channel: the gateway pushes this message's subscriber count
+        # here whenever it changes, so the sender can skip producing data
+        # nobody reads (see hasSubscribers).
+        self._pipeRecv, self._pipeSend = Pipe(duplex=False)
+        self._subscriberCount = 0
+        self.queuesList["Config"].put(
+            {
+                "Subscribe/Unsubscribe": "senderFeedback",
+                "Owner": self.message.Owner.value,
+                "msgID": self.message.msgID.value,
+                "To": {"pipe": self._pipeSend},
+            }
+        )
+
+    def hasSubscribers(self):
+        """
+        True while at least one subscriber is registered for this message,
+        as reported by the gateway. Typical use:
+
+            if self.sender.hasSubscribers():
+                self.sender.send(expensive_payload)
+        """
+        while self._pipeRecv.poll():
+            self._subscriberCount = self._pipeRecv.recv()
+        return self._subscriberCount > 0
 
     def send(self, value):
         """

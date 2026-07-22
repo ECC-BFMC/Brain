@@ -1,113 +1,127 @@
 .console-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    /* Dimmed background */
-    z-index: 2000;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
 }
 
 .console-window {
-    width: 80%;
-    height: 80%;
-    background-color: rgb(45, 54, 58);
-    /* Dashboard theme color */
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    width: min(1120px, 95vw);
+    height: min(800px, 90vh);
+    background: rgb(45, 54, 58);
+    border-radius: 10px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
-    color: #e0e0e0;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    color: rgba(255, 255, 255, 0.9);
     font-family: 'Courier New', Courier, monospace;
+    padding: clamp(10px, 1.2vw, 14px);
+    overflow: hidden;
+    position: relative;
 }
 
 .console-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px 8px 0 0;
+    gap: 12px;
+    min-height: 30px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    margin-bottom: 6px;
 }
 
 .console-header h3 {
     margin: 0;
-    font-size: 18px;
-    color: #fff;
-    font-weight: 500;
-    letter-spacing: 0.5px;
+    font-size: clamp(15px, 1.7vw, 18px);
+    color: rgba(255, 255, 255, 0.94);
+    font-weight: 560;
+    font-family: "poppins", sans-serif;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
 }
 
 .header-actions {
     display: flex;
-    gap: 15px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
 }
 
 .icon-btn {
-    background: none;
-    border: none;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     cursor: pointer;
-    color: #aaa;
-    padding: 6px;
-    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.72);
+    width: 26px;
+    min-width: 26px;
+    min-height: 28px;
+    padding: 0;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .icon-btn svg {
-    /* stroke: currentColor; Removed stroke */
     fill: currentColor;
-    width: 20px;
-    height: 20px;
+    width: 13px;
+    height: 13px;
 }
 
 .icon-btn:hover {
-    background-color: transparent;
-    /* No background on hover */
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.16);
     color: #fff;
-    transform: scale(1.1);
 }
 
 .console-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
-    font-size: 14px;
-    line-height: 1.5;
+    min-height: 0;
+    padding: 9px;
+    font-size: 11px;
+    line-height: 1.45;
     white-space: pre-wrap;
-    word-break: break-all;
-    background-color: rgba(0, 0, 0, 0.2);
-    /* Slightly darker text area */
-    margin: 10px;
-    border-radius: 4px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    background-color: rgb(35, 42, 45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    color: rgba(255, 255, 255, 0.86);
+    font-variant-numeric: tabular-nums;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(125, 249, 255, 0.24) transparent;
 }
 
 .log-line {
-    margin-bottom: 2px;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+}
+
+.log-line:last-child {
+    border-bottom: 0;
 }
 
 /* Scrollbar styling */
 .console-body::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 .console-body::-webkit-scrollbar-track {
-    background: #111;
+    background: transparent;
 }
 
 .console-body::-webkit-scrollbar-thumb {
-    background: #444;
+    background: rgba(125, 249, 255, 0.24);
     border-radius: 4px;
 }
 
 .console-body::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: rgba(125, 249, 255, 0.42);
 }

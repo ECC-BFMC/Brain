@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 2,
+  "id": "test",
+  "name": "Simple manual calibration",
+  "savedAt": "2026-03-25T15:22:10+02:00",
+  "calibrationMode": "basic",
+  "modeLabel": "1D cubic spline",
+  "measurementMode": "manual",
+  "measurementModeLabel": "Manual measurements",
+  "useDummyData": false,
+  "commands": {
+    "left": [
+      {
+        "desiredSpeed": 500,
+        "desiredSteer": 5.0,
+        "time": 20,
+        "actualSpeed": 427.5,
+        "actualSpeedPWM": 1760,
+        "actualSteer": 4.76,
+        "actualSteerPWM": 1444
+      },
+      {
+        "desiredSpeed": 400,
+        "desiredSteer": 10.0,
+        "time": 25,
+        "actualSpeed": 327.0,
+        "actualSpeedPWM": 1688,
+        "actualSteer": 9.54,
+        "actualSteerPWM": 1393
+      },
+      {
+        "desiredSpeed": 300,
+        "desiredSteer": 15.0,
+        "time": 30,
+        "actualSpeed": 241.6,
+        "actualSpeedPWM": 1647,
+        "actualSteer": 13.76,
+        "actualSteerPWM": 1344
+      },
+      {
+        "desiredSpeed": 200,
+        "desiredSteer": 20.0,
+        "time": 35,
+        "actualSpeed": 183.6,
+        "actualSpeedPWM": 1602,
+        "actualSteer": 18.87,
+        "actualSteerPWM": 1293
+      },
+      {
+        "desiredSpeed": 100,
+        "desiredSteer": 23.2,
+        "time": 40,
+        "actualSpeed": 86.8,
+        "actualSpeedPWM": 1559,
+        "actualSteer": 22.38,
+        "actualSteerPWM": 1247
+      },
+      {
+        "desiredSpeed": 100,
+        "desiredSteer": 25.0,
+        "time": 40,
+        "actualSpeed": 81.9,
+        "actualSpeedPWM": 1550,
+        "actualSteer": 23.17,
+        "actualSteerPWM": 1245
+      },
+      {
+        "desiredSpeed": 100,
+        "desiredSteer": 27.2,
+        "time": 40,
+        "actualSpeed": 90.7,
+        "actualSpeedPWM": 1552,
+        "actualSteer": 26.24,
+        "actualSteerPWM": 1213
+      }
+    ],
+    "right": [
+      {
+        "desiredSpeed": 500,
+        "desiredSteer": 5.0,
+        "time": 20,
+        "actualSpeed": 482.9,
+        "actualSpeedPWM": 1795,
+        "actualSteer": 4.72,
+        "actualSteerPWM": 1553
+      },
+      {
+        "desiredSpeed": 400,
+        "desiredSteer": 10.0,
+        "time": 25,
+        "actualSpeed": 376.4,
+        "actualSpeedPWM": 1721,
+        "actualSteer": 9.46,
+        "actualSteerPWM": 1600
+      },
+      {
+        "desiredSpeed": 300,
+        "desiredSteer": 15.0,
+        "time": 30,
+        "actualSpeed": 244.8,
+        "actualSpeedPWM": 1640,
+        "actualSteer": 13.85,
+        "actualSteerPWM": 1651
+      },
+      {
+        "desiredSpeed": 200,
+        "desiredSteer": 20.0,
+        "time": 35,
+        "actualSpeed": 185.4,
+        "actualSpeedPWM": 1609,
+        "actualSteer": 18.44,
+        "actualSteerPWM": 1703
+      },
+      {
+        "desiredSpeed": 100,
+        "desiredSteer": 23.2,
+        "time": 40,
+        "actualSpeed": 85.3,
+        "actualSpeedPWM": 1553,
+        "actualSteer": 21.27,
+        "actualSteerPWM": 1740
+      },
+      {
+        "desiredSpeed": 100,
+        "desiredSteer": 25.0,
+        "time": 40,
+        "actualSpeed": 83.4,
+        "actualSpeedPWM": 1544,
+        "actualSteer": 23.72,
+        "actualSteerPWM": 1765
+      },
+      {
+        "desiredSpeed": 100,
+        "desiredSteer": 27.2,
+        "time": 40,
+        "actualSpeed": 99.8,
+        "actualSpeedPWM": 1560,
+        "actualSteer": 25.31,
+        "actualSteerPWM": 1782
+      }
+    ],
+    "backward": [
+      {
+        "desiredSpeed": -100,
+        "desiredSteer": 0.0,
+        "time": 40,
+        "actualSpeed": -96.9,
+        "actualSpeedPWM": 1446,
+        "actualSteer": null,
+        "actualSteerPWM": null
+      },
+      {
+        "desiredSpeed": -200,
+        "desiredSteer": 0.0,
+        "time": 35,
+        "actualSpeed": -169.2,
+        "actualSpeedPWM": 1391,
+        "actualSteer": null,
+        "actualSteerPWM": null
+      },
+      {
+        "desiredSpeed": -300,
+        "desiredSteer": 0.0,
+        "time": 30,
+        "actualSpeed": -258.9,
+        "actualSpeedPWM": 1340,
+        "actualSteer": null,
+        "actualSteerPWM": null
+      },
+      {
+        "desiredSpeed": -400,
+        "desiredSteer": 0.0,
+        "time": 25,
+        "actualSpeed": -336.9,
+        "actualSpeedPWM": 1304,
+        "actualSteer": null,
+        "actualSteerPWM": null
+      },
+      {
+        "desiredSpeed": -500,
+        "desiredSteer": 0.0,
+        "time": 20,
+        "actualSpeed": -487.6,
+        "actualSpeedPWM": 1204,
+        "actualSteer": null,
+        "actualSteerPWM": null
+      }
+    ],
+    "zero": [
+      {
+        "desiredSpeed": 350,
+        "desiredSteer": 0.35,
+        "time": 30,
+        "actualSpeed": 0,
+        "actualSteer": 0.0,
+        "actualSpeedPWM": 1491,
+        "actualSteerPWM": 1505
+      }
+    ]
+  },
+  "testRun": {
+    "speed": 350,
+    "steer": 0,
+    "time": 30
+  },
+  "completion": {
+    "forward": false,
+    "left": true,
+    "right": true,
+    "backward": true,
+    "testRun": true
+  },
+  "derived": {
+    "maxAngleLeft": 25.5,
+    "maxAngleRight": 25.8,
+    "steeringOffset": 0.35,
+    "zeroOffsetSplineData": {
+      "points": [
+        [
+          -23.17,
+          -25.0
+        ],
+        [
+          -22.38,
+          -23.2
+        ],
+        [
+          -18.87,
+          -20.0
+        ],
+        [
+          -13.76,
+          -15.0
+        ],
+        [
+          -9.54,
+          -10.0
+        ],
+        [
+          -4.76,
+          -5.0
+        ],
+        [
+          4.72,
+          5.0
+        ],
+        [
+          9.46,
+          10.0
+        ],
+        [
+          13.85,
+          15.0
+        ],
+        [
+          18.44,
+          20.0
+        ],
+        [
+          21.27,
+          23.2
+        ],
+        [
+          23.72,
+          25.0
+        ]
+      ],
+      "spline": {
+        "knots": [
+          -23.17,
+          -22.38,
+          -18.87,
+          -13.76,
+          -9.54,
+          -4.76,
+          4.72,
+          9.46,
+          13.85,
+          18.44,
+          21.27,
+          23.72
+        ],
+        "coefficients": [
+          [
+            0.05386378552797035,
+            -0.592027156936743,
+            2.712566078090243,
+            -25.0
+          ],
+          [
+            0.05386378552796988,
+            -0.46436998523545164,
+            1.8780123357742053,
+            -23.2
+          ],
+          [
+            -0.005969310654024585,
+            0.10281567637407096,
+            0.6089567116707596,
+            -20.0
+          ],
+          [
+            -0.0030882627684789385,
+            0.01130614404787439,
+            1.192119214026899,
+            -15.0
+          ],
+          [
+            0.0024647382794070146,
+            -0.027791262601069185,
+            1.122552013732418,
+            -10.0
+          ],
+          [
+            -0.00047362023878437477,
+            0.007553084325627252,
+            1.0258135215758064,
+            -5.0
+          ],
+          [
+            0.0018502502254956537,
+            -0.00591667526540046,
+            1.0413266794667573,
+            5.0
+          ],
+          [
+            -0.0031405828089479696,
+            0.020393882941147738,
+            1.1099486438497996,
+            10.0
+          ],
+          [
+            0.003708726026369999,
+            -0.020967592652697365,
+            1.107430058216098,
+            15.0
+          ],
+          [
+            -0.012960627398263229,
+            0.030101564730417658,
+            1.1493549900528335,
+            20.0
+          ],
+          [
+            -0.012960627398263126,
+            -0.0799341618808373,
+            1.0083287401171466,
+            23.2
+          ]
+        ],
+        "n_segments": 11
+      },
+      "error": 0.0,
+      "per_speed_offsets": [
+        {
+          "speed": 500,
+          "offset": 0.02109704641350163
+        },
+        {
+          "speed": 400,
+          "offset": 0.04210526315789309
+        },
+        {
+          "speed": 300,
+          "offset": -0.048895327779789
+        },
+        {
+          "speed": 200,
+          "offset": 0.23050120611096148
+        },
+        {
+          "speed": 100,
+          "offset": 0.5899656357388352
+        }
+      ]
+    }
+  }
+}

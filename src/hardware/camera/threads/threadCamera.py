@@ -27,10 +27,24 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import cv2
-import threading
-import base64
-import picamera2
+import os
+from datetime import datetime
 import time
+from threading import Lock
+
+
+def _load_picamera2(use_simulator):
+    if use_simulator:
+        from sim import picamera2 as camera_module
+
+        return camera_module
+
+    try:
+        import picamera2 as camera_module
+    except ImportError:
+        return None
+    return camera_module
+
 
 from src.utils.messages.allMessages import (
     mainCamera,
@@ -39,41 +53,57 @@ from src.utils.messages.allMessages import (
     Record,
     Brightness,
     Contrast,
+    StateChange,
 )
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import StateChange
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.statemachine.systemMode import SystemMode
+from src.utils.logConfig import get_logger
+from src.utils.sharedFrameBuffer import (
+    SharedFrameWriter,
+    CAMERA_SHM_NAME,
+    CAMERA_MAIN_SHM_NAME,
+)
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
     Args:
         queuesList (dictionar of multiprocessing.queues.Queue): Dictionar of queues where the ID is the type of messages.
-        logger (logging object): Made for debugging.
         debugger (bool): A flag for debugging.
     """
 
     # ================================ INIT ===============================================
-    def __init__(self, queuesList, logger, debugger):
+    def __init__(self, queuesList, debugger, dev_mode=False):
         super(threadCamera, self).__init__(pause=0.001)
         self.queuesList = queuesList
-        self.logger = logger
+        self.logger = get_logger("Camera")
         self.debugger = debugger
-        self.frame_rate = 5
+        self.picamera2 = _load_picamera2(dev_mode)
+        self.frame_rate = 15  # recording playback fps; frames are written on this cadence
         self.recording = False
-
-        self.video_writer = ""
+        self.video_writer = None
+        self.recordingsDir = os.path.join("runtime", "recordings")
+        self._nextRecordFrameDue = 0.0
+        self._lastHousekeeping = 0.0
+        self._streamLock = Lock()
+        self._cleanupDone = False
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
         self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
 
+        # Demand-driven streams: raw frames go into shared memory plus a small
+        # gateway notification ({"seq", "timestamp", "shm", "shape"}), but only
+        # while the stream's sender reports hasSubscribers() - so consumers
+        # pick a stream just by subscribing to mainCamera/serialCamera.
+        self._streams = {
+            "mainCamera": {"shm": CAMERA_MAIN_SHM_NAME, "writer": None, "sender": self.mainCameraSender},
+            "serialCamera": {"shm": CAMERA_SHM_NAME, "writer": None, "sender": self.serialCameraSender},
+        }
+
         self.subscribe()
         self._init_camera()
-        self.queue_sending()
-        self.configs()
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
@@ -83,116 +113,26 @@ class threadCamera(ThreadWithStop):
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
         self.stateChangeSubscriber = messageHandlerSubscriber(self.queuesList, StateChange, "lastOnly", True)
 
-    def queue_sending(self):
-        """Callback function for recording flag."""
-        if self._blocker.is_set():
+    # ============================ PERIODIC HOUSEKEEPING ==================================
+    def _housekeeping(self):
+        """Runs on the camera thread at most once per second: publishes the
+        recording flag and applies pending brightness/contrast settings.
+        (Replaces the old self-rearming threading.Timer callbacks, so nothing
+        touches the camera from another thread and nothing fires after stop.)"""
+        now = time.monotonic()
+        if now - self._lastHousekeeping < 1.0:
             return
-        self.recordingSender.send(self.recording)
-        threading.Timer(1, self.queue_sending).start()
+        self._lastHousekeeping = now
+        if self.recordingSender.hasSubscribers():
+            self.recordingSender.send(self.recording)
+        self._applyCameraControls()
 
-    # ================================ RUN ================================================
-    def thread_work(self):
-        """This function will run while the running flag is True. 
-        It captures the image from camera and make the required modifies 
-        and then it send the data to process gateway."""
-        # if camera is not available, skip processing
+    def _applyCameraControls(self):
+        """Applies pending brightness/contrast messages to the camera."""
         if self.camera is None:
-            time.sleep(0.1)
             return
-            
-        try:
-            recordRecv = self.recordSubscriber.receive()
-            if recordRecv is not None: 
-                self.recording = bool(recordRecv)
-                if recordRecv == False:
-                    self.video_writer.release() # type: ignore
-                else:
-                    fourcc = cv2.VideoWriter_fourcc( # type: ignore
-                        *"XVID"
-                    )  # You can choose different codecs, e.g., 'MJPG', 'XVID', 'H264', etc.
-                    self.video_writer = cv2.VideoWriter(
-                        "output_video" + str(time.time()) + ".avi",
-                        fourcc,
-                        self.frame_rate,
-                        (2048, 1080),
-                    )
-
-        except Exception as e:
-            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
-
-        try:
-            mainRequest = self.camera.capture_array("main")
-            serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
-
-            if self.recording == True:
-                self.video_writer.write(mainRequest) # type: ignore
-
-            serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
-
-            _, mainEncodedImg = cv2.imencode(".jpg", mainRequest) # type: ignore
-            _, serialEncodedImg = cv2.imencode(".jpg", serialRequest) # type: ignore
-
-            mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8") # type: ignore
-            serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8") # type: ignore
-
-            if self._blocker.is_set():
-                return
-
-            self.mainCameraSender.send(mainEncodedImageData)
-            self.serialCameraSender.send(serialEncodedImageData)
-        except Exception as e:
-            print(f"\033[1;97m[ Camera ] :\033[0m \033[1;91mERROR\033[0m - {e}")
-
-    # ================================ STATE CHANGE HANDLER ========================================
-    def state_change_handler(self):
-        message = self.stateChangeSubscriber.receive()
+        message = self.brightnessSubscriber.receive()
         if message is not None:
-            modeDict = SystemMode[message].value["camera"]["thread"]
-
-            if "resolution" in modeDict:
-                print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - Resolution changed to {modeDict['resolution']}")
-
-    # ================================ INIT CAMERA ========================================
-    def _init_camera(self):
-        """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
-
-        try:
-            # check if camera is available
-            if len(picamera2.Picamera2.global_camera_info()) == 0:
-                print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - No camera detected. Camera functionality will be disabled.")
-                self.camera = None
-                return
-            
-            self.camera = picamera2.Picamera2()
-            config = self.camera.create_preview_configuration(
-                buffer_count=1,
-                queue=False,
-                main={"format": "RGB888", "size": (2048, 1080)},
-                lores={"size": (512, 270)},
-                encode="lores",
-            )
-            self.camera.configure(config) # type: ignore
-            self.camera.start()
-            print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;92mINFO\033[0m - Camera initialized successfully")
-        except Exception as e:
-            print(f"\033[1;97m[ Camera Thread ] :\033[0m \033[1;91mERROR\033[0m - Failed to initialize camera: {e}")
-            self.camera = None
-
-    # =============================== STOP ================================================
-    def stop(self):
-        if self.recording and self.video_writer:
-            self.video_writer.release() # type: ignore
-        if self.camera is not None:
-            self.camera.stop()
-        super(threadCamera, self).stop()
-
-    # =============================== CONFIG ==============================================
-    def configs(self):
-        """Callback function for receiving configs on the pipe."""
-        if self._blocker.is_set():
-            return
-        if self.brightnessSubscriber.is_data_in_pipe():
-            message = self.brightnessSubscriber.receive()
             if self.debugger:
                 self.logger.info(str(message))
             self.camera.set_controls(
@@ -202,8 +142,8 @@ class threadCamera(ThreadWithStop):
                     "Brightness": max(0.0, min(1.0, float(message))), # type: ignore
                 }
             )
-        if self.contrastSubscriber.is_data_in_pipe():
-            message = self.contrastSubscriber.receive() # de modificat marti uc camera noua 
+        message = self.contrastSubscriber.receive()
+        if message is not None:
             if self.debugger:
                 self.logger.info(str(message))
             self.camera.set_controls(
@@ -213,4 +153,176 @@ class threadCamera(ThreadWithStop):
                     "Contrast": max(0.0, min(32.0, float(message))), # type: ignore
                 }
             )
-        threading.Timer(1, self.configs).start()
+
+    # ================================ RUN ================================================
+    def run(self):
+        """Run capture work, then release camera resources on this same thread."""
+        try:
+            super(threadCamera, self).run()
+        finally:
+            self._cleanup()
+    def thread_work(self):
+        """This function will run while the running flag is True.
+        It captures frames from the camera and publishes each demanded stream:
+        raw pixels into shared memory, a small notification through the gateway."""
+        self._housekeeping()
+
+        if self.camera is None:
+            time.sleep(1)
+            return
+
+        try:
+            recordRecv = self.recordSubscriber.receive()
+            if recordRecv is not None:
+                self._handleRecordToggle(bool(recordRecv))
+        except Exception:
+            self.logger.exception("Failed to handle the record toggle")
+
+        try:
+            wantsMainStream = self.mainCameraSender.hasSubscribers()
+            wantsSerial = self.serialCameraSender.hasSubscribers()
+            wantsMain = self.recording or wantsMainStream
+            if not wantsMain and not wantsSerial:
+                time.sleep(0.1)  # nobody is listening: idle instead of spinning
+                return
+
+            if wantsMain:
+                mainRequest = self.camera.capture_array("main")
+                if self.recording:
+                    self._recordFrame(mainRequest)
+                if wantsMainStream:
+                    self._publishStream("mainCamera", mainRequest, history=1)
+
+            if wantsSerial:
+                serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
+                serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420) # type: ignore
+                self._publishStream("serialCamera", serialRequest, history=1)
+        except Exception:
+            self.logger.exception("Camera capture failed")
+
+    # ============================ STREAM PUBLISHING ======================================
+    def _publishStream(self, name, frame, history=1):
+        """Writes the raw frame into the stream's shared memory segment and
+        notifies subscribers through the gateway."""
+        if self._blocker.is_set():
+            return
+
+        stream = self._streams[name]
+        try:
+            with self._streamLock:
+                if self._blocker.is_set():
+                    return
+                if stream["writer"] is None:
+                    # created on first demand, sized from the actual frame
+                    stream["writer"] = SharedFrameWriter(name=stream["shm"], shape=frame.shape, history=history)
+                timestamp = time.time()
+                seq = stream["writer"].write(frame, timestamp)
+                stream["sender"].send(
+                    {
+                        "seq": seq,
+                        "timestamp": timestamp,
+                        "shm": stream["shm"],
+                        "shape": list(frame.shape),
+                    }
+                )
+        except Exception:
+            self.logger.exception(f"Failed to publish the {name} stream")
+
+    # =============================== RECORDING ===========================================
+    def _handleRecordToggle(self, enable):
+        """Starts or stops recording; repeated same-state toggles are ignored."""
+        if enable and not self.recording:
+            self._nextRecordFrameDue = time.monotonic()
+        elif not enable and self.recording:
+            self._stopRecording()
+        self.recording = enable
+
+    def _recordFrame(self, frame):
+        """Writes frames on a fixed time cadence (frame_rate) so playback speed
+        matches real time regardless of how fast the capture loop runs."""
+        now = time.monotonic()
+        if now < self._nextRecordFrameDue:
+            return
+
+        if self.video_writer is None:
+            # created lazily so the size always matches what the camera delivers
+            os.makedirs(self.recordingsDir, exist_ok=True)
+            path = os.path.join(
+                self.recordingsDir,
+                datetime.now().strftime("recording_%Y-%m-%d_%H-%M-%S.avi"),
+            )
+            fourcc = cv2.VideoWriter_fourcc(*"XVID") # type: ignore
+            height, width = frame.shape[:2]
+            self.video_writer = cv2.VideoWriter(path, fourcc, self.frame_rate, (width, height))
+            self.logger.info(f"Recording to {path}")
+
+        self.video_writer.write(frame)
+        self._nextRecordFrameDue += 1.0 / self.frame_rate
+        if self._nextRecordFrameDue < now:
+            self._nextRecordFrameDue = now  # fell behind: skip ahead instead of bursting
+
+    def _stopRecording(self):
+        if self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
+
+    # ================================ STATE CHANGE HANDLER ========================================
+    def state_change_handler(self):
+        message = self.stateChangeSubscriber.receive()
+        if message is not None:
+            modeDict = SystemMode[message].value["camera"]["thread"]
+
+            if "resolution" in modeDict:
+                get_logger("Camera Thread").info(f"Resolution changed to {modeDict['resolution']}")
+
+    # ================================ INIT CAMERA ========================================
+    def _init_camera(self):
+        """This function will initialize the camera object. It will make this camera object have two chanels "lore" and "main"."""
+
+        if self.picamera2 is None:
+            self.camera = None
+            get_logger("Camera Thread").error("No picamera2 available. Camera functionality will be disabled.")
+            return
+
+        try:
+            # check if camera is available
+            if len(self.picamera2.Picamera2.global_camera_info()) == 0:
+                self.camera = None
+                get_logger("Camera Thread").error(f"No camera detected. Camera functionality will be disabled.")
+                return
+            
+            self.camera = self.picamera2.Picamera2()
+            config = self.camera.create_preview_configuration(
+                buffer_count=1,
+                queue=False,
+                main={"format": "RGB888", "size": (2048, 1080)},
+                lores={"size": (512, 270)},
+                encode="lores",
+            )
+            self.camera.configure(config) # type: ignore
+            self.camera.start()
+            get_logger("Camera Thread").info(f"Camera initialized successfully")
+        except Exception as e:
+            self.camera = None
+            get_logger("Camera Thread").error(f"Failed to initialize camera: {e}")
+
+    # =============================== STOP ================================================
+    def stop(self):
+        super(threadCamera, self).stop()
+        if not self.is_alive():
+            self._cleanup()
+
+    def _cleanup(self):
+        """Release resources only after the capture loop can no longer use them."""
+        if self._cleanupDone:
+            return
+        self._cleanupDone = True
+        self.recording = False
+        self._stopRecording()
+        if self.camera is not None:
+            self.camera.stop()
+        with self._streamLock:
+            for stream in self._streams.values():
+                if stream["writer"] is not None:
+                    stream["writer"].close()
+                    stream["writer"] = None

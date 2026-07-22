@@ -52,7 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     </div>
   </div>
   <!-- Cluster -->
-  <div class="cluster-container">
+  <div class="cluster-container" [class.fit-viewport]="isMobileDriving">
     <app-cluster class="cluster" [cursorRotation]="cursorRotationSliderValue" [carPosition]="carPositionSliderValue"
       [carLeftLaneOn]="carLeftLaneOn" [carRightLaneOn]="carRightLaneOn"></app-cluster>
 
@@ -77,5 +77,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     <app-settings [open]="showSettingsModal" (close)="closeSettings()"></app-settings>
   </div>
 
-  <app-table class="table" />
+  <app-table *ngIf="!isMobileDriving" class="table" />
 </div>
