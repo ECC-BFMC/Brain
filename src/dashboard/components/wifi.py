@@ -182,8 +182,9 @@ class WifiManager:
             denied_names = ', '.join(denied)
             raise WifiPermissionError(
                 'Dashboard service is not authorized by Polkit for: '
-                f'{denied_names}. Reinstall the Wi-Fi service and restart '
-                'brain-monitor.service.'
+                f'{denied_names}. From the Brain repository root run '
+                '"bash services/rpi-wifi-fallback/install.sh" in an '
+                'interactive SSH or local terminal.'
             )
 
     @staticmethod
@@ -427,6 +428,10 @@ class WifiManager:
         env['CONFIG_FILE'] = self.config_file
         env['LOG'] = '/tmp/rpi-wifi-fallback.log'
         env['LOCK_FILE'] = self.lock_file
+        # The systemd/dispatcher path waits for an in-flight dashboard
+        # operation. This direct backup launch happens after the dashboard lock
+        # is released, so it must not queue behind another reconciler.
+        env['LOCK_WAIT_SECONDS'] = '0'
         try:
             subprocess.Popen(
                 ['/bin/bash', fallback_script, 'up'],

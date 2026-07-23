@@ -29,6 +29,7 @@ DELETE_AP_ON_CLIENT=${DELETE_AP_ON_CLIENT:-true}
 
 NMCLI_BIN="${NMCLI_BIN:-nmcli}"
 LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback/operation.lock}"
+LOCK_WAIT_SECONDS="${LOCK_WAIT_SECONDS:-0}"
 
 run_nmcli() {
   "$NMCLI_BIN" "$@"
@@ -38,9 +39,14 @@ say() { echo "[$(date +'%F %T')] $*"; }
 # single-instance lock
 mkdir -p "$(dirname "$LOCK_FILE")"
 exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-  say "Another instance is running; exiting."
-  exit 0
+if [[ "$LOCK_WAIT_SECONDS" =~ ^[0-9]+$ ]] && (( LOCK_WAIT_SECONDS > 0 )); then
+  if ! flock -w "$LOCK_WAIT_SECONDS" 9; then
+    say "Wi-Fi operation lock stayed busy for ${LOCK_WAIT_SECONDS}s; exiting."
+    exit 0
+  fi
+elif ! flock -n 9; then
+    say "Another instance is running; exiting."
+    exit 0
 fi
 
 nm_state() { run_nmcli -t -f STATE g 2>/dev/null || echo unknown; }
@@ -57,6 +63,10 @@ client_wifi_connected() {
   [[ -n "$uuid" ]] || return 1
   mode=$(run_nmcli -g 802-11-wireless.mode connection show uuid "$uuid" 2>/dev/null || true)
   [[ "$mode" != "ap" ]]
+}
+
+hotspot_active() {
+  [[ "$(run_nmcli -g GENERAL.CONNECTION device show "$IFACE" 2>/dev/null || true)" == "$CON_NAME" ]]
 }
 
 wait_for_client() {
@@ -197,6 +207,10 @@ case "${1:-auto}" in
   down) bring_down_ap ;;
   auto)
     say "NM state: $(nm_state); device $IFACE state: $(dev_state || echo '?')"
+    if hotspot_active; then
+      say "Fallback hotspot '$CON_NAME' is already active."
+      exit 0
+    fi
     if client_wifi_connected; then
       say "Client Wi-Fi connected → ensure hotspot is down."
       bring_down_ap

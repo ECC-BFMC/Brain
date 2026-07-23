@@ -394,6 +394,20 @@ def test_remove_active_profile_starts_fallback_after_delete(wifi):
     assert wifi._operations[operation_id]["state"] == "completed"
 
 
+def test_direct_fallback_does_not_wait_for_another_reconciler(wifi, tmp_path):
+    fallback = tmp_path / "fallback.sh"
+    fallback.write_text("#!/bin/bash\n", encoding="utf-8")
+
+    with (
+        patch("src.dashboard.components.wifi.os.path.isfile", return_value=True),
+        patch("src.dashboard.components.wifi.subprocess.Popen") as popen,
+    ):
+        assert wifi._start_fallback() is True
+
+    env = popen.call_args.kwargs["env"]
+    assert env["LOCK_WAIT_SECONDS"] == "0"
+
+
 def test_remove_failure_starts_fallback_when_restore_is_denied(wifi):
     saved = profile(active=True)
 

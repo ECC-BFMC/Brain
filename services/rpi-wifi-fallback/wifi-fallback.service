@@ -12,6 +12,10 @@ User=root
 Environment=CONFIG_FILE=/opt/rpi-wifi-fallback/config.env
 Environment=LOG=/var/log/rpi-wifi-fallback.log
 Environment=DEBUG=1
+# A dispatcher "down" event can arrive while the dashboard still owns the
+# shared radio lock. Wait for that operation to finish instead of dropping the
+# only fallback request.
+Environment=LOCK_WAIT_SECONDS=30
 ExecStart=/opt/rpi-wifi-fallback/fallback.sh auto
 StandardOutput=journal
 StandardError=journal

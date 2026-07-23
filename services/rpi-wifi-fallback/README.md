@@ -14,10 +14,14 @@ Run the installer after copying or pulling this repository onto the Raspberry Pi
 
 ```bash
 cd ~/Documents/Brain/services/rpi-wifi-fallback
-chmod +x install.sh
-sudo ./install.sh
+bash install.sh
 sudo reboot
 ```
+
+When started as the regular `pi` user, the installer requests sudo
+authentication once before making changes. `sudo bash install.sh` is also
+supported. Run it from an interactive SSH or local terminal, not from the
+dashboard service.
 
 The installer deploys:
 
@@ -32,6 +36,10 @@ The installer creates the system group `brain-network`, adds `pi`, and injects
 the group explicitly into `brain-monitor.service` with `SupplementaryGroups`.
 The scoped Polkit rule authorizes NetworkManager mutations only for user `pi`
 in that group. The drop-in also enables `NoNewPrivileges`.
+
+The dispatcher-started root service waits up to 30 seconds for an in-progress
+dashboard Wi-Fi operation to release the shared lock. This prevents a
+disconnect event from being lost while an active profile is being removed.
 
 ## Configuration
 

@@ -13,6 +13,7 @@ def test_fallback_service_can_be_started_for_each_disconnect():
     assert "Type=oneshot" in service
     assert "RemainAfterExit=yes" not in service
     assert "systemd-tmpfiles-setup.service" in service
+    assert "Environment=LOCK_WAIT_SECONDS=30" in service
 
 
 def test_dispatcher_triggers_non_blocking_reconciliation():
@@ -37,6 +38,9 @@ def test_installer_deploys_dispatcher_helper_and_shared_lock():
     assert "systemd-tmpfiles --create" in install
     assert "/run/rpi-wifi-fallback/operation.lock" in tmpfiles
     assert "/run/rpi-wifi-fallback/operation.lock" in fallback
+    assert 'flock -w "$LOCK_WAIT_SECONDS"' in fallback
+    assert "hotspot_active" in fallback
+    assert "is already active" in fallback
 
 
 def test_wifi_installer_enforces_brain_service_sandbox():
@@ -50,3 +54,12 @@ def test_wifi_installer_enforces_brain_service_sandbox():
     assert "groupadd --system brain-network" in install
     assert "usermod --append --groups brain-network pi" in install
     assert "systemctl try-restart brain-monitor.service" in install
+
+
+def test_wifi_installer_authenticates_before_privileged_changes():
+    install = (WIFI_SERVICE / "install.sh").read_text(encoding="utf-8")
+
+    assert "if (( EUID != 0 ))" in install
+    assert "sudo -v" in install
+    assert "as_root()" in install
+    assert install.index("sudo -v") < install.index("as_root groupadd")
