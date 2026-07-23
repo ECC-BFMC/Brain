@@ -3,7 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface WifiNetwork {
+    uuid: string;
     name: string;
+    active: boolean;
 }
 
 export interface WifiListResponse {
@@ -14,7 +16,25 @@ export interface WifiListResponse {
 
 export interface WifiActionResponse {
     success: boolean;
+    operation_id?: string;
+    state?: string;
     message?: string;
+    error?: string;
+}
+
+export interface WifiOperation {
+    id: string;
+    action: 'add' | 'remove';
+    network: string;
+    state: 'preparing' | 'connecting' | 'disconnecting' | 'connected' | 'completed' | 'failed';
+    message: string;
+    created_at: number;
+    updated_at: number;
+}
+
+export interface WifiOperationResponse {
+    success: boolean;
+    operation?: WifiOperation;
     error?: string;
 }
 
@@ -230,8 +250,14 @@ export class ApiService {
         return this.http.post<WifiActionResponse>(`${this.baseUrl}/api/wifi`, { ssid, password });
     }
 
-    removeWifi(name: string): Observable<WifiActionResponse> {
-        return this.http.delete<WifiActionResponse>(`${this.baseUrl}/api/wifi/${encodeURIComponent(name)}`);
+    removeWifi(identifier: string): Observable<WifiActionResponse> {
+        return this.http.delete<WifiActionResponse>(`${this.baseUrl}/api/wifi/${encodeURIComponent(identifier)}`);
+    }
+
+    getWifiOperation(operationId: string): Observable<WifiOperationResponse> {
+        return this.http.get<WifiOperationResponse>(
+            `${this.baseUrl}/api/wifi/operations/${encodeURIComponent(operationId)}`
+        );
     }
 
     // Table State Management

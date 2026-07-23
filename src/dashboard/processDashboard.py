@@ -171,9 +171,13 @@ class processDashboard(WorkerProcess):
         def api_add_wifi():
             return self.wifi.handle_add(flask_request.get_json())
         
-        @self.app.route('/api/wifi/<name>', methods=['DELETE'])
-        def api_remove_wifi(name):
-            return self.wifi.handle_remove(name)
+        @self.app.route('/api/wifi/<identifier>', methods=['DELETE'])
+        def api_remove_wifi(identifier):
+            return self.wifi.handle_remove(identifier)
+
+        @self.app.route('/api/wifi/operations/<operation_id>', methods=['GET'])
+        def api_get_wifi_operation(operation_id):
+            return self.wifi.handle_operation(operation_id)
         
         # Table State Management
         @self.app.route('/api/table', methods=['GET'])

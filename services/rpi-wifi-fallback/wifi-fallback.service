@@ -1,13 +1,12 @@
 [Unit]
 Description=Wi-Fi Fallback Hotspot
 Wants=NetworkManager.service
-After=NetworkManager.service network.target
+After=NetworkManager.service network.target systemd-tmpfiles-setup.service
 # (remove) Wants=NetworkManager-wait-online.service
 
 [Service]
 Type=oneshot
 User=root
-RemainAfterExit=yes
 # (remove) ExecStartPre=/usr/bin/nm-online -q -t 20 || true
 # (remove) ExecStartPre=/bin/sleep 3
 Environment=CONFIG_FILE=/opt/rpi-wifi-fallback/config.env

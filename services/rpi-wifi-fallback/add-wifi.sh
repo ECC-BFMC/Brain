@@ -69,10 +69,19 @@ IFACE=$(strip_crnl "${IFACE:-wlan0}")
 AP_CON_NAME=$(strip_crnl "${CON_NAME:-rpi-hotspot}")
 HOTSPOT_SSID=$(strip_crnl "${SSID:-BFMCDemoCar}")
 DELETE_AP_ON_CLIENT=$(strip_crnl "${DELETE_AP_ON_CLIENT:-true}")
+LOCK_FILE=$(strip_crnl "${LOCK_FILE:-/run/rpi-wifi-fallback/operation.lock}")
 
 TARGET_SSID="$(strip_crnl "$TARGET_SSID")"
 TARGET_PSK="$(strip_crnl "$TARGET_PSK")"
 AUTOCONNECT="$(strip_crnl "$AUTOCONNECT")"
+
+# Serialize manual profile changes with the dashboard and fallback service.
+mkdir -p "$(dirname "$LOCK_FILE")"
+exec 9>"$LOCK_FILE"
+if ! flock -w 120 9; then
+  say "[!] Timed out waiting for another Wi-Fi operation to finish."
+  exit 1
+fi
 
 # Safety: don't try to join our own hotspot
 if [[ "$TARGET_SSID" == "$AP_CON_NAME" || "$TARGET_SSID" == "$HOTSPOT_SSID" ]]; then
@@ -102,6 +111,8 @@ restore_hotspot_on_failure() {
   local fallback_script="$SCRIPT_DIR/fallback.sh"
   [[ -f "$fallback_script" ]] || fallback_script="/opt/rpi-wifi-fallback/fallback.sh"
 
+  # fallback.sh acquires the same lock, so release it before handoff.
+  flock -u 9 || true
   say "Restoring hotspot '$AP_CON_NAME' for access..."
   if [[ -f "$fallback_script" ]]; then
     /bin/bash "$fallback_script" up

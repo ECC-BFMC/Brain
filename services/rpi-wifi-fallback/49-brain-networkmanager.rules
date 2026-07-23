@@ -1,7 +1,11 @@
 // Allow the non-interactive Brain dashboard service to manage Wi-Fi through
 // NetworkManager without granting passwordless sudo or running the backend as root.
 polkit.addRule(function(action, subject) {
-    if (subject.user !== "pi" || !subject.local) {
+    if (
+        subject.user !== "pi" ||
+        subject.system_unit !== "brain-monitor.service" ||
+        subject.no_new_privileges !== true
+    ) {
         return polkit.Result.NOT_HANDLED;
     }
 

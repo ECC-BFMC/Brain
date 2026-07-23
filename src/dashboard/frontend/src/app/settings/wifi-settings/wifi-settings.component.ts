@@ -11,6 +11,7 @@ import { ApiService, WifiNetwork } from '../../services/api.service';
     styleUrls: ['./wifi-settings.component.css']
 })
 export class WifiSettingsComponent implements OnInit, OnDestroy {
+    private readonly operationStorageKey = 'brainWifiOperationId';
     ssid: string = '';
     password: string = '';
     showPassword: boolean = false;
@@ -20,20 +21,30 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
     statusMessage: string = '';
     statusType: 'success' | 'error' | 'info' = 'info';
     private statusTimeout: any;
+    private operationPollTimeout: any;
 
     // Confirmation dialog state
     showConfirmDialog: boolean = false;
     confirmNetworkName: string = '';
+    confirmNetworkId: string = '';
 
     constructor(private apiService: ApiService) { }
 
     ngOnInit(): void {
         this.loadNetworks();
+        const operationId = this.getStoredOperationId();
+        if (operationId) {
+            this.isAdding = true;
+            this.watchOperation(operationId);
+        }
     }
 
     ngOnDestroy(): void {
         if (this.statusTimeout) {
             clearTimeout(this.statusTimeout);
+        }
+        if (this.operationPollTimeout) {
+            clearTimeout(this.operationPollTimeout);
         }
     }
 
@@ -65,38 +76,61 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
         this.apiService.addWifi(this.ssid.trim(), this.password).subscribe({
             next: (response) => {
                 if (response.success) {
-                    this.showStatus(response.message || 'WiFi network added', 'success', 10000);
+                    this.showStatus(
+                        response.message || 'WiFi profile saved; connecting...',
+                        'info',
+                        60000
+                    );
                     this.ssid = '';
                     this.password = '';
-                    // Reload networks after a short delay
-                    setTimeout(() => this.loadNetworks(), 2000);
+                    if (response.operation_id) {
+                        this.storeOperationId(response.operation_id);
+                        this.watchOperation(response.operation_id);
+                    } else {
+                        this.isAdding = false;
+                        this.loadNetworks();
+                    }
                 } else {
                     this.showStatus(response.error || 'Failed to add network', 'error');
+                    this.isAdding = false;
                 }
-                this.isAdding = false;
             },
             error: (err) => {
-                this.showStatus('Failed to connect to server', 'error');
+                const message = err?.error?.error || 'Failed to connect to server';
+                this.showStatus(message, 'error');
                 this.isAdding = false;
             }
         });
     }
 
-    removeNetwork(name: string): void {
-        this.confirmNetworkName = name;
+    removeNetwork(network: WifiNetwork): void {
+        this.confirmNetworkName = network.name;
+        this.confirmNetworkId = network.uuid;
         this.showConfirmDialog = true;
     }
 
     confirmDelete(): void {
         const name = this.confirmNetworkName;
+        const identifier = this.confirmNetworkId;
         this.showConfirmDialog = false;
         this.confirmNetworkName = '';
+        this.confirmNetworkId = '';
 
-        this.apiService.removeWifi(name).subscribe({
+        this.apiService.removeWifi(identifier).subscribe({
             next: (response) => {
                 if (response.success) {
-                    this.showStatus(response.message || 'Network removed', 'success');
-                    this.loadNetworks();
+                    if (response.operation_id && response.state !== 'completed') {
+                        this.showStatus(
+                            response.message || `Removing "${name}"...`,
+                            'info',
+                            60000
+                        );
+                        this.storeOperationId(response.operation_id);
+                        this.watchOperation(response.operation_id);
+                    } else {
+                        this.showStatus(response.message || 'Network removed', 'success');
+                        this.loadNetworks();
+                    }
                 } else {
                     this.showStatus(response.error || 'Failed to remove network', 'error');
                 }
@@ -111,6 +145,85 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
     cancelDelete(): void {
         this.showConfirmDialog = false;
         this.confirmNetworkName = '';
+        this.confirmNetworkId = '';
+    }
+
+    private watchOperation(operationId: string): void {
+        this.isAdding = true;
+        if (this.operationPollTimeout) {
+            clearTimeout(this.operationPollTimeout);
+        }
+
+        this.apiService.getWifiOperation(operationId).subscribe({
+            next: (response) => {
+                const operation = response.operation;
+                if (!response.success || !operation) {
+                    this.finishOperation();
+                    this.showStatus(response.error || 'WiFi operation could not be read', 'error');
+                    return;
+                }
+
+                if (operation.state === 'connected' || operation.state === 'completed') {
+                    this.finishOperation();
+                    this.showStatus(operation.message, 'success', 10000);
+                    this.loadNetworks();
+                    return;
+                }
+
+                if (operation.state === 'failed') {
+                    this.finishOperation();
+                    this.showStatus(operation.message, 'error', 15000);
+                    this.loadNetworks();
+                    return;
+                }
+
+                this.showStatus(operation.message, 'info', 60000);
+                this.operationPollTimeout = setTimeout(
+                    () => this.watchOperation(operationId),
+                    1000
+                );
+            },
+            error: () => {
+                this.showStatus(
+                    'The WiFi connection is changing. Reconnect to the car and reopen Settings to see the final result.',
+                    'info',
+                    60000
+                );
+                this.operationPollTimeout = setTimeout(
+                    () => this.watchOperation(operationId),
+                    3000
+                );
+            }
+        });
+    }
+
+    private finishOperation(): void {
+        this.isAdding = false;
+        if (this.operationPollTimeout) {
+            clearTimeout(this.operationPollTimeout);
+            this.operationPollTimeout = undefined;
+        }
+        try {
+            localStorage.removeItem(this.operationStorageKey);
+        } catch {
+            // Storage can be unavailable in restricted browser modes.
+        }
+    }
+
+    private storeOperationId(operationId: string): void {
+        try {
+            localStorage.setItem(this.operationStorageKey, operationId);
+        } catch {
+            // Polling still works for the current page without persistence.
+        }
+    }
+
+    private getStoredOperationId(): string | null {
+        try {
+            return localStorage.getItem(this.operationStorageKey);
+        } catch {
+            return null;
+        }
     }
 
     private showStatus(message: string, type: 'success' | 'error' | 'info', duration: number = 5000): void {

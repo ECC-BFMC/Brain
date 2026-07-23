@@ -28,7 +28,7 @@ CLIENT_CONNECT_TIMEOUT=${CLIENT_CONNECT_TIMEOUT:-30}
 DELETE_AP_ON_CLIENT=${DELETE_AP_ON_CLIENT:-true}
 
 NMCLI_BIN="${NMCLI_BIN:-nmcli}"
-LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback.lock}"
+LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback/operation.lock}"
 
 run_nmcli() {
   "$NMCLI_BIN" "$@"
