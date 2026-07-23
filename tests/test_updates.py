@@ -7,6 +7,7 @@ or read local files). Those are tested here; the git/network paths are not.
 """
 
 from types import SimpleNamespace
+import os
 import subprocess
 
 import pytest
@@ -164,6 +165,7 @@ def test_success_message_mentions_deps_only_when_changed(updates):
     assert "Dependencies changed" in updates._success_message(True)
     assert "Dependencies changed" not in updates._success_message(False)
     assert "discarded" in updates._success_message(False, forced=True)
+    assert "safely stored" in updates._success_message(False)
 
 
 # --------------------------------------------------------------------------- #
@@ -238,6 +240,73 @@ def test_verified_update_is_staged_then_applied(git_update_repo, app_context):
     assert payload["success"] is True
     assert _git(car, "rev-parse", "HEAD") == target_head
     assert (car / "app.txt").read_text(encoding="utf-8") == "v2\n"
+
+
+def test_verified_update_syncs_worktree_before_success(
+    git_update_repo, app_context, monkeypatch
+):
+    manager, _car, _previous_head, _target_head = git_update_repo
+    real_sync = manager._sync_live_checkout
+    synced_files = []
+
+    def recording_sync(changed_files):
+        synced_files.extend(changed_files)
+        return real_sync(changed_files)
+
+    monkeypatch.setattr(manager, "_sync_live_checkout", recording_sync)
+
+    response = manager.handle_pull()
+
+    assert response.get_json()["success"] is True
+    assert synced_files == ["app.txt"]
+
+
+def test_sync_live_checkout_fsyncs_changed_files(
+    updates, tmp_path, monkeypatch
+):
+    changed = tmp_path / "nested" / "app.txt"
+    changed.parent.mkdir()
+    changed.write_text("durable\n", encoding="utf-8")
+    updates.repo_path = str(tmp_path)
+    fsync_calls = []
+    sync_calls = []
+
+    monkeypatch.setattr(os, "fsync", lambda descriptor: fsync_calls.append(descriptor))
+    if hasattr(os, "sync"):
+        monkeypatch.setattr(os, "sync", lambda: sync_calls.append(True))
+
+    synced, error = updates._sync_live_checkout(["nested/app.txt"])
+
+    assert synced is True
+    assert error == ""
+    assert fsync_calls
+    if hasattr(os, "sync"):
+        assert sync_calls == [True]
+
+
+def test_sync_failure_rolls_update_back(
+    git_update_repo, app_context, monkeypatch
+):
+    manager, car, previous_head, _target_head = git_update_repo
+    sync_attempts = 0
+
+    def failing_first_sync(_changed_files):
+        nonlocal sync_attempts
+        sync_attempts += 1
+        if sync_attempts == 1:
+            return False, "simulated SD-card sync failure"
+        return True, ""
+
+    monkeypatch.setattr(manager, "_sync_live_checkout", failing_first_sync)
+
+    response, status = manager.handle_pull()
+    payload = response.get_json()
+
+    assert status == 500
+    assert payload["verification_failed"] is True
+    assert payload["rolled_back"] is True
+    assert _git(car, "rev-parse", "HEAD") == previous_head
+    assert (car / "app.txt").read_text(encoding="utf-8") == "v1\n"
 
 
 def test_staging_failure_leaves_live_checkout_untouched(

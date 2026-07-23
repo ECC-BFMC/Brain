@@ -603,7 +603,98 @@ class UpdateManager:
             )
         return True, ''
 
-    def _rollback(self, previous_head, previous_branch=''):
+    def _sync_live_checkout(self, changed_files):
+        """Persist checked-out files before reporting an update as successful.
+
+        Git's ``core.fsync`` policy protects Git objects, refs, and the index,
+        but not the live working-tree files written by checkout/merge. On an SD
+        card, a restart immediately after a successful response can otherwise
+        preserve the new metadata while losing dirty file pages, leaving
+        zero-filled source files.
+        """
+        repo_root = os.path.abspath(self.repo_path)
+        directories = {repo_root}
+        try:
+            for relative_path in changed_files:
+                candidate = os.path.abspath(
+                    os.path.join(repo_root, relative_path)
+                )
+                try:
+                    inside_repo = os.path.commonpath(
+                        [repo_root, candidate]
+                    ) == repo_root
+                except ValueError:
+                    inside_repo = False
+                if not inside_repo:
+                    return False, (
+                        f'Refusing to sync a path outside the repository: '
+                        f'{relative_path}'
+                    )
+
+                parent = os.path.dirname(candidate)
+                while parent and parent != repo_root:
+                    directories.add(parent)
+                    parent = os.path.dirname(parent)
+                directories.add(repo_root)
+
+                if os.path.isfile(candidate) and not os.path.islink(candidate):
+                    # Windows rejects fsync on a read-only CRT descriptor;
+                    # Linux (the Raspberry Pi target) accepts O_RDONLY.
+                    open_mode = os.O_RDWR if os.name == 'nt' else os.O_RDONLY
+                    descriptor = os.open(candidate, open_mode)
+                    try:
+                        os.fsync(descriptor)
+                    finally:
+                        os.close(descriptor)
+
+            # Persist directory entries for added, removed, and replaced files.
+            directory_flag = getattr(os, 'O_DIRECTORY', None)
+            if directory_flag is not None:
+                for directory in sorted(
+                    directories,
+                    key=lambda value: value.count(os.sep),
+                    reverse=True,
+                ):
+                    if not os.path.isdir(directory):
+                        continue
+                    descriptor = os.open(
+                        directory,
+                        os.O_RDONLY | directory_flag,
+                    )
+                    try:
+                        os.fsync(descriptor)
+                    finally:
+                        os.close(descriptor)
+
+            # Also flush Git metadata and any filesystem journal records. This
+            # call blocks until the kernel has handed all dirty pages to disk.
+            sync = getattr(os, 'sync', None)
+            if sync is not None:
+                sync()
+            return True, ''
+        except OSError as error:
+            return False, f'Could not persist the updated files: {error}'
+
+    def _make_live_checkout_durable(self, commit, changed_files):
+        """Verify, fsync, then verify again before the HTTP success response."""
+        live_ok, live_error = self._verify_live_checkout(
+            commit, changed_files
+        )
+        if not live_ok:
+            return live_ok, live_error
+
+        synced, sync_error = self._sync_live_checkout(changed_files)
+        if not synced:
+            return False, sync_error
+
+        return self._verify_live_checkout(commit, changed_files)
+
+    def _rollback(
+        self,
+        previous_head,
+        previous_branch='',
+        changed_files=None,
+    ):
         if previous_branch and previous_branch != 'HEAD':
             result = self._git_durable(
                 'checkout', '-f', '-B', previous_branch, previous_head, timeout=None
@@ -617,6 +708,10 @@ class UpdateManager:
                 'Automatic update rollback failed: %s',
                 self._command_error(result, 'git checkout failed'),
             )
+            return False
+        synced, sync_error = self._sync_live_checkout(changed_files or [])
+        if not synced:
+            logger.error('Automatic update rollback was not durable: %s', sync_error)
             return False
         return True
 
@@ -1004,7 +1099,7 @@ class UpdateManager:
             submodules = self._git_durable(
                 'submodule', 'update', '--init', '--recursive', timeout=None
             )
-            live_ok, live_error = self._verify_live_checkout(
+            live_ok, live_error = self._make_live_checkout_durable(
                 remote_commit, changed_files
             )
             if submodules.returncode != 0:
@@ -1015,7 +1110,11 @@ class UpdateManager:
                 )
 
             if not live_ok:
-                rolled_back = self._rollback(head, current_branch)
+                rolled_back = self._rollback(
+                    head,
+                    current_branch,
+                    changed_files,
+                )
                 logger.error(
                     'Live update verification failed (rollback=%s): %s',
                     rolled_back,
@@ -1047,7 +1146,10 @@ class UpdateManager:
     def _success_message(deps_changed, forced=False):
         base = ('Local changes discarded and update applied.' if forced
                 else 'Update successful!')
-        msg = f'{base} Please restart the application for changes to take effect.'
+        msg = (
+            f'{base} Updated files are safely stored. '
+            'Please restart the application for changes to take effect.'
+        )
         if deps_changed:
             msg += (' Dependencies changed -- reinstall them (pip install -r requirements.txt, '
                     'and npm install in src/dashboard/frontend) before restarting.')
@@ -1146,7 +1248,7 @@ class UpdateManager:
             submodules = self._git_durable(
                 'submodule', 'update', '--init', '--recursive', timeout=None
             )
-            live_ok, live_error = self._verify_live_checkout(
+            live_ok, live_error = self._make_live_checkout_durable(
                 remote_commit, changed_files
             )
             if submodules.returncode != 0:
@@ -1157,7 +1259,11 @@ class UpdateManager:
                 )
 
             if not live_ok:
-                rolled_back = self._rollback(head, current_branch)
+                rolled_back = self._rollback(
+                    head,
+                    current_branch,
+                    changed_files,
+                )
                 logger.error(
                     'Live force-update verification failed (rollback=%s): %s',
                     rolled_back,
@@ -1300,7 +1406,10 @@ class UpdateManager:
                             submodules, 'failed to update submodules'
                         )
                     )
-                live_ok, live_error = self._verify_live_checkout(remote_commit)
+                live_ok, live_error = self._make_live_checkout_durable(
+                    remote_commit,
+                    changed_files,
+                )
                 if not live_ok:
                     raise RuntimeError(
                         f'live checkout verification failed: {live_error}'
