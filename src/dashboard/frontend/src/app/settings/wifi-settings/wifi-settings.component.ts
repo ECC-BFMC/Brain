@@ -183,7 +183,18 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                     1000
                 );
             },
-            error: () => {
+            error: (err) => {
+                if (err?.status === 404) {
+                    this.finishOperation();
+                    this.showStatus(
+                        'The previous WiFi operation is no longer available. Showing the current network state.',
+                        'info',
+                        10000
+                    );
+                    this.loadNetworks();
+                    return;
+                }
+
                 this.showStatus(
                     'The WiFi connection is changing. Reconnect to the car and reopen Settings to see the final result.',
                     'info',
