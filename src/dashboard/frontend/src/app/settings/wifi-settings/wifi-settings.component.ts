@@ -11,7 +11,6 @@ import { ApiService, WifiNetwork } from '../../services/api.service';
     styleUrls: ['./wifi-settings.component.css']
 })
 export class WifiSettingsComponent implements OnInit, OnDestroy {
-    private readonly operationStorageKey = 'brainWifiOperationId';
     ssid: string = '';
     password: string = '';
     showPassword: boolean = false;
@@ -32,11 +31,6 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.loadNetworks();
-        const operationId = this.getStoredOperationId();
-        if (operationId) {
-            this.isAdding = true;
-            this.watchOperation(operationId);
-        }
     }
 
     ngOnDestroy(): void {
@@ -84,7 +78,6 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                     this.ssid = '';
                     this.password = '';
                     if (response.operation_id) {
-                        this.storeOperationId(response.operation_id);
                         this.watchOperation(response.operation_id);
                     } else {
                         this.isAdding = false;
@@ -125,7 +118,6 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                             'info',
                             60000
                         );
-                        this.storeOperationId(response.operation_id);
                         this.watchOperation(response.operation_id);
                     } else {
                         this.showStatus(response.message || 'Network removed', 'success');
@@ -213,27 +205,6 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
         if (this.operationPollTimeout) {
             clearTimeout(this.operationPollTimeout);
             this.operationPollTimeout = undefined;
-        }
-        try {
-            localStorage.removeItem(this.operationStorageKey);
-        } catch {
-            // Storage can be unavailable in restricted browser modes.
-        }
-    }
-
-    private storeOperationId(operationId: string): void {
-        try {
-            localStorage.setItem(this.operationStorageKey, operationId);
-        } catch {
-            // Polling still works for the current page without persistence.
-        }
-    }
-
-    private getStoredOperationId(): string | null {
-        try {
-            return localStorage.getItem(this.operationStorageKey);
-        } catch {
-            return null;
         }
     }
 
