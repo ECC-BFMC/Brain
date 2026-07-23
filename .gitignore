@@ -4,6 +4,7 @@ docs/build/
 __pycache__
 **/*.pyc
 /src/dashboard/frontend/node_modules
+/src/dashboard/frontend/.angular/
 /runtime/config.yaml
 /runtime/update_keys/
 /runtime/temp/
