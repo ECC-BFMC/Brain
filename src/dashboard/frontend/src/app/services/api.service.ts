@@ -3,7 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface WifiNetwork {
+    uuid: string;
     name: string;
+    active: boolean;
 }
 
 export interface WifiListResponse {
@@ -12,9 +14,42 @@ export interface WifiListResponse {
     error?: string;
 }
 
+export interface WifiAccessPoint {
+    ssid: string;
+    signal: number;
+    security: string;
+    secured: boolean;
+    saved: boolean;
+    active: boolean;
+}
+
+export interface WifiScanResponse {
+    success: boolean;
+    networks?: WifiAccessPoint[];
+    error?: string;
+}
+
 export interface WifiActionResponse {
     success: boolean;
+    operation_id?: string;
+    state?: string;
     message?: string;
+    error?: string;
+}
+
+export interface WifiOperation {
+    id: string;
+    action: 'add' | 'remove';
+    network: string;
+    state: 'preparing' | 'connecting' | 'disconnecting' | 'connected' | 'completed' | 'failed';
+    message: string;
+    created_at: number;
+    updated_at: number;
+}
+
+export interface WifiOperationResponse {
+    success: boolean;
+    operation?: WifiOperation;
     error?: string;
 }
 
@@ -226,12 +261,26 @@ export class ApiService {
         return this.http.get<WifiListResponse>(`${this.baseUrl}/api/wifi`);
     }
 
-    addWifi(ssid: string, password: string): Observable<WifiActionResponse> {
-        return this.http.post<WifiActionResponse>(`${this.baseUrl}/api/wifi`, { ssid, password });
+    scanWifiNetworks(): Observable<WifiScanResponse> {
+        return this.http.get<WifiScanResponse>(`${this.baseUrl}/api/wifi/scan`);
     }
 
-    removeWifi(name: string): Observable<WifiActionResponse> {
-        return this.http.delete<WifiActionResponse>(`${this.baseUrl}/api/wifi/${encodeURIComponent(name)}`);
+    addWifi(ssid: string, password: string, openNetwork: boolean = false): Observable<WifiActionResponse> {
+        return this.http.post<WifiActionResponse>(`${this.baseUrl}/api/wifi`, {
+            ssid,
+            password,
+            security: openNetwork ? 'open' : 'secured'
+        });
+    }
+
+    removeWifi(identifier: string): Observable<WifiActionResponse> {
+        return this.http.delete<WifiActionResponse>(`${this.baseUrl}/api/wifi/${encodeURIComponent(identifier)}`);
+    }
+
+    getWifiOperation(operationId: string): Observable<WifiOperationResponse> {
+        return this.http.get<WifiOperationResponse>(
+            `${this.baseUrl}/api/wifi/operations/${encodeURIComponent(operationId)}`
+        );
     }
 
     // Table State Management

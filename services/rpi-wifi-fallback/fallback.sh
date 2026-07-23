@@ -28,7 +28,9 @@ CLIENT_CONNECT_TIMEOUT=${CLIENT_CONNECT_TIMEOUT:-30}
 DELETE_AP_ON_CLIENT=${DELETE_AP_ON_CLIENT:-true}
 
 NMCLI_BIN="${NMCLI_BIN:-nmcli}"
-LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback.lock}"
+LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback/operation.lock}"
+LOCK_WAIT_SECONDS="${LOCK_WAIT_SECONDS:-0}"
+HOTSPOT_REQUEST_FILE="${HOTSPOT_REQUEST_FILE:-$(dirname "$LOCK_FILE")/immediate-hotspot}"
 
 run_nmcli() {
   "$NMCLI_BIN" "$@"
@@ -38,9 +40,14 @@ say() { echo "[$(date +'%F %T')] $*"; }
 # single-instance lock
 mkdir -p "$(dirname "$LOCK_FILE")"
 exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-  say "Another instance is running; exiting."
-  exit 0
+if [[ "$LOCK_WAIT_SECONDS" =~ ^[0-9]+$ ]] && (( LOCK_WAIT_SECONDS > 0 )); then
+  if ! flock -w "$LOCK_WAIT_SECONDS" 9; then
+    say "Wi-Fi operation lock stayed busy for ${LOCK_WAIT_SECONDS}s; exiting."
+    exit 0
+  fi
+elif ! flock -n 9; then
+    say "Another instance is running; exiting."
+    exit 0
 fi
 
 nm_state() { run_nmcli -t -f STATE g 2>/dev/null || echo unknown; }
@@ -57,6 +64,16 @@ client_wifi_connected() {
   [[ -n "$uuid" ]] || return 1
   mode=$(run_nmcli -g 802-11-wireless.mode connection show uuid "$uuid" 2>/dev/null || true)
   [[ "$mode" != "ap" ]]
+}
+
+hotspot_active() {
+  [[ "$(run_nmcli -g GENERAL.CONNECTION device show "$IFACE" 2>/dev/null || true)" == "$CON_NAME" ]]
+}
+
+consume_immediate_hotspot_request() {
+  [[ -f "$HOTSPOT_REQUEST_FILE" ]] || return 1
+  rm -f "$HOTSPOT_REQUEST_FILE"
+  say "Immediate hotspot requested; skipping the client reconnect grace period."
 }
 
 wait_for_client() {
@@ -193,18 +210,33 @@ bring_down_ap() {
 }
 
 case "${1:-auto}" in
-  up)   bring_up_ap ;;
+  up)
+    consume_immediate_hotspot_request || true
+    bring_up_ap
+    ;;
   down) bring_down_ap ;;
   auto)
+    immediate_hotspot=false
+    if consume_immediate_hotspot_request; then
+      immediate_hotspot=true
+    fi
+
     say "NM state: $(nm_state); device $IFACE state: $(dev_state || echo '?')"
+    if hotspot_active; then
+      say "Fallback hotspot '$CON_NAME' is already active."
+      exit 0
+    fi
     if client_wifi_connected; then
       say "Client Wi-Fi connected → ensure hotspot is down."
       bring_down_ap
       exit 0
     fi
 
-    # Not connected; give client a grace window before enabling AP
-    if wait_for_client; then
+    # Dashboard removals request an immediate AP. Organic disconnects still
+    # get the normal grace window so brief signal loss does not flap modes.
+    if [[ "$immediate_hotspot" == "true" ]]; then
+      bring_up_ap
+    elif wait_for_client; then
       say "Client Wi-Fi connected during grace period → ensure hotspot is down."
       bring_down_ap
     elif try_saved_clients; then

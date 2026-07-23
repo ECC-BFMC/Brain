@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+IFACE_EVENT="${1:-}"
+ACTION="${2:-}"
+CONFIG_FILE="${CONFIG_FILE:-/opt/rpi-wifi-fallback/config.env}"
+
+[[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
+
+IFACE="${IFACE:-wlan0}"
+CON_NAME="${CON_NAME:-rpi-hotspot}"
+
+# Boot reconciliation is handled by wifi-fallback.service itself. At runtime,
+# only reconcile when the configured Wi-Fi interface loses a non-hotspot link.
+[[ "$IFACE_EVENT" == "$IFACE" && "$ACTION" == "down" ]] || exit 0
+[[ "${CONNECTION_ID:-}" != "$CON_NAME" ]] || exit 0
+
+# Do not block NetworkManager's dispatcher. The service has its own grace
+# period and a shared lock that prevents it racing dashboard Wi-Fi changes.
+systemctl --no-block start wifi-fallback.service

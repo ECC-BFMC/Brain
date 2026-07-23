@@ -33,6 +33,51 @@
 }
 
 /* Form Styles */
+.setup-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.setup-tabs button {
+  flex: 1;
+  min-height: 28px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.setup-tabs button[aria-selected="true"] {
+  border-color: rgba(125, 249, 255, 0.2);
+  background: rgba(125, 249, 255, 0.08);
+  color: #b9fdff;
+}
+
+.setup-tabs button:focus-visible,
+.available-network-item:focus-visible,
+.password-toggle:focus-visible {
+  outline: 2px solid rgba(125, 249, 255, 0.55);
+  outline-offset: 1px;
+}
+
+.setup-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.setup-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .add-wifi-form {
   display: flex;
   flex-direction: column;
@@ -106,6 +151,36 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+.password-toggle span {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.selected-network-form {
+  padding-top: 2px;
+}
+
+.selected-network-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(125, 249, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(125, 249, 255, 0.04);
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+}
+
+.selected-network-summary strong {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Buttons */
 .btn-primary {
   padding: 0.6rem 1.2rem;
@@ -159,6 +234,10 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.available-section {
+  flex: 0 0 auto;
 }
 
 .section-title {
@@ -231,6 +310,10 @@
   flex: 1;
 }
 
+.available-network-list {
+  max-height: 156px;
+}
+
 .network-item {
   display: flex;
   align-items: center;
@@ -240,6 +323,25 @@
   background: rgba(255, 255, 255, 0.03);
   margin-bottom: 0.4rem;
   transition: background 0.2s;
+}
+
+.available-network-item {
+  width: 100%;
+  border: 1px solid transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.available-network-item.selected {
+  border-color: rgba(125, 249, 255, 0.32);
+  background: rgba(125, 249, 255, 0.08);
+}
+
+.available-network-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .network-item:hover {
@@ -259,6 +361,73 @@
 
 .network-name {
   font-size: 0.9rem;
+}
+
+.active-badge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #8fe2ad;
+  background: rgba(46, 160, 89, 0.18);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.saved-badge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.network-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.network-meta svg {
+  opacity: 0.72;
+}
+
+.signal-bars {
+  width: 16px;
+  height: 14px;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
+  flex: 0 0 auto;
+}
+
+.signal-bars span {
+  width: 3px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.signal-bars span:nth-child(1) { height: 4px; }
+.signal-bars span:nth-child(2) { height: 7px; }
+.signal-bars span:nth-child(3) { height: 10px; }
+.signal-bars span:nth-child(4) { height: 13px; }
+
+.signal-bars span.on {
+  background: #7df9ff;
+}
+
+.scan-error {
+  padding: 8px;
+  color: #f5747f;
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.open-network-note {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
 }
 
 .btn-delete {

@@ -8,6 +8,7 @@ ConditionPathExists=/opt/brain-autostart/monitor-dashboard.sh
 Type=simple
 User=pi
 Group=pi
+NoNewPrivileges=true
 WorkingDirectory=/home/pi/Documents/Brain
 Environment=HOME=/home/pi
 EnvironmentFile=/opt/brain-autostart/config.env
