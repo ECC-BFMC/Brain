@@ -16,6 +16,12 @@ POLKIT_RULE_PATH="/etc/polkit-1/rules.d/49-brain-networkmanager.rules"
 TMPFILES_PATH="/etc/tmpfiles.d/rpi-wifi-fallback.conf"
 BRAIN_DROPIN_PATH="/etc/systemd/system/brain-monitor.service.d/20-wifi-security.conf"
 
+# Give only the dashboard service a stable identity that Polkit can match.
+if ! getent group brain-network >/dev/null; then
+  sudo groupadd --system brain-network
+fi
+sudo usermod --append --groups brain-network pi
+
 # Create app directory and copy files
 sudo mkdir -p "$DEST_DIR"
 sudo cp fallback.sh add-wifi.sh config.env "$DEST_DIR/"

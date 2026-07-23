@@ -12,8 +12,7 @@ def test_polkit_rule_is_scoped_to_brain_service_and_required_actions():
     rule = (WIFI_SERVICE / RULE_NAME).read_text(encoding="utf-8")
 
     assert 'subject.user !== "pi"' in rule
-    assert 'subject.system_unit !== "brain-monitor.service"' in rule
-    assert "subject.no_new_privileges !== true" in rule
+    assert 'subject.isInGroup("brain-network")' in rule
     assert "subject.local" not in rule
     assert 'action.id.indexOf("org.freedesktop.NetworkManager.")' not in rule
 

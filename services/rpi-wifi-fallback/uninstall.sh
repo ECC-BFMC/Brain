@@ -22,6 +22,8 @@ sudo systemctl disable wifi-fallback.service 2>/dev/null || true
 sudo rm -f "$POLKIT_RULE_PATH"
 sudo rm -f "$BRAIN_DROPIN_PATH"
 sudo rmdir "$BRAIN_DROPIN_DIR" 2>/dev/null || true
+sudo gpasswd --delete pi brain-network 2>/dev/null || true
+sudo groupdel brain-network 2>/dev/null || true
 
 # Remove unit + reload
 sudo rm -f "$SERVICE_PATH"

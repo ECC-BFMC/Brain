@@ -28,7 +28,10 @@ The installer deploys:
 - `/etc/systemd/system/brain-monitor.service.d/20-wifi-security.conf`;
 - `/etc/tmpfiles.d/rpi-wifi-fallback.conf`.
 
-The `brain-monitor.service` drop-in enables `NoNewPrivileges`, which is required by the scoped Polkit rule. The rule authorizes only user `pi` inside that exact system service.
+The installer creates the system group `brain-network`, adds `pi`, and injects
+the group explicitly into `brain-monitor.service` with `SupplementaryGroups`.
+The scoped Polkit rule authorizes NetworkManager mutations only for user `pi`
+in that group. The drop-in also enables `NoNewPrivileges`.
 
 ## Configuration
 
@@ -81,6 +84,8 @@ Check installation and authorization:
 ```bash
 systemctl cat brain-monitor.service wifi-fallback.service
 systemctl is-active NetworkManager polkit
+systemctl show brain-monitor.service -p MainPID -p NoNewPrivileges -p SupplementaryGroups
+id pi
 sudo cat /etc/polkit-1/rules.d/49-brain-networkmanager.rules
 sudo ls -l /run/rpi-wifi-fallback/operation.lock
 nmcli general permissions

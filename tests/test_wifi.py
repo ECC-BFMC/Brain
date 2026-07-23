@@ -9,6 +9,7 @@ from flask import Flask
 from src.dashboard.components.wifi import (
     WifiCommandError,
     WifiManager,
+    WifiPermissionError,
 )
 
 
@@ -16,6 +17,7 @@ from src.dashboard.components.wifi import (
 def wifi(tmp_path):
     manager = WifiManager(str(tmp_path))
     manager.lock_file = str(tmp_path / "operation.lock")
+    manager._require_permissions = MagicMock()
     return manager
 
 
@@ -93,6 +95,19 @@ def test_list_surfaces_nmcli_failure(wifi):
     assert "insufficient privileges" in body(response)["error"]
 
 
+def test_nmcli_classifies_permission_denial(wifi):
+    denied = nmcli_result(
+        returncode=1,
+        stderr="Connection deletion failed: Insufficient privileges",
+    )
+    with patch(
+        "src.dashboard.components.wifi.subprocess.run",
+        return_value=denied,
+    ):
+        with pytest.raises(WifiPermissionError):
+            wifi._nmcli("connection", "delete", "uuid", "home-uuid")
+
+
 @pytest.mark.parametrize(
     "payload",
     [
@@ -160,6 +175,20 @@ def test_add_returns_real_preparation_error(wifi):
     assert status(response) == 500
     assert body(response)["error"] == "Not authorized"
     thread.assert_not_called()
+
+
+def test_add_permission_denial_happens_before_profile_creation(wifi):
+    wifi._require_permissions.side_effect = WifiPermissionError(
+        "Polkit denied modify.system"
+    )
+    with patch.object(wifi, "_create_candidate") as create_candidate:
+        response = wifi.handle_add({
+            "ssid": "HomeNet",
+            "password": "secret12",
+        })
+
+    assert status(response) == 403
+    create_candidate.assert_not_called()
 
 
 def test_add_rejects_concurrent_operation(wifi):
@@ -317,6 +346,21 @@ def test_remove_active_profile_returns_operation(wifi):
     )
 
 
+def test_remove_active_permission_denial_does_not_disconnect(wifi):
+    saved = profile(active=True)
+    wifi._require_permissions.side_effect = WifiPermissionError(
+        "Polkit denied network-control"
+    )
+    with (
+        patch.object(wifi, "_wifi_profiles", return_value=[saved]),
+        patch("src.dashboard.components.wifi.threading.Thread") as thread,
+    ):
+        response = wifi.handle_remove("home-uuid")
+
+    assert status(response) == 403
+    thread.assert_not_called()
+
+
 def test_remove_active_profile_starts_fallback_after_delete(wifi):
     saved = profile(active=True)
     events = []
@@ -348,6 +392,34 @@ def test_remove_active_profile_starts_fallback_after_delete(wifi):
 
     assert events == ["lock-enter", "delete", "lock-exit", "fallback"]
     assert wifi._operations[operation_id]["state"] == "completed"
+
+
+def test_remove_failure_starts_fallback_when_restore_is_denied(wifi):
+    saved = profile(active=True)
+
+    def run_nmcli(*args, **_kwargs):
+        if "connection" in args and "up" in args:
+            raise WifiPermissionError("restore denied")
+        return nmcli_result()
+
+    with (
+        patch("src.dashboard.components.wifi.time.sleep"),
+        patch.object(wifi, "_radio_lock", return_value=nullcontext()),
+        patch.object(wifi, "_nmcli", side_effect=run_nmcli),
+        patch.object(
+            wifi,
+            "_delete_profile",
+            side_effect=WifiPermissionError("delete denied"),
+        ),
+        patch.object(wifi, "_start_fallback", return_value=True) as fallback,
+    ):
+        operation_id = wifi._begin_operation("remove", "HomeNet")
+        wifi._remove_active_connection(operation_id, saved)
+
+    fallback.assert_called_once_with()
+    operation = wifi._operations[operation_id]
+    assert operation["state"] == "failed"
+    assert "restoring the fallback hotspot" in operation["message"]
 
 
 def test_remove_protects_hotspot_by_mode(wifi):

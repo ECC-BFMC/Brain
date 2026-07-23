@@ -18,6 +18,10 @@ class WifiCommandError(RuntimeError):
     """Raised when NetworkManager rejects a dashboard operation."""
 
 
+class WifiPermissionError(WifiCommandError):
+    """Raised when Polkit denies a required NetworkManager action."""
+
+
 class WifiManager:
     """Manage persistent Wi-Fi profiles through NetworkManager."""
 
@@ -25,6 +29,10 @@ class WifiManager:
     WIFI_TYPES = {'802-11-wireless', 'wifi'}
     TERMINAL_STATES = {'connected', 'completed', 'failed'}
     MAX_OPERATIONS = 50
+    PERMISSION_ENABLE_WIFI = 'org.freedesktop.NetworkManager.enable-disable-wifi'
+    PERMISSION_NETWORK_CONTROL = 'org.freedesktop.NetworkManager.network-control'
+    PERMISSION_MODIFY_SYSTEM = 'org.freedesktop.NetworkManager.settings.modify.system'
+    PERMISSION_WIFI_SCAN = 'org.freedesktop.NetworkManager.wifi.scan'
 
     def __init__(self, repo_path):
         self.repo_path = repo_path
@@ -135,10 +143,52 @@ class WifiManager:
             raise WifiCommandError(str(error)) from error
 
         if check and result.returncode not in allowed_returncodes:
-            raise WifiCommandError(
-                self._command_error(result, 'NetworkManager operation failed')
+            message = self._command_error(
+                result,
+                'NetworkManager operation failed',
             )
+            normalized_message = message.lower()
+            if (
+                'insufficient privileges' in normalized_message
+                or 'not authorized' in normalized_message
+                or 'not authorised' in normalized_message
+            ):
+                raise WifiPermissionError(message)
+            raise WifiCommandError(message)
         return result
+
+    def _require_permissions(self, *required_permissions):
+        result = self._nmcli(
+            '--terse',
+            '--escape',
+            'no',
+            '--fields',
+            'PERMISSION,VALUE',
+            'general',
+            'permissions',
+        )
+        permissions = {}
+        for line in result.stdout.splitlines():
+            permission, separator, value = line.rpartition(':')
+            if separator:
+                permissions[permission] = value.strip().lower()
+
+        denied = [
+            permission
+            for permission in required_permissions
+            if permissions.get(permission) != 'yes'
+        ]
+        if denied:
+            denied_names = ', '.join(denied)
+            raise WifiPermissionError(
+                'Dashboard service is not authorized by Polkit for: '
+                f'{denied_names}. Reinstall the Wi-Fi service and restart '
+                'brain-monitor.service.'
+            )
+
+    @staticmethod
+    def _error_status(error):
+        return 403 if isinstance(error, WifiPermissionError) else 500
 
     def _connection_property(self, connection_uuid, property_name):
         result = self._nmcli(
@@ -494,6 +544,19 @@ class WifiManager:
                 'error': 'WPA password must contain 8-63 characters, or 64 hexadecimal characters',
             }), 400
 
+        try:
+            self._require_permissions(
+                self.PERMISSION_ENABLE_WIFI,
+                self.PERMISSION_NETWORK_CONTROL,
+                self.PERMISSION_MODIFY_SYSTEM,
+                self.PERMISSION_WIFI_SCAN,
+            )
+        except WifiCommandError as error:
+            return jsonify({
+                'success': False,
+                'error': str(error),
+            }), self._error_status(error)
+
         operation_id = self._begin_operation('add', ssid)
         if operation_id is None:
             return jsonify({
@@ -530,7 +593,10 @@ class WifiManager:
                 'failed',
                 f'Could not save "{ssid}": {error}',
             )
-            return jsonify({'success': False, 'error': str(error)}), 500
+            return jsonify({
+                'success': False,
+                'error': str(error),
+            }), self._error_status(error)
 
         worker = threading.Thread(
             target=self._activate_candidate,
@@ -730,6 +796,17 @@ class WifiManager:
                 'error': 'Cannot remove this connection',
             }), 400
 
+        required_permissions = [self.PERMISSION_MODIFY_SYSTEM]
+        if profile['active']:
+            required_permissions.append(self.PERMISSION_NETWORK_CONTROL)
+        try:
+            self._require_permissions(*required_permissions)
+        except WifiCommandError as error:
+            return jsonify({
+                'success': False,
+                'error': str(error),
+            }), self._error_status(error)
+
         operation_id = self._begin_operation('remove', profile['ssid'])
         if operation_id is None:
             return jsonify({
@@ -747,7 +824,10 @@ class WifiManager:
                     'failed',
                     f'Could not remove "{profile["ssid"]}": {error}',
                 )
-                return jsonify({'success': False, 'error': str(error)}), 500
+                return jsonify({
+                    'success': False,
+                    'error': str(error),
+                }), self._error_status(error)
 
             message = f'Network "{profile["ssid"]}" was removed'
             self._update_operation(operation_id, 'completed', message)
@@ -777,6 +857,7 @@ class WifiManager:
     def _remove_active_connection(self, operation_id, profile):
         time.sleep(2)
         removed = False
+        restored = False
         message = f'Could not remove "{profile["ssid"]}"'
 
         try:
@@ -812,6 +893,7 @@ class WifiManager:
                     self.interface,
                     timeout=30,
                 )
+                restored = True
                 message += '; the connection was restored'
             except WifiCommandError:
                 message += '; the connection could not be restored'
@@ -825,4 +907,9 @@ class WifiManager:
                 message += '; fallback could not be started'
             self._update_operation(operation_id, 'completed', message)
         else:
+            if not restored:
+                if self._start_fallback():
+                    message += '; restoring the fallback hotspot'
+                else:
+                    message += '; fallback could not be started'
             self._update_operation(operation_id, 'failed', message)

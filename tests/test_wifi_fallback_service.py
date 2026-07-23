@@ -46,4 +46,7 @@ def test_wifi_installer_enforces_brain_service_sandbox():
     install = (WIFI_SERVICE / "install.sh").read_text(encoding="utf-8")
 
     assert "NoNewPrivileges=true" in dropin
+    assert "SupplementaryGroups=brain-network" in dropin
+    assert "groupadd --system brain-network" in install
+    assert "usermod --append --groups brain-network pi" in install
     assert "systemctl try-restart brain-monitor.service" in install
