@@ -97,6 +97,69 @@ def test_list_surfaces_nmcli_failure(wifi):
     assert "insufficient privileges" in body(response)["error"]
 
 
+def test_scan_returns_strongest_visible_access_points(wifi):
+    wifi.hotspot_ssid = "BFMCDemoCar"
+    saved = [
+        profile(name="Home", ssid="Home", active=True),
+        profile(name="Cafe", ssid="Cafe: Upstairs"),
+    ]
+    scan = nmcli_result(
+        stdout=(
+            "*:Home:80:WPA2\n"
+            ":Home:55:WPA2\n"
+            r":Cafe\: Upstairs:42:WPA2" "\n"
+            ":Guest:70:--\n"
+            ":BFMCDemoCar:100:WPA2\n"
+            "::50:--\n"
+        )
+    )
+
+    with (
+        patch.object(wifi, "_wifi_profiles", return_value=saved),
+        patch.object(wifi, "_nmcli", return_value=scan) as run,
+    ):
+        response = wifi.handle_scan()
+
+    assert status(response) == 200
+    assert body(response)["networks"] == [
+        {
+            "ssid": "Home",
+            "signal": 80,
+            "security": "WPA2",
+            "secured": True,
+            "saved": True,
+            "active": True,
+        },
+        {
+            "ssid": "Cafe: Upstairs",
+            "signal": 42,
+            "security": "WPA2",
+            "secured": True,
+            "saved": True,
+            "active": False,
+        },
+        {
+            "ssid": "Guest",
+            "signal": 70,
+            "security": "Open",
+            "secured": False,
+            "saved": False,
+            "active": False,
+        },
+    ]
+    assert "--rescan" in run.call_args.args
+    assert "yes" in run.call_args.args
+
+
+def test_scan_reports_permission_denial(wifi):
+    wifi._require_permissions.side_effect = WifiPermissionError("scan denied")
+
+    response = wifi.handle_scan()
+
+    assert status(response) == 403
+    assert body(response)["error"] == "scan denied"
+
+
 def test_nmcli_classifies_permission_denial(wifi):
     denied = nmcli_result(
         returncode=1,
@@ -155,6 +218,32 @@ def test_add_prepares_profile_before_returning_accepted(wifi):
         "candidate-uuid",
         ["home-uuid"],
         "home-uuid",
+    )
+    thread.return_value.start.assert_called_once_with()
+
+
+def test_add_prepares_open_network_without_a_password(wifi):
+    with (
+        patch.object(wifi, "_wifi_profiles", return_value=[]),
+        patch.object(
+            wifi,
+            "_create_candidate",
+            return_value="candidate-uuid",
+        ) as create_candidate,
+        patch("src.dashboard.components.wifi.threading.Thread") as thread,
+    ):
+        response = wifi.handle_add({
+            "ssid": "Guest",
+            "password": "",
+            "security": "open",
+        })
+
+    assert status(response) == 202
+    create_candidate.assert_called_once_with(
+        "Guest",
+        "",
+        create_candidate.call_args.args[2],
+        open_network=True,
     )
     thread.return_value.start.assert_called_once_with()
 

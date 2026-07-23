@@ -5,14 +5,69 @@
     {{ statusMessage }}
   </div>
 
+  <!-- Available Networks -->
+  <div class="networks-section available-section">
+    <div class="section-title">
+      <h4>Available Networks</h4>
+      <button class="btn-refresh" (click)="scanNetworks()" [disabled]="isScanning || isAdding"
+        title="Scan for networks" aria-label="Scan for available networks">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" [class.spinning]="isScanning">
+          <path
+            d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="isScanning && availableNetworks.length === 0" class="loading">
+      Scanning for networks...
+    </div>
+
+    <div *ngIf="scanError" class="scan-error">
+      {{ scanError }}
+    </div>
+
+    <div *ngIf="!isScanning && !scanError && availableNetworks.length === 0" class="empty-list">
+      No WiFi networks found.
+    </div>
+
+    <ul class="network-list available-network-list" *ngIf="availableNetworks.length > 0">
+      <li *ngFor="let network of availableNetworks">
+        <button type="button" class="network-item available-network-item"
+          [class.selected]="selectedAccessPoint === network" (click)="selectNetwork(network)"
+          [disabled]="isAdding" [attr.aria-label]="'Select ' + network.ssid">
+          <div class="network-info">
+            <span class="signal-bars" [attr.aria-label]="'Signal ' + network.signal + '%'">
+              <span [class.on]="network.signal >= 15"></span>
+              <span [class.on]="network.signal >= 35"></span>
+              <span [class.on]="network.signal >= 60"></span>
+              <span [class.on]="network.signal >= 80"></span>
+            </span>
+            <span class="network-name">{{ network.ssid }}</span>
+            <span *ngIf="network.active" class="active-badge">Connected</span>
+            <span *ngIf="network.saved && !network.active" class="saved-badge">Saved</span>
+          </div>
+          <div class="network-meta">
+            <span>{{ network.security }}</span>
+            <svg *ngIf="network.secured" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
+              aria-label="Password required">
+              <path
+                d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z" />
+            </svg>
+          </div>
+        </button>
+      </li>
+    </ul>
+  </div>
+
   <!-- Add WiFi Form -->
   <div class="add-wifi-form">
     <div class="form-group">
       <label for="ssid">Network Name (SSID)</label>
-      <input type="text" id="ssid" [(ngModel)]="ssid" placeholder="Enter WiFi name" [disabled]="isAdding" />
+      <input type="text" id="ssid" [(ngModel)]="ssid" (ngModelChange)="onSsidChanged($event)"
+        placeholder="Select a network or enter its name" [disabled]="isAdding" />
     </div>
 
-    <div class="form-group">
+    <div class="form-group" *ngIf="requiresPassword()">
       <label for="password">Password</label>
       <div class="password-input-wrapper">
         <input [type]="showPassword ? 'text' : 'password'" id="password" [(ngModel)]="password"
@@ -30,7 +85,12 @@
       </div>
     </div>
 
-    <button class="btn-primary add-btn" (click)="addWifi()" [disabled]="isAdding || !ssid.trim() || !password.trim()">
+    <div *ngIf="!requiresPassword() && ssid" class="open-network-note">
+      This is an open network and does not require a password.
+    </div>
+
+    <button class="btn-primary add-btn" (click)="addWifi()"
+      [disabled]="isAdding || !ssid.trim() || (requiresPassword() && !password)">
       <span *ngIf="!isAdding">Add WiFi</span>
       <span *ngIf="isAdding">Adding...</span>
     </button>

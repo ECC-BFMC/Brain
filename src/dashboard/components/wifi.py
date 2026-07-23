@@ -42,6 +42,10 @@ class WifiManager:
             'WIFI_HOTSPOT_CONNECTION',
             config.get('CON_NAME', 'rpi-hotspot'),
         )
+        self.hotspot_ssid = os.environ.get(
+            'WIFI_HOTSPOT_SSID',
+            config.get('SSID', 'BFMCDemoCar'),
+        )
         self.delete_hotspot_on_client = (
             config.get('DELETE_AP_ON_CLIENT', 'true').lower() == 'true'
         )
@@ -89,6 +93,7 @@ class WifiManager:
                             continue
                         key, raw_value = line.split('=', 1)
                         if key not in {
+                            'SSID',
                             'IFACE',
                             'CON_NAME',
                             'DELETE_AP_ON_CLIENT',
@@ -284,6 +289,89 @@ class WifiManager:
         except WifiCommandError as error:
             LOGGER.error('Cannot list Wi-Fi profiles: %s', error)
             return jsonify({'success': False, 'error': str(error)}), 500
+
+    def handle_scan(self):
+        """Force a scan and return visible access points grouped by network."""
+        try:
+            self._require_permissions(self.PERMISSION_WIFI_SCAN)
+            profiles = [
+                profile
+                for profile in self._wifi_profiles()
+                if (
+                    profile['mode'] != 'ap'
+                    and profile['name'] not in self.PROTECTED_CONNECTIONS
+                    and profile['name'] != self.hotspot_name
+                )
+            ]
+            saved_ssids = {profile['ssid'] for profile in profiles}
+            active_ssids = {
+                profile['ssid']
+                for profile in profiles
+                if profile['active']
+            }
+            result = self._nmcli(
+                '--terse',
+                '--escape',
+                'yes',
+                '--fields',
+                'IN-USE,SSID,SIGNAL,SECURITY',
+                'device',
+                'wifi',
+                'list',
+                'ifname',
+                self.interface,
+                '--rescan',
+                'yes',
+                timeout=20,
+            )
+
+            strongest = {}
+            for line in result.stdout.splitlines():
+                fields = self._split_terse_line(line)
+                if len(fields) != 4:
+                    continue
+
+                in_use, ssid, signal_value, security_value = fields
+                ssid = ssid.strip()
+                if not ssid or ssid == self.hotspot_ssid:
+                    continue
+                try:
+                    signal = max(0, min(100, int(signal_value)))
+                except ValueError:
+                    continue
+
+                raw_security = security_value.strip()
+                secured = raw_security not in {'', '--'}
+                security = raw_security if secured else 'Open'
+                key = (ssid, security)
+                network = {
+                    'ssid': ssid,
+                    'signal': signal,
+                    'security': security,
+                    'secured': secured,
+                    'saved': ssid in saved_ssids,
+                    'active': in_use.strip() == '*' or ssid in active_ssids,
+                }
+                previous = strongest.get(key)
+                if previous is None or signal > previous['signal']:
+                    strongest[key] = network
+
+            networks = list(strongest.values())
+            networks.sort(
+                key=lambda network: (
+                    not network['active'],
+                    not network['saved'],
+                    -network['signal'],
+                    network['ssid'].lower(),
+                )
+            )
+            return jsonify({'success': True, 'networks': networks})
+        except WifiCommandError as error:
+            LOGGER.error('Cannot scan Wi-Fi networks: %s', error)
+            return jsonify({
+                'success': False,
+                'error': str(error),
+            }), self._error_status(error)
 
     def _prune_operations_locked(self):
         if len(self._operations) <= self.MAX_OPERATIONS:
@@ -484,7 +572,13 @@ class WifiManager:
             return True
         return len(password) == 64 and re.fullmatch(r'[0-9a-fA-F]{64}', password)
 
-    def _create_candidate(self, ssid, password, candidate_name):
+    def _create_candidate(
+        self,
+        ssid,
+        password,
+        candidate_name,
+        open_network=False,
+    ):
         self._nmcli(
             'connection',
             'add',
@@ -515,17 +609,11 @@ class WifiManager:
             raise WifiCommandError('NetworkManager did not return the new profile UUID')
 
         try:
-            self._nmcli(
+            modify_args = [
                 'connection',
                 'modify',
                 'uuid',
                 candidate_uuid,
-                '802-11-wireless-security.key-mgmt',
-                'wpa-psk',
-                '802-11-wireless-security.psk',
-                password,
-                '802-11-wireless-security.psk-flags',
-                '0',
                 '802-11-wireless.mode',
                 'infrastructure',
                 '802-11-wireless.cloned-mac-address',
@@ -536,7 +624,17 @@ class WifiManager:
                 'no',
                 'connection.autoconnect-priority',
                 '20',
-            )
+            ]
+            if not open_network:
+                modify_args.extend([
+                    '802-11-wireless-security.key-mgmt',
+                    'wpa-psk',
+                    '802-11-wireless-security.psk',
+                    password,
+                    '802-11-wireless-security.psk-flags',
+                    '0',
+                ])
+            self._nmcli(*modify_args)
         except WifiCommandError:
             self._delete_profile(candidate_uuid, ignore_missing=True)
             raise
@@ -569,14 +667,29 @@ class WifiManager:
 
         ssid_value = data.get('ssid', '')
         password = data.get('password', '')
+        security = data.get('security', 'secured')
         ssid = ssid_value.strip() if isinstance(ssid_value, str) else ''
+        open_network = security == 'open'
 
-        if not ssid or not isinstance(password, str) or not password:
+        if security not in {'open', 'secured'}:
             return jsonify({
                 'success': False,
-                'error': 'SSID and password are required',
+                'error': 'Wi-Fi security type is invalid',
             }), 400
-        if not self._valid_wpa_psk(password):
+        if (
+            not ssid
+            or not isinstance(password, str)
+            or (not open_network and not password)
+        ):
+            return jsonify({
+                'success': False,
+                'error': (
+                    'SSID is required'
+                    if open_network
+                    else 'SSID and password are required'
+                ),
+            }), 400
+        if not open_network and not self._valid_wpa_psk(password):
             return jsonify({
                 'success': False,
                 'error': 'WPA password must contain 8-63 characters, or 64 hexadecimal characters',
@@ -619,11 +732,19 @@ class WifiManager:
                     ),
                     None,
                 )
-                candidate_uuid = self._create_candidate(
-                    ssid,
-                    password,
-                    candidate_name,
-                )
+                if open_network:
+                    candidate_uuid = self._create_candidate(
+                        ssid,
+                        password,
+                        candidate_name,
+                        open_network=True,
+                    )
+                else:
+                    candidate_uuid = self._create_candidate(
+                        ssid,
+                        password,
+                        candidate_name,
+                    )
         except WifiCommandError as error:
             LOGGER.error('Cannot prepare Wi-Fi profile %r: %s', ssid, error)
             self._update_operation(

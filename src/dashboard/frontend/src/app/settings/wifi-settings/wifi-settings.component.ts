@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, WifiNetwork } from '../../services/api.service';
+import { ApiService, WifiAccessPoint, WifiNetwork } from '../../services/api.service';
 
 @Component({
     selector: 'app-wifi-settings',
@@ -15,7 +15,11 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
     password: string = '';
     showPassword: boolean = false;
     networks: WifiNetwork[] = [];
+    availableNetworks: WifiAccessPoint[] = [];
+    selectedAccessPoint?: WifiAccessPoint;
     isLoading: boolean = false;
+    isScanning: boolean = false;
+    scanError: string = '';
     isAdding: boolean = false;
     statusMessage: string = '';
     statusType: 'success' | 'error' | 'info' = 'info';
@@ -31,6 +35,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.loadNetworks();
+        this.scanNetworks();
     }
 
     ngOnDestroy(): void {
@@ -60,14 +65,61 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
         });
     }
 
+    scanNetworks(): void {
+        this.isScanning = true;
+        this.scanError = '';
+        this.apiService.scanWifiNetworks().subscribe({
+            next: (response) => {
+                if (response.success) {
+                    this.availableNetworks = response.networks || [];
+                } else {
+                    this.scanError = response.error || 'Failed to scan for networks';
+                }
+                this.isScanning = false;
+            },
+            error: (err) => {
+                this.scanError = err?.error?.error || 'Failed to scan for networks';
+                this.isScanning = false;
+            }
+        });
+    }
+
+    selectNetwork(network: WifiAccessPoint): void {
+        if (this.isAdding) {
+            return;
+        }
+        this.selectedAccessPoint = network;
+        this.ssid = network.ssid;
+        this.password = '';
+    }
+
+    onSsidChanged(value: string): void {
+        if (this.selectedAccessPoint?.ssid !== value) {
+            this.selectedAccessPoint = undefined;
+        }
+    }
+
+    requiresPassword(): boolean {
+        return this.selectedAccessPoint?.secured !== false;
+    }
+
     addWifi(): void {
-        if (!this.ssid.trim() || !this.password.trim()) {
-            this.showStatus('Please enter both SSID and password', 'error');
+        if (!this.ssid.trim() || (this.requiresPassword() && !this.password)) {
+            this.showStatus(
+                this.requiresPassword()
+                    ? 'Please enter both SSID and password'
+                    : 'Please select or enter a network',
+                'error'
+            );
             return;
         }
 
         this.isAdding = true;
-        this.apiService.addWifi(this.ssid.trim(), this.password).subscribe({
+        this.apiService.addWifi(
+            this.ssid.trim(),
+            this.password,
+            !this.requiresPassword()
+        ).subscribe({
             next: (response) => {
                 if (response.success) {
                     this.showStatus(
@@ -77,11 +129,13 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                     );
                     this.ssid = '';
                     this.password = '';
+                    this.selectedAccessPoint = undefined;
                     if (response.operation_id) {
                         this.watchOperation(response.operation_id);
                     } else {
                         this.isAdding = false;
                         this.loadNetworks();
+                        this.scanNetworks();
                     }
                 } else {
                     this.showStatus(response.error || 'Failed to add network', 'error');
@@ -122,6 +176,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                     } else {
                         this.showStatus(response.message || 'Network removed', 'success');
                         this.loadNetworks();
+                        this.scanNetworks();
                     }
                 } else {
                     this.showStatus(response.error || 'Failed to remove network', 'error');
@@ -159,6 +214,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                     this.finishOperation();
                     this.showStatus(operation.message, 'success', 10000);
                     this.loadNetworks();
+                    this.scanNetworks();
                     return;
                 }
 
@@ -166,6 +222,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                     this.finishOperation();
                     this.showStatus(operation.message, 'error', 15000);
                     this.loadNetworks();
+                    this.scanNetworks();
                     return;
                 }
 
@@ -184,6 +241,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                         10000
                     );
                     this.loadNetworks();
+                    this.scanNetworks();
                     return;
                 }
 

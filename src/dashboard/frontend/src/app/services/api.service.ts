@@ -14,6 +14,21 @@ export interface WifiListResponse {
     error?: string;
 }
 
+export interface WifiAccessPoint {
+    ssid: string;
+    signal: number;
+    security: string;
+    secured: boolean;
+    saved: boolean;
+    active: boolean;
+}
+
+export interface WifiScanResponse {
+    success: boolean;
+    networks?: WifiAccessPoint[];
+    error?: string;
+}
+
 export interface WifiActionResponse {
     success: boolean;
     operation_id?: string;
@@ -246,8 +261,16 @@ export class ApiService {
         return this.http.get<WifiListResponse>(`${this.baseUrl}/api/wifi`);
     }
 
-    addWifi(ssid: string, password: string): Observable<WifiActionResponse> {
-        return this.http.post<WifiActionResponse>(`${this.baseUrl}/api/wifi`, { ssid, password });
+    scanWifiNetworks(): Observable<WifiScanResponse> {
+        return this.http.get<WifiScanResponse>(`${this.baseUrl}/api/wifi/scan`);
+    }
+
+    addWifi(ssid: string, password: string, openNetwork: boolean = false): Observable<WifiActionResponse> {
+        return this.http.post<WifiActionResponse>(`${this.baseUrl}/api/wifi`, {
+            ssid,
+            password,
+            security: openNetwork ? 'open' : 'secured'
+        });
     }
 
     removeWifi(identifier: string): Observable<WifiActionResponse> {
