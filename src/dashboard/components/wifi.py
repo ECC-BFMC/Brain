@@ -49,6 +49,13 @@ class WifiManager:
             'WIFI_LOCK_FILE',
             '/run/rpi-wifi-fallback/operation.lock',
         )
+        self.hotspot_request_file = os.environ.get(
+            'WIFI_HOTSPOT_REQUEST_FILE',
+            os.path.join(
+                os.path.dirname(self.lock_file),
+                'immediate-hotspot',
+            ),
+        )
         self.config_file = config.get(
             '_path',
             '/opt/rpi-wifi-fallback/config.env',
@@ -428,6 +435,7 @@ class WifiManager:
         env['CONFIG_FILE'] = self.config_file
         env['LOG'] = '/tmp/rpi-wifi-fallback.log'
         env['LOCK_FILE'] = self.lock_file
+        env['HOTSPOT_REQUEST_FILE'] = self.hotspot_request_file
         # The systemd/dispatcher path waits for an in-flight dashboard
         # operation. This direct backup launch happens after the dashboard lock
         # is released, so it must not queue behind another reconciler.
@@ -444,6 +452,31 @@ class WifiManager:
         except OSError:
             LOGGER.exception('Cannot launch Wi-Fi fallback')
             return False
+
+    def _request_immediate_hotspot(self):
+        """Tell a dispatcher-started reconciler to skip its reconnect grace."""
+        try:
+            with open(self.hotspot_request_file, 'w', encoding='utf-8'):
+                pass
+            return True
+        except OSError:
+            LOGGER.exception(
+                'Cannot create immediate hotspot request %s',
+                self.hotspot_request_file,
+            )
+            return False
+
+    def _cancel_immediate_hotspot(self):
+        """Remove a request when the client connection was restored."""
+        try:
+            os.remove(self.hotspot_request_file)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            LOGGER.exception(
+                'Cannot remove immediate hotspot request %s',
+                self.hotspot_request_file,
+            )
 
     @staticmethod
     def _valid_wpa_psk(password):
@@ -867,6 +900,7 @@ class WifiManager:
 
         try:
             with self._radio_lock():
+                self._request_immediate_hotspot()
                 self._update_operation(
                     operation_id,
                     'disconnecting',
@@ -899,6 +933,7 @@ class WifiManager:
                     timeout=30,
                 )
                 restored = True
+                self._cancel_immediate_hotspot()
                 message += '; the connection was restored'
             except WifiCommandError:
                 message += '; the connection could not be restored'

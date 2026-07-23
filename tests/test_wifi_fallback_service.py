@@ -41,6 +41,8 @@ def test_installer_deploys_dispatcher_helper_and_shared_lock():
     assert 'flock -w "$LOCK_WAIT_SECONDS"' in fallback
     assert "hotspot_active" in fallback
     assert "is already active" in fallback
+    assert "consume_immediate_hotspot_request" in fallback
+    assert "skipping the client reconnect grace period" in fallback
 
 
 def test_wifi_installer_enforces_brain_service_sandbox():

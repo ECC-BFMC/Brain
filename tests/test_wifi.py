@@ -1,5 +1,6 @@
 """Unit tests for the NetworkManager-backed Wi-Fi API handlers."""
 
+import os
 from contextlib import nullcontext
 from unittest.mock import MagicMock, call, patch
 
@@ -17,6 +18,7 @@ from src.dashboard.components.wifi import (
 def wifi(tmp_path):
     manager = WifiManager(str(tmp_path))
     manager.lock_file = str(tmp_path / "operation.lock")
+    manager.hotspot_request_file = str(tmp_path / "immediate-hotspot")
     manager._require_permissions = MagicMock()
     return manager
 
@@ -392,6 +394,7 @@ def test_remove_active_profile_starts_fallback_after_delete(wifi):
 
     assert events == ["lock-enter", "delete", "lock-exit", "fallback"]
     assert wifi._operations[operation_id]["state"] == "completed"
+    assert os.path.isfile(wifi.hotspot_request_file)
 
 
 def test_direct_fallback_does_not_wait_for_another_reconciler(wifi, tmp_path):
@@ -406,6 +409,28 @@ def test_direct_fallback_does_not_wait_for_another_reconciler(wifi, tmp_path):
 
     env = popen.call_args.kwargs["env"]
     assert env["LOCK_WAIT_SECONDS"] == "0"
+    assert env["HOTSPOT_REQUEST_FILE"] == wifi.hotspot_request_file
+
+
+def test_restored_connection_cancels_immediate_hotspot_request(wifi):
+    saved = profile(active=True)
+
+    with (
+        patch("src.dashboard.components.wifi.time.sleep"),
+        patch.object(wifi, "_radio_lock", return_value=nullcontext()),
+        patch.object(wifi, "_nmcli", return_value=nmcli_result()),
+        patch.object(
+            wifi,
+            "_delete_profile",
+            side_effect=WifiPermissionError("delete denied"),
+        ),
+        patch.object(wifi, "_start_fallback") as fallback,
+    ):
+        operation_id = wifi._begin_operation("remove", "HomeNet")
+        wifi._remove_active_connection(operation_id, saved)
+
+    assert not os.path.exists(wifi.hotspot_request_file)
+    fallback.assert_not_called()
 
 
 def test_remove_failure_starts_fallback_when_restore_is_denied(wifi):

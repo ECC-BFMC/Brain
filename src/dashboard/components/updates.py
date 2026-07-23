@@ -1,14 +1,28 @@
 import base64
+from contextlib import contextmanager
+import importlib.util
 import json
+import logging
 import os
 import shutil
 import subprocess
+import sys
+import tempfile
+import threading
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
 
 import yaml
 from flask import jsonify
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows development fallback
+    fcntl = None
+
+
+logger = logging.getLogger(__name__)
 
 
 class UpdateManager:
@@ -28,6 +42,7 @@ class UpdateManager:
 
     def __init__(self, repo_path):
         self.repo_path = repo_path
+        self._update_lock = threading.Lock()
 
     # ----------------------------- config -----------------------------
 
@@ -194,6 +209,16 @@ class UpdateManager:
         "Raspberry Pi, run: sudo chown -R $(id -u):$(id -g) ~/Documents/Brain"
     )
 
+    UPDATE_BUSY_MESSAGE = (
+        "Another repository operation is already running. Wait for it to finish, "
+        "then try again."
+    )
+
+    CORRUPT_REPO_MESSAGE = (
+        "The local Git checkout is damaged or incomplete. Do not continue updating "
+        "this folder; restore it from a clean clone first."
+    )
+
     @classmethod
     def _is_permission_error(cls, text):
         if not text:
@@ -307,7 +332,11 @@ class UpdateManager:
     def _deps_changed(files):
         """True if a dependency manifest changed in the update range (#7)."""
         for f in files:
-            if os.path.basename(f) == 'requirements.txt' or f.endswith('frontend/package.json'):
+            if (
+                os.path.basename(f) == 'requirements.txt'
+                or f.endswith('frontend/package.json')
+                or f.endswith('frontend/package-lock.json')
+            ):
                 return True
         return False
 
@@ -315,6 +344,281 @@ class UpdateManager:
         git_dir = os.path.join(self.repo_path, '.git')
         if os.path.isdir(git_dir):
             shutil.rmtree(git_dir, ignore_errors=True)
+
+    # ----------------------------- update transaction -----------------------------
+
+    def _lock_path(self):
+        return os.path.join(self.repo_path, 'runtime', '.brain-update.lock')
+
+    @contextmanager
+    def _update_guard(self):
+        """Serialize repository mutations in this process and, on Linux, across
+        dashboard processes. The OS releases the file lock if the process dies,
+        so a crash cannot leave a stale lock blocking future recovery."""
+        if not self._update_lock.acquire(blocking=False):
+            yield False
+            return
+
+        lock_file = None
+        acquired = True
+        try:
+            if fcntl is not None:
+                os.makedirs(os.path.dirname(self._lock_path()), exist_ok=True)
+                lock_file = open(self._lock_path(), 'a+')
+                try:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    acquired = False
+            yield acquired
+        finally:
+            if lock_file is not None:
+                if acquired:
+                    try:
+                        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                    except OSError:
+                        pass
+                lock_file.close()
+            self._update_lock.release()
+
+    def _busy_response(self):
+        return jsonify({
+            'success': False,
+            'update_in_progress': True,
+            'error': self.UPDATE_BUSY_MESSAGE,
+        }), 409
+
+    @staticmethod
+    def _command_error(result, fallback):
+        output = ((result.stderr or '') + '\n' + (result.stdout or '')).strip()
+        return output or fallback
+
+    def _verify_commit(self, commit):
+        """Verify that an incoming commit and every object reachable from it can
+        be read before it is allowed to touch the live checkout."""
+        if not commit:
+            return False, 'The update source did not provide a commit.'
+
+        exists = self._git('cat-file', '-e', f'{commit}^{{commit}}', timeout=30)
+        if exists.returncode != 0:
+            return False, self._command_error(
+                exists, 'The target commit is missing or unreadable.'
+            )
+
+        fsck = self._git(
+            'fsck', '--no-dangling', '--no-progress', commit, timeout=180
+        )
+        if fsck.returncode != 0:
+            return False, self._command_error(
+                fsck, 'Git object verification failed.'
+            )
+        return True, ''
+
+    def _fetch_verified(self, remote):
+        """Fetch with object validation enabled. Fetch may time out because it
+        does not touch the live working tree; the later integrity check prevents
+        incomplete objects from being applied."""
+        return self._git_durable(
+            '-c', 'fetch.fsckObjects=true',
+            '-c', 'transfer.fsckObjects=true',
+            'fetch', remote, '--recurse-submodules', timeout=300,
+        )
+
+    def _git_durable(self, *args, timeout):
+        """Run a repository mutation with Git's strongest fsync policy.
+
+        Raspberry Pi installations commonly use SD cards and may be powered off
+        without a clean shutdown. Hardening objects, refs, and the index reduces
+        the chance of a reported-success update disappearing after power loss.
+        """
+        return self._git(
+            '-c', 'core.fsync=all',
+            '-c', 'core.fsyncMethod=fsync',
+            *args,
+            timeout=timeout,
+        )
+
+    def _run_validation_command(self, args, cwd, timeout, label, env=None):
+        try:
+            result = subprocess.run(
+                args,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env=env,
+            )
+        except subprocess.TimeoutExpired:
+            return False, f'{label} timed out.'
+        except OSError as exc:
+            return False, f'{label} could not start: {exc}'
+        if result.returncode != 0:
+            return False, (
+                f'{label} failed.\n'
+                f'{self._command_error(result, "No command output was produced.")}'
+            )
+        return True, ''
+
+    def _validate_staged_checkout(self, commit, changed_files):
+        """Materialize and validate the incoming commit outside the live tree.
+
+        Git integrity and checkout validation always run. Changed Python files
+        are compiled, updater tests run when the updater itself changes, and an
+        Angular production build runs when frontend files change.
+        """
+        parent = os.path.dirname(os.path.realpath(self.repo_path))
+        temp_root = tempfile.mkdtemp(prefix='.brain-update-', dir=parent)
+        staged = os.path.join(temp_root, 'checkout')
+        worktree_added = False
+        try:
+            self._git('worktree', 'prune', '--expire', 'now', timeout=30)
+            checkout = self._git(
+                'worktree', 'add', '--detach', staged, commit, timeout=None
+            )
+            if checkout.returncode != 0:
+                return False, (
+                    'Could not create the isolated update checkout.\n'
+                    f'{self._command_error(checkout, "git worktree add failed")}'
+                )
+            worktree_added = True
+
+            clean = self._git(
+                '-C', staged, 'diff', '--quiet', commit, '--', timeout=60
+            )
+            if clean.returncode != 0:
+                return False, 'The isolated checkout does not match the target commit.'
+
+            python_files = [
+                os.path.join(staged, path)
+                for path in changed_files
+                if path.endswith('.py') and os.path.isfile(os.path.join(staged, path))
+            ]
+            if python_files:
+                ok, error = self._run_validation_command(
+                    [sys.executable, '-m', 'py_compile', *python_files],
+                    cwd=staged,
+                    timeout=180,
+                    label='Python compilation',
+                )
+                if not ok:
+                    return False, error
+
+            updater_changed = any(
+                path in (
+                    'src/dashboard/components/updates.py',
+                    'tests/test_updates.py',
+                )
+                for path in changed_files
+            )
+            updater_tests = os.path.join(staged, 'tests', 'test_updates.py')
+            if (
+                updater_changed
+                and os.path.isfile(updater_tests)
+                and importlib.util.find_spec('pytest') is not None
+            ):
+                ok, error = self._run_validation_command(
+                    [sys.executable, '-m', 'pytest', 'tests/test_updates.py', '-q',
+                     '-p', 'no:cacheprovider', '--basetemp',
+                     os.path.join(temp_root, 'pytest')],
+                    cwd=staged,
+                    timeout=300,
+                    label='Updater tests',
+                )
+                if not ok:
+                    return False, error
+
+            frontend_changed = any(
+                path.startswith('src/dashboard/frontend/')
+                for path in changed_files
+            )
+            if frontend_changed:
+                npm = shutil.which('npm')
+                live_frontend = os.path.join(
+                    self.repo_path, 'src', 'dashboard', 'frontend'
+                )
+                staged_frontend = os.path.join(
+                    staged, 'src', 'dashboard', 'frontend'
+                )
+                live_modules = os.path.join(live_frontend, 'node_modules')
+                staged_modules = os.path.join(staged_frontend, 'node_modules')
+                if not npm:
+                    return False, 'Frontend verification needs npm.'
+
+                frontend_deps_changed = any(
+                    path.endswith('src/dashboard/frontend/package.json')
+                    or path.endswith('src/dashboard/frontend/package-lock.json')
+                    for path in changed_files
+                )
+                if frontend_deps_changed:
+                    ok, error = self._run_validation_command(
+                        [npm, 'ci', '--no-audit', '--no-fund'],
+                        cwd=staged_frontend,
+                        timeout=1800,
+                        label='Frontend dependency installation',
+                    )
+                    if not ok:
+                        return False, error
+                elif not os.path.isdir(live_modules):
+                    return False, (
+                        'Frontend verification needs the installed node_modules '
+                        'directory.'
+                    )
+                elif not os.path.exists(staged_modules):
+                    os.symlink(live_modules, staged_modules, target_is_directory=True)
+
+                build_output = os.path.join(temp_root, 'angular-build')
+                build_env = dict(os.environ)
+                build_env['NG_CLI_ANALYTICS'] = 'false'
+                ok, error = self._run_validation_command(
+                    [npm, 'run', 'build', '--', '--output-path', build_output],
+                    cwd=staged_frontend,
+                    timeout=900,
+                    label='Angular production build',
+                    env=build_env,
+                )
+                if not ok:
+                    return False, error
+
+            return True, ''
+        finally:
+            if worktree_added:
+                self._git(
+                    'worktree', 'remove', '--force', staged, timeout=None
+                )
+            shutil.rmtree(temp_root, ignore_errors=True)
+            self._git('worktree', 'prune', '--expire', 'now', timeout=30)
+
+    def _verify_live_checkout(self, commit, changed_files=None):
+        current = self._git('rev-parse', 'HEAD', timeout=10)
+        if current.returncode != 0 or current.stdout.strip() != commit:
+            return False, 'The live checkout did not move to the verified commit.'
+
+        verified, error = self._verify_commit(commit)
+        if not verified:
+            return False, error
+
+        diff = self._git('diff', '--quiet', commit, '--', timeout=120)
+        if diff.returncode != 0:
+            return False, (
+                'Updated files do not match the verified commit after checkout.'
+            )
+        return True, ''
+
+    def _rollback(self, previous_head, previous_branch=''):
+        if previous_branch and previous_branch != 'HEAD':
+            result = self._git_durable(
+                'checkout', '-f', '-B', previous_branch, previous_head, timeout=None
+            )
+        else:
+            result = self._git_durable(
+                'checkout', '-f', '--detach', previous_head, timeout=None
+            )
+        if result.returncode != 0:
+            logger.error(
+                'Automatic update rollback failed: %s',
+                self._command_error(result, 'git checkout failed'),
+            )
+            return False
+        return True
 
     # ----------------------------- github api -----------------------------
 
@@ -416,7 +720,7 @@ class UpdateManager:
     def _check_via_git(self, remote, branch, head):
         """Update check via git fetch (works for private repos through the
         deploy key, and any provider)."""
-        fetch = self._git('fetch', remote, timeout=60)
+        fetch = self._fetch_verified(remote)
         if fetch.returncode != 0:
             auth_required = self._is_auth_error(fetch.stderr or fetch.stdout)
             return {
@@ -475,6 +779,12 @@ class UpdateManager:
 
     def handle_check(self):
         """Check whether an update is available from the configured source."""
+        with self._update_guard() as acquired:
+            if not acquired:
+                return self._busy_response()
+            return self._handle_check_locked()
+
+    def _handle_check_locked(self):
         try:
             if not self._is_git_repo():
                 cfg = self._load_config()
@@ -492,6 +802,17 @@ class UpdateManager:
                 return jsonify({'success': False, 'error': err}), 400
 
             head = self._git('rev-parse', 'HEAD', timeout=10).stdout.strip()
+            valid_head = self._git(
+                'cat-file', '-e', f'{head}^{{commit}}', timeout=30
+            )
+            if not head or valid_head.returncode != 0:
+                return jsonify({
+                    'success': False,
+                    'is_git_repo': True,
+                    'repository_corrupt': True,
+                    'error': self.CORRUPT_REPO_MESSAGE,
+                }), 500
+
             branch = self._resolve_branch(cfg, remote)
             source = self._source_label(cfg)
 
@@ -563,6 +884,12 @@ class UpdateManager:
 
     def handle_pull(self):
         """Fast-forward the codebase to the configured remote branch."""
+        with self._update_guard() as acquired:
+            if not acquired:
+                return self._busy_response()
+            return self._handle_pull_locked()
+
+    def _handle_pull_locked(self):
         try:
             if not self._is_git_repo():
                 return jsonify({
@@ -578,15 +905,94 @@ class UpdateManager:
 
             branch = self._resolve_branch(cfg, remote)
             head = self._git('rev-parse', 'HEAD', timeout=10).stdout.strip()
+            current_branch = self._git(
+                'rev-parse', '--abbrev-ref', 'HEAD', timeout=10
+            ).stdout.strip()
 
-            fetch = self._git('fetch', remote, '--recurse-submodules', timeout=120)
+            valid_head, integrity_error = self._verify_commit(head)
+            if not valid_head:
+                logger.error('Local Git integrity check failed: %s', integrity_error)
+                return jsonify({
+                    'success': False,
+                    'repository_corrupt': True,
+                    'error': self.CORRUPT_REPO_MESSAGE,
+                }), 500
+
+            status = self._git(
+                'status', '--porcelain', '--untracked-files=no', timeout=30
+            )
+            if status.returncode != 0:
+                return jsonify({
+                    'success': False,
+                    'repository_corrupt': True,
+                    'error': self.CORRUPT_REPO_MESSAGE,
+                }), 500
+            if status.stdout.strip():
+                files = [
+                    line[3:].strip()
+                    for line in status.stdout.splitlines()
+                    if line.strip()
+                ]
+                return jsonify({
+                    'success': False,
+                    'conflict': {
+                        'files': files,
+                        'raw': status.stdout.strip(),
+                        'diverged': False,
+                        'message': (
+                            'Tracked files have local changes. Commit them first, '
+                            'or use "Discard local changes & update".'
+                        ),
+                    },
+                    'error': (
+                        'Tracked files have local changes. Commit them first, or '
+                        'use "Discard local changes & update".'
+                    ),
+                }), 409
+
+            fetch = self._fetch_verified(remote)
             if fetch.returncode != 0:
+                logger.error(
+                    'Verified update fetch failed: %s',
+                    self._command_error(fetch, 'git fetch failed'),
+                )
                 return self._fetch_failure_response(fetch)
 
             remote_branch = f'{remote}/{branch}'
-            remote_commit = self._git('rev-parse', remote_branch, timeout=10).stdout.strip()
+            remote_ref = self._git('rev-parse', remote_branch, timeout=10)
+            remote_commit = remote_ref.stdout.strip()
+            valid_target, integrity_error = self._verify_commit(remote_commit)
+            if remote_ref.returncode != 0 or not valid_target:
+                logger.error('Incoming Git integrity check failed: %s', integrity_error)
+                return jsonify({
+                    'success': False,
+                    'verification_failed': True,
+                    'error': (
+                        'The downloaded update failed Git integrity checks. '
+                        'The live code was not changed.'
+                    ),
+                }), 502
 
-            merge = self._git('merge', '--ff-only', remote_branch, timeout=120)
+            changed_files = self._changed_files(head, remote_commit)
+            staged_ok, staged_error = self._validate_staged_checkout(
+                remote_commit, changed_files
+            )
+            if not staged_ok:
+                logger.error('Staged update verification failed: %s', staged_error)
+                return jsonify({
+                    'success': False,
+                    'verification_failed': True,
+                    'error': (
+                        'The update failed isolated verification. '
+                        f'The live code was not changed.\n{staged_error}'
+                    ),
+                }), 422
+
+            # Do not impose a timeout while Git is writing the live checkout.
+            # Killing checkout mid-write is worse than waiting for it to finish.
+            merge = self._git_durable(
+                'merge', '--ff-only', remote_branch, timeout=None
+            )
             if merge.returncode != 0:
                 conflict = self._collect_conflict(head, remote_branch, merge)
                 return jsonify({
@@ -595,8 +1001,38 @@ class UpdateManager:
                     'error': conflict['message']
                 }), 409
 
-            self._git('submodule', 'update', '--init', '--recursive', timeout=180)
-            deps_changed = self._deps_changed(self._changed_files(head, remote_commit))
+            submodules = self._git_durable(
+                'submodule', 'update', '--init', '--recursive', timeout=None
+            )
+            live_ok, live_error = self._verify_live_checkout(
+                remote_commit, changed_files
+            )
+            if submodules.returncode != 0:
+                live_ok = False
+                live_error = (
+                    'Submodule update failed.\n'
+                    f'{self._command_error(submodules, "git submodule update failed")}'
+                )
+
+            if not live_ok:
+                rolled_back = self._rollback(head, current_branch)
+                logger.error(
+                    'Live update verification failed (rollback=%s): %s',
+                    rolled_back,
+                    live_error,
+                )
+                return jsonify({
+                    'success': False,
+                    'verification_failed': True,
+                    'rolled_back': rolled_back,
+                    'error': (
+                        'The live checkout failed verification and '
+                        f'{"was rolled back." if rolled_back else "could not be rolled back."}\n'
+                        f'{live_error}'
+                    ),
+                }), 500
+
+            deps_changed = self._deps_changed(changed_files)
             return jsonify({
                 'success': True,
                 'deps_changed': deps_changed,
@@ -628,6 +1064,12 @@ class UpdateManager:
         actually lands *on* the tracked branch (git reports the right branch) and
         the previously checked-out branch ref is left untouched. Destructive --
         the frontend gates this behind an explicit confirmation."""
+        with self._update_guard() as acquired:
+            if not acquired:
+                return self._busy_response()
+            return self._handle_force_pull_locked()
+
+    def _handle_force_pull_locked(self):
         try:
             if not self._is_git_repo():
                 return jsonify({'success': False, 'error': 'This installation is not a git repository.'}), 400
@@ -639,25 +1081,100 @@ class UpdateManager:
 
             branch = self._resolve_branch(cfg, remote)
             head = self._git('rev-parse', 'HEAD', timeout=10).stdout.strip()
+            current_branch = self._git(
+                'rev-parse', '--abbrev-ref', 'HEAD', timeout=10
+            ).stdout.strip()
 
-            fetch = self._git('fetch', remote, '--recurse-submodules', timeout=120)
+            valid_head, integrity_error = self._verify_commit(head)
+            if not valid_head:
+                logger.error('Local Git integrity check failed: %s', integrity_error)
+                return jsonify({
+                    'success': False,
+                    'repository_corrupt': True,
+                    'error': self.CORRUPT_REPO_MESSAGE,
+                }), 500
+
+            fetch = self._fetch_verified(remote)
             if fetch.returncode != 0:
+                logger.error(
+                    'Verified force-update fetch failed: %s',
+                    self._command_error(fetch, 'git fetch failed'),
+                )
                 return self._fetch_failure_response(fetch)
 
             remote_branch = f'{remote}/{branch}'
-            remote_commit = self._git('rev-parse', remote_branch, timeout=10).stdout.strip()
+            remote_ref = self._git('rev-parse', remote_branch, timeout=10)
+            remote_commit = remote_ref.stdout.strip()
+            valid_target, integrity_error = self._verify_commit(remote_commit)
+            if remote_ref.returncode != 0 or not valid_target:
+                logger.error('Incoming Git integrity check failed: %s', integrity_error)
+                return jsonify({
+                    'success': False,
+                    'verification_failed': True,
+                    'error': (
+                        'The downloaded update failed Git integrity checks. '
+                        'The live code was not changed.'
+                    ),
+                }), 502
+
+            changed_files = self._changed_files(head, remote_commit)
+            staged_ok, staged_error = self._validate_staged_checkout(
+                remote_commit, changed_files
+            )
+            if not staged_ok:
+                logger.error('Staged force-update verification failed: %s', staged_error)
+                return jsonify({
+                    'success': False,
+                    'verification_failed': True,
+                    'error': (
+                        'The update failed isolated verification. '
+                        f'The live code was not changed.\n{staged_error}'
+                    ),
+                }), 422
 
             # -f discards local working-tree changes; -B creates/resets the local
             # branch at the remote tip and checks it out (so HEAD is on `branch`).
-            checkout = self._git('checkout', '-f', '-B', branch, remote_branch, timeout=60)
+            checkout = self._git_durable(
+                'checkout', '-f', '-B', branch, remote_branch, timeout=None
+            )
             if checkout.returncode != 0:
                 return jsonify({
                     'success': False,
                     'error': f'Failed to switch to the update.\n{checkout.stderr.strip()}'
                 }), 500
 
-            self._git('submodule', 'update', '--init', '--recursive', timeout=180)
-            deps_changed = self._deps_changed(self._changed_files(head, remote_commit))
+            submodules = self._git_durable(
+                'submodule', 'update', '--init', '--recursive', timeout=None
+            )
+            live_ok, live_error = self._verify_live_checkout(
+                remote_commit, changed_files
+            )
+            if submodules.returncode != 0:
+                live_ok = False
+                live_error = (
+                    'Submodule update failed.\n'
+                    f'{self._command_error(submodules, "git submodule update failed")}'
+                )
+
+            if not live_ok:
+                rolled_back = self._rollback(head, current_branch)
+                logger.error(
+                    'Live force-update verification failed (rollback=%s): %s',
+                    rolled_back,
+                    live_error,
+                )
+                return jsonify({
+                    'success': False,
+                    'verification_failed': True,
+                    'rolled_back': rolled_back,
+                    'error': (
+                        'The live checkout failed verification and '
+                        f'{"was rolled back." if rolled_back else "could not be rolled back."}\n'
+                        f'{live_error}'
+                    ),
+                }), 500
+
+            deps_changed = self._deps_changed(changed_files)
             return jsonify({
                 'success': True,
                 'deps_changed': deps_changed,
@@ -692,6 +1209,12 @@ class UpdateManager:
     def handle_adopt(self):
         """Turn a non-git install (e.g. a downloaded ZIP) into a git-tracked
         clone of the configured repo so future updates use the normal flow."""
+        with self._update_guard() as acquired:
+            if not acquired:
+                return self._busy_response()
+            return self._handle_adopt_locked()
+
+    def _handle_adopt_locked(self):
         try:
             if self._is_git_repo():
                 return jsonify({'success': False, 'error': 'This installation is already a git repository.'}), 400
@@ -720,7 +1243,7 @@ class UpdateManager:
                 if add.returncode != 0:
                     raise RuntimeError(add.stderr.strip() or 'failed to add remote')
 
-                fetch = self._git('fetch', remote, '--recurse-submodules', timeout=300)
+                fetch = self._fetch_verified(remote)
                 if fetch.returncode != 0:
                     if self._is_auth_error(fetch.stderr or fetch.stdout):
                         self._cleanup_git_dir()
@@ -732,11 +1255,56 @@ class UpdateManager:
                     raise RuntimeError(fetch.stderr.strip() or 'failed to fetch repository')
 
                 branch = self._resolve_branch(cfg, remote)
-                reset = self._git('reset', '--hard', f'{remote}/{branch}', timeout=120)
+                remote_ref = f'{remote}/{branch}'
+                remote_commit = self._git(
+                    'rev-parse', remote_ref, timeout=10
+                ).stdout.strip()
+                valid_target, integrity_error = self._verify_commit(remote_commit)
+                if not valid_target:
+                    raise RuntimeError(
+                        f'incoming Git integrity check failed: {integrity_error}'
+                    )
+
+                tree = self._git(
+                    'ls-tree', '-r', '--name-only', remote_commit, timeout=60
+                )
+                if tree.returncode != 0:
+                    raise RuntimeError(
+                        self._command_error(tree, 'failed to list incoming files')
+                    )
+                changed_files = [
+                    line.strip()
+                    for line in tree.stdout.splitlines()
+                    if line.strip()
+                ]
+                staged_ok, staged_error = self._validate_staged_checkout(
+                    remote_commit, changed_files
+                )
+                if not staged_ok:
+                    raise RuntimeError(
+                        f'isolated update verification failed: {staged_error}'
+                    )
+
+                reset = self._git_durable(
+                    'reset', '--hard', remote_ref, timeout=None
+                )
                 if reset.returncode != 0:
                     raise RuntimeError(reset.stderr.strip() or 'failed to check out repository')
 
-                self._git('submodule', 'update', '--init', '--recursive', timeout=300)
+                submodules = self._git_durable(
+                    'submodule', 'update', '--init', '--recursive', timeout=None
+                )
+                if submodules.returncode != 0:
+                    raise RuntimeError(
+                        self._command_error(
+                            submodules, 'failed to update submodules'
+                        )
+                    )
+                live_ok, live_error = self._verify_live_checkout(remote_commit)
+                if not live_ok:
+                    raise RuntimeError(
+                        f'live checkout verification failed: {live_error}'
+                    )
             except Exception as inner:
                 self._cleanup_git_dir()
                 return jsonify({

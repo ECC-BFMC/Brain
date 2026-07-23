@@ -30,6 +30,7 @@ DELETE_AP_ON_CLIENT=${DELETE_AP_ON_CLIENT:-true}
 NMCLI_BIN="${NMCLI_BIN:-nmcli}"
 LOCK_FILE="${LOCK_FILE:-/run/rpi-wifi-fallback/operation.lock}"
 LOCK_WAIT_SECONDS="${LOCK_WAIT_SECONDS:-0}"
+HOTSPOT_REQUEST_FILE="${HOTSPOT_REQUEST_FILE:-$(dirname "$LOCK_FILE")/immediate-hotspot}"
 
 run_nmcli() {
   "$NMCLI_BIN" "$@"
@@ -67,6 +68,12 @@ client_wifi_connected() {
 
 hotspot_active() {
   [[ "$(run_nmcli -g GENERAL.CONNECTION device show "$IFACE" 2>/dev/null || true)" == "$CON_NAME" ]]
+}
+
+consume_immediate_hotspot_request() {
+  [[ -f "$HOTSPOT_REQUEST_FILE" ]] || return 1
+  rm -f "$HOTSPOT_REQUEST_FILE"
+  say "Immediate hotspot requested; skipping the client reconnect grace period."
 }
 
 wait_for_client() {
@@ -203,9 +210,17 @@ bring_down_ap() {
 }
 
 case "${1:-auto}" in
-  up)   bring_up_ap ;;
+  up)
+    consume_immediate_hotspot_request || true
+    bring_up_ap
+    ;;
   down) bring_down_ap ;;
   auto)
+    immediate_hotspot=false
+    if consume_immediate_hotspot_request; then
+      immediate_hotspot=true
+    fi
+
     say "NM state: $(nm_state); device $IFACE state: $(dev_state || echo '?')"
     if hotspot_active; then
       say "Fallback hotspot '$CON_NAME' is already active."
@@ -217,8 +232,11 @@ case "${1:-auto}" in
       exit 0
     fi
 
-    # Not connected; give client a grace window before enabling AP
-    if wait_for_client; then
+    # Dashboard removals request an immediate AP. Organic disconnects still
+    # get the normal grace window so brief signal loss does not flap modes.
+    if [[ "$immediate_hotspot" == "true" ]]; then
+      bring_up_ap
+    elif wait_for_client; then
       say "Client Wi-Fi connected during grace period → ensure hotspot is down."
       bring_down_ap
     elif try_saved_clients; then

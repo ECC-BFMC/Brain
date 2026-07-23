@@ -203,7 +203,11 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     performUpdate(): void {
         this.isUpdating = true;
         this.conflict = null;
-        this.showStatus('Updating codebase... This may take a moment.', 'info', 60000);
+        this.showStatus(
+            'Downloading and verifying the update... Do not restart the car.',
+            'info',
+            900000
+        );
 
         this.apiService.performUpdate().subscribe({
             next: (response: UpdateActionResponse) => {
@@ -225,7 +229,11 @@ export class UpdateSettingsComponent implements OnInit, OnDestroy {
     forceUpdate(): void {
         this.showForceConfirm = false;
         this.isForcing = true;
-        this.showStatus('Discarding local changes and updating...', 'info', 60000);
+        this.showStatus(
+            'Discarding local changes and verifying the update... Do not restart the car.',
+            'info',
+            900000
+        );
 
         this.apiService.forceUpdate().subscribe({
             next: (response: UpdateActionResponse) => {
