@@ -33,6 +33,51 @@
 }
 
 /* Form Styles */
+.setup-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.setup-tabs button {
+  flex: 1;
+  min-height: 28px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.setup-tabs button[aria-selected="true"] {
+  border-color: rgba(125, 249, 255, 0.2);
+  background: rgba(125, 249, 255, 0.08);
+  color: #b9fdff;
+}
+
+.setup-tabs button:focus-visible,
+.available-network-item:focus-visible,
+.password-toggle:focus-visible {
+  outline: 2px solid rgba(125, 249, 255, 0.55);
+  outline-offset: 1px;
+}
+
+.setup-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.setup-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .add-wifi-form {
   display: flex;
   flex-direction: column;
@@ -104,6 +149,36 @@
 
 .password-toggle:hover {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.password-toggle span {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.selected-network-form {
+  padding-top: 2px;
+}
+
+.selected-network-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(125, 249, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(125, 249, 255, 0.04);
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+}
+
+.selected-network-summary strong {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Buttons */

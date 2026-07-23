@@ -59,8 +59,44 @@ describe('WifiSettingsComponent', () => {
 
         component.selectNetwork(component.availableNetworks[0]);
 
+        expect(component.setupMode).toBe('available');
         expect(component.ssid).toBe('Guest');
         expect(component.requiresPassword()).toBeFalse();
+    });
+
+    it('clears the selected network when switching to manual entry', () => {
+        component.ngOnInit();
+        component.selectNetwork(component.availableNetworks[0]);
+        component.password = 'stale-password';
+
+        component.setSetupMode('manual');
+
+        expect(component.setupMode).toBe('manual');
+        expect(component.selectedAccessPoint).toBeUndefined();
+        expect(component.ssid).toBe('');
+        expect(component.password).toBe('');
+        expect(component.requiresPassword()).toBeTrue();
+    });
+
+    it('connects to a selected open network without a password', () => {
+        component.ngOnInit();
+        component.selectNetwork(component.availableNetworks[0]);
+        api.addWifi.and.returnValue(of({ success: true }));
+
+        component.addWifi();
+
+        expect(api.addWifi).toHaveBeenCalledWith('Guest', '', true);
+    });
+
+    it('connects to a manually entered secured network', () => {
+        component.setSetupMode('manual');
+        component.ssid = 'Hidden Network';
+        component.password = 'secret-password';
+        api.addWifi.and.returnValue(of({ success: true }));
+
+        component.addWifi();
+
+        expect(api.addWifi).toHaveBeenCalledWith('Hidden Network', 'secret-password', false);
     });
 
     it('stops an in-memory operation that the restarted backend no longer knows', () => {

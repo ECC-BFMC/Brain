@@ -11,6 +11,7 @@ import { ApiService, WifiAccessPoint, WifiNetwork } from '../../services/api.ser
     styleUrls: ['./wifi-settings.component.css']
 })
 export class WifiSettingsComponent implements OnInit, OnDestroy {
+    setupMode: 'available' | 'manual' = 'available';
     ssid: string = '';
     password: string = '';
     showPassword: boolean = false;
@@ -85,7 +86,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
     }
 
     selectNetwork(network: WifiAccessPoint): void {
-        if (this.isAdding) {
+        if (this.isAdding || this.setupMode !== 'available') {
             return;
         }
         this.selectedAccessPoint = network;
@@ -93,22 +94,50 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
         this.password = '';
     }
 
-    onSsidChanged(value: string): void {
-        if (this.selectedAccessPoint?.ssid !== value) {
-            this.selectedAccessPoint = undefined;
+    setSetupMode(mode: 'available' | 'manual'): void {
+        if (this.isAdding || this.setupMode === mode) {
+            return;
+        }
+
+        this.setupMode = mode;
+        this.resetSetupForm();
+        if (mode === 'available' && this.availableNetworks.length === 0) {
+            this.scanNetworks();
         }
     }
 
+    onSetupTabKeydown(event: KeyboardEvent): void {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+            return;
+        }
+
+        event.preventDefault();
+        const mode = event.key === 'ArrowRight' || event.key === 'End'
+            ? 'manual'
+            : 'available';
+        this.setSetupMode(mode);
+
+        const tabList = (event.currentTarget as HTMLElement).parentElement;
+        setTimeout(() => {
+            tabList?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
+        });
+    }
+
     requiresPassword(): boolean {
-        return this.selectedAccessPoint?.secured !== false;
+        return this.setupMode === 'manual' || this.selectedAccessPoint?.secured !== false;
     }
 
     addWifi(): void {
-        if (!this.ssid.trim() || (this.requiresPassword() && !this.password)) {
+        const hasNetwork = this.setupMode === 'manual'
+            ? Boolean(this.ssid.trim())
+            : Boolean(this.selectedAccessPoint);
+        if (!hasNetwork || (this.requiresPassword() && !this.password)) {
             this.showStatus(
-                this.requiresPassword()
-                    ? 'Please enter both SSID and password'
-                    : 'Please select or enter a network',
+                !hasNetwork
+                    ? (this.setupMode === 'manual'
+                        ? 'Please enter the network name'
+                        : 'Please select a network')
+                    : 'Please enter the WiFi password',
                 'error'
             );
             return;
@@ -127,9 +156,7 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                         'info',
                         60000
                     );
-                    this.ssid = '';
-                    this.password = '';
-                    this.selectedAccessPoint = undefined;
+                    this.resetSetupForm();
                     if (response.operation_id) {
                         this.watchOperation(response.operation_id);
                     } else {
@@ -148,6 +175,13 @@ export class WifiSettingsComponent implements OnInit, OnDestroy {
                 this.isAdding = false;
             }
         });
+    }
+
+    private resetSetupForm(): void {
+        this.ssid = '';
+        this.password = '';
+        this.showPassword = false;
+        this.selectedAccessPoint = undefined;
     }
 
     removeNetwork(network: WifiNetwork): void {
