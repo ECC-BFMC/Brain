@@ -1,2 +1,0 @@
-Brain updater durability probe.
-If this complete sentence is present after the update, the working-tree file contents survived the durability barrier.
