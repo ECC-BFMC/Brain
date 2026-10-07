@@ -32,7 +32,6 @@ import { WebSocketService} from '../../services/web-socket.service'
 
 import { MapCursorComponent } from './map-cursor/map-cursor.component';
 
-const TRACK_WIDTH_MM = 20_670;
 const TRACK_HEIGHT_MM = 13_759;
 const IMAGE_PIXELS_PER_MM_X = 0.2806;
 const IMAGE_PIXELS_PER_MM_Y = 0.27996;
@@ -48,17 +47,10 @@ export class MapComponent {
   @Input() cursorRotation: number = 0;
 
   @ViewChild('imageElement') imageElementRef!: ElementRef<HTMLImageElement>;
-  @ViewChild('imageContainer') imageContainerRef!: ElementRef<HTMLImageElement>;
-
   private mapX: number = 0;
-  private mapY: number = 0;
-
-  private screenSize = {"width": 100, "height": 100}; // screen size in %
-  private mapSize: number = 500; // map size in % for width
-  private mapWidth: number = 0;
-  private mapHeight: number = 0;
-
-  private cursorSize: number = 6; // cursor size in % for width
+  private mapY: number = TRACK_HEIGHT_MM * IMAGE_PIXELS_PER_MM_Y;
+  trackTransform: string = 'translate(0%, -100%)';
+  hasLocation: boolean = false;
 
   private locationSubscription: Subscription | undefined;
 
@@ -68,18 +60,17 @@ export class MapComponent {
   {
     this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
       (message) => {
-        const location = message.value;
-        const xMm = Number(location?.x);
-        const yMm = Number(location?.y);
+        const location = message?.value;
+        const xMm = this.parseCoordinate(location?.x);
+        const yMm = this.parseCoordinate(location?.y);
         if (!Number.isFinite(xMm) || !Number.isFinite(yMm)) {
           console.warn('[Map] Ignoring location with invalid coordinates:', location);
           return;
         }
 
-        const imageX = xMm * IMAGE_PIXELS_PER_MM_X;
-        const imageY = (TRACK_HEIGHT_MM - yMm) * IMAGE_PIXELS_PER_MM_Y;
-        this.mapX = xMm * 100 / TRACK_WIDTH_MM;
-        this.mapY = 100 - yMm * 100 / TRACK_HEIGHT_MM;
+        this.mapX = xMm * IMAGE_PIXELS_PER_MM_X;
+        this.mapY = (TRACK_HEIGHT_MM - yMm) * IMAGE_PIXELS_PER_MM_Y;
+        this.hasLocation = true;
         this.updateMap()
       },
     );
@@ -94,58 +85,25 @@ export class MapComponent {
     this.webSocketService.disconnectSocket();
   }
 
-  onLoadTrack(image: HTMLImageElement): void {
-    const imageContainer = document.getElementById("map-track-image-container") as HTMLElement;
-
-    if (imageContainer) {
-      imageContainer.style.width = `${this.screenSize["width"]}%`;
-      imageContainer.style.height = `${this.screenSize["height"]}%`;  
+  private parseCoordinate(value: unknown): number {
+    if (typeof value !== 'number' && typeof value !== 'string') {
+      return NaN;
     }
-
-    this.mapWidth = image.width;
-    this.mapHeight = image.height;
-
-    const map = document.getElementById("map-track-image") as HTMLElement;
-
-    if (map) {
-      map.style.width = `${this.mapSize}%`;
-      map.style.height = `auto`;
-
-      this.mapWidth = this.mapSize;
-    }
+    return typeof value === 'string' && value.trim() === '' ? NaN : Number(value);
   }
 
-  onLoadCursor(): void {
-    const cursor = document.getElementById("map-cursor") as HTMLElement;
+  onLoadTrack(): void {
+    this.updateMap();
+  }
 
-    if (cursor) {
-      cursor.style.width = `${this.cursorSize}%`;
-      cursor.style.height = `auto`;
-    }
+  onTrackError(): void {
+    console.error('[Map] Failed to load the calibrated Masterix track image.');
   }
 
   updateMap(): void {
-    const map = document.getElementById("map-track-image") as HTMLElement;
-    let imageContainerHeight: number = 0;
-
-    if (map) {
-      if (this.imageContainerRef) {
-        const imgContainer = this.imageContainerRef.nativeElement;
-        const rect = imgContainer.getBoundingClientRect();
-        imageContainerHeight = rect.height;
-      }
-
-      if (this.imageElementRef) {
-        const image = this.imageElementRef.nativeElement;
-        this.mapWidth = this.mapSize;
-        this.mapHeight = (100 * image.height) / imageContainerHeight;
-      }
-
-      const top = (this.mapY * this.mapHeight) / 100 - this.mapHeight - (this.screenSize["height"] / 2 - this.mapHeight);
-      const left = (this.mapX * this.mapWidth) / 100 - this.mapWidth - (this.screenSize["width"] / 2 - this.mapWidth);
-
-      map.style.top = `${-top}%`;
-      map.style.left = `${-left}%`;
+    const image = this.imageElementRef?.nativeElement;
+    if (image?.naturalWidth && image.naturalHeight) {
+      this.trackTransform = `translate(${-this.mapX * 100 / image.naturalWidth}%, ${-this.mapY * 100 / image.naturalHeight}%)`;
     }
   }
 }

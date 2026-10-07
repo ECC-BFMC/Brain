@@ -27,11 +27,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
 <div class="map-container">
-  <div class="map-track-container">
-    <div #imageContainer id="map-track-image-container">
-      <img src="/assets/Track.svg" id="map-track-image" #imageElement (load)="onLoadTrack(imageElement)" alt="BFMC Track" />
+  <div class="map-track-container" [style.visibility]="hasLocation ? 'visible' : 'hidden'">
+    <div id="map-track-image-container">
+      <img src="/assets/Track2023_modified.png" id="map-track-image" #imageElement [style.transform]="trackTransform" (load)="onLoadTrack()" (error)="onTrackError()" alt="BFMC Masterix Track" />
     </div>
 
   </div>
-  <app-map-cursor id="map-cursor" (cursorLoaded)="onLoadCursor()" [cursorRotation]="cursorRotation" />
+  <app-map-cursor id="map-cursor" [cursorRotation]="cursorRotation" />
 </div>
