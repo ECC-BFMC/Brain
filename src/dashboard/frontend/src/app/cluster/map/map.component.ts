@@ -32,6 +32,11 @@ import { WebSocketService} from '../../services/web-socket.service'
 
 import { MapCursorComponent } from './map-cursor/map-cursor.component';
 
+const TRACK_WIDTH_MM = 20_670;
+const TRACK_HEIGHT_MM = 13_759;
+const IMAGE_PIXELS_PER_MM_X = 0.2806;
+const IMAGE_PIXELS_PER_MM_Y = 0.27996;
+
 @Component({
   selector: 'app-map',
   standalone: true,
@@ -63,8 +68,18 @@ export class MapComponent {
   {
     this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
       (message) => {
-        this.mapX = (parseFloat(message.value.x)*100/20.67)
-        this.mapY = (100 - parseFloat(message.value.y)*100/13.76) //magic percent + same system of coordinates
+        const location = message.value;
+        const xMm = Number(location?.x);
+        const yMm = Number(location?.y);
+        if (!Number.isFinite(xMm) || !Number.isFinite(yMm)) {
+          console.warn('[Map] Ignoring location with invalid coordinates:', location);
+          return;
+        }
+
+        const imageX = xMm * IMAGE_PIXELS_PER_MM_X;
+        const imageY = (TRACK_HEIGHT_MM - yMm) * IMAGE_PIXELS_PER_MM_Y;
+        this.mapX = xMm * 100 / TRACK_WIDTH_MM;
+        this.mapY = 100 - yMm * 100 / TRACK_HEIGHT_MM;
         this.updateMap()
       },
     );
