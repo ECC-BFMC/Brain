@@ -64,4 +64,30 @@ def test_disabling_dynamic_process_stops_it_before_joining():
     assert process.joined
     assert not process.terminated
     assert not process.killed
-    assert process not in processes
+    assert process not in processes
+
+
+def test_enabling_dynamic_process_passes_keyword_arguments():
+    class KeywordProcess:
+        def __init__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
+            self.started = False
+
+        def start(self):
+            self.started = True
+
+    processes = []
+    process = manage_process_life(
+        process_class=KeywordProcess,
+        process_instance=None,
+        process_args=("queue",),
+        enabled=True,
+        allProcesses=processes,
+        process_kwargs={"api_key": "test-token"},
+    )
+
+    assert process.args == ("queue",)
+    assert process.kwargs == {"api_key": "test-token"}
+    assert process.started
+    assert processes == [process]

@@ -88,11 +88,18 @@ def shutdown_process(process, timeout=1):
 
 # ===================================== PROCESS MANAGEMENT ==================================
 
-def manage_process_life(process_class, process_instance, process_args, enabled, allProcesses):
+def manage_process_life(
+    process_class,
+    process_instance,
+    process_args,
+    enabled,
+    allProcesses,
+    process_kwargs=None,
+):
     """Start or stop a process based on the enabled flag."""
     if enabled:
         if process_instance is None:
-            process_instance = process_class(*process_args)
+            process_instance = process_class(*process_args, **(process_kwargs or {}))
             allProcesses.append(process_instance)
             process_instance.start()
     else:
@@ -116,6 +123,7 @@ if __name__ == "__main__":
         help="Enable development mode with mocked NUCLEO serial and offline camera frames.",
     )
     args = parser.parse_args()
+    traffic_api_key = os.getenv("TRAFFIC_DEVICE_TOKEN")
 
     print(BigPrint.PLEASE_WAIT.value)
     allProcesses = list()
@@ -151,7 +159,13 @@ if __name__ == "__main__":
 
     # Initializing GPS
     traffic_com_ready = Event()
-    processTrafficCom = processTrafficCommunication(queueList, 3, traffic_com_ready, debugging = False)
+    processTrafficCom = processTrafficCommunication(
+        queueList,
+        3,
+        traffic_com_ready,
+        debugging=False,
+        api_key=traffic_api_key,
+    )
 
     # Initializing serial connection NUCLEO - > PI
     serial_handler_ready = Event()
@@ -190,8 +204,14 @@ if __name__ == "__main__":
             message = stateChangeSubscriber.receive()
             if message is not None:
                 modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
-
-                processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
+                processTrafficCom = manage_process_life(
+                    processTrafficCommunication,
+                    processTrafficCom,
+                    [queueList, 1, traffic_com_ready, False],
+                    modeDictTrafficCom["enabled"],
+                    allProcesses,
+                    process_kwargs={"api_key": traffic_api_key},
+                )
 
             blocker.wait(0.1)
 

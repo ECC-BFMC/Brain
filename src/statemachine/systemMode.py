@@ -57,7 +57,7 @@ class SystemMode(Enum):
         "mode": "auto",
         "camera": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             },
             "thread": {
                 "resolution": "480p",
@@ -70,7 +70,7 @@ class SystemMode(Enum):
         },
         "traffic_com": {
             "process": {
-                "enabled": False,
+                "enabled": True,
             }
         }
     }
@@ -101,7 +101,7 @@ class SystemMode(Enum):
         "mode": "legacy",
         "camera": {
             "process": {
-                "enabled": True,
+                "enabled": False,
             },
             "thread": {
                 "resolution": "1080p",

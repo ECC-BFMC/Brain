@@ -4,6 +4,7 @@ Flask-Cors>=6,<7
 psutil>=5.9.4
 # picamera2 is installed via apt on Raspberry Pi OS because it depends on native libcamera bindings.
 simple-websocket>=1.0
+websockets>=14,<16
 Twisted>=24.7.0
 cryptography>=48.0.1,<49
 opencv-python          # if wheel fails, use: sudo apt-get install -y python3-opencv

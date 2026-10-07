@@ -1,4 +1,7 @@
 .venv/
+.env
+.env.*
+!.env.example
 docs/build/
 .vscode/
 __pycache__

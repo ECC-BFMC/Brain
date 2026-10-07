@@ -3,6 +3,8 @@ services:
     build: .
     ports:
       - "5005:5005"
+    environment:
+      TRAFFIC_DEVICE_TOKEN: ${TRAFFIC_DEVICE_TOKEN:-}
 
   frontend:
     build: ./src/dashboard/frontend

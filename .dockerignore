@@ -1,4 +1,7 @@
 .venv/
+.env
+.env.*
+!.env.example
 src/dashboard/frontend/node_modules/
 src/dashboard/frontend/.angular/
 src/dashboard/frontend/dist/
