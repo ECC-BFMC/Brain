@@ -11,7 +11,7 @@ import pytest
 from src.statemachine.systemMode import SystemMode
 
 # Sub-systems that every mode toggles on/off.
-PROCESS_KEYS = ["camera", "serial_handler", "semaphore", "traffic_com"]
+PROCESS_KEYS = ["camera", "serial_handler", "traffic_com"]
 
 ALL_MODES = list(SystemMode)
 

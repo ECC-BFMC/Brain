@@ -30,21 +30,12 @@ import { Component, Input, ViewChild, ElementRef } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WebSocketService} from '../../services/web-socket.service'
 
-import { CommonModule } from '@angular/common';
-
 import { MapCursorComponent } from './map-cursor/map-cursor.component';
-import { MapSemaphoreComponent } from './map-semaphore/map-semaphore.component';
- 
-interface Semaphore { 
-  x: number;
-  y: number;
-  state: string;
-}
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [MapCursorComponent, MapSemaphoreComponent, CommonModule],
+  imports: [MapCursorComponent],
   templateUrl: './map.component.html',
   styleUrl: './map.component.css'
 })
@@ -63,15 +54,8 @@ export class MapComponent {
   private mapHeight: number = 0;
 
   private cursorSize: number = 6; // cursor size in % for width
-  private semaphoreSize: number = 3;
-
-  private semaphoreXOffset: number = 10;
-  private semaphoreYOffset: number = 1.45;
-  
-  public semaphores: Map<number, Semaphore> = new Map<number, Semaphore>();
 
   private locationSubscription: Subscription | undefined;
-  private semaphoresAndCarsSubscription: Subscription | undefined;
 
   constructor( private  webSocketService: WebSocketService) { }
   
@@ -85,21 +69,12 @@ export class MapComponent {
       },
     );
 
-    this.semaphoresAndCarsSubscription = this.webSocketService.receiveSemaphores().subscribe(
-      (message) => {
-        const recv = message.value;
-        this.semaphores.set(recv.id, {x: recv.x, y: recv.y, state: recv.state});
-      },
-    );
     this.updateMap()
   }
 
   ngOnDestroy() {
     if (this.locationSubscription) {
       this.locationSubscription.unsubscribe();
-    }
-    if (this.semaphoresAndCarsSubscription) {
-      this.semaphoresAndCarsSubscription.unsubscribe();
     }
     this.webSocketService.disconnectSocket();
   }
@@ -134,18 +109,6 @@ export class MapComponent {
     }
   }
 
-  onLoadSemaphore(id: number): void {
-    const semaphore = document.getElementById("map-semaphore" + id) as HTMLElement;
-
-    if (semaphore) {
-      semaphore.style.position = "absolute";
-      semaphore.style.width = `${this.semaphoreSize}%`;
-      semaphore.style.height = `auto`;
-
-      this.updateMap();
-    }
-  }
-
   updateMap(): void {
     const map = document.getElementById("map-track-image") as HTMLElement;
     let imageContainerHeight: number = 0;
@@ -168,23 +131,6 @@ export class MapComponent {
 
       map.style.top = `${-top}%`;
       map.style.left = `${-left}%`;
-
-      this.semaphores.forEach((value: Semaphore, key: number) => {
-        console.log("???");
-        
-        const semaphore = document.getElementById("map-semaphore" + key) as HTMLElement;
-
-        if (semaphore) { 
-          const x = (value.x * 100/20.67);
-          const y = (value.y * 100/13.76);
-
-          const top_new = (y * this.mapHeight) / 100;
-          const left_new = (x * this.mapWidth) / 100;
-          
-          semaphore.style.top = `${(-top - this.semaphoreXOffset) + top_new}%`;
-          semaphore.style.left = `${(-left - this.semaphoreYOffset) + left_new}%`;
-        }
-      });
     }
   }
 }

@@ -51,7 +51,6 @@ from enum import Enum
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.templates.workerprocess import WorkerProcess
-from src.utils.messages.allMessages import Semaphores
 from src.statemachine.stateMachine import StateMachine
 from src.dashboard.components.calibration import Calibration
 from src.dashboard.components.wifi import WifiManager
@@ -146,7 +145,6 @@ class processDashboard(WorkerProcess):
         """Initialize message handling systems."""
         self.get_name_and_vals()
         self.messagesAndVals.pop("mainCamera", None)
-        self.messagesAndVals.pop("Semaphores", None)
         self.subscribe()
     
 
@@ -469,10 +467,6 @@ class processDashboard(WorkerProcess):
             else:
                 sender = messageHandlerSender(self.queueList, enum["enum"])
                 self.sendMessages[str(name)] = {"obj": sender}
-
-        subscriber = messageHandlerSubscriber(self.queueList, Semaphores, "fifo", True)
-        self.messages["Semaphores"] = {"obj": subscriber}
-
 
     def get_name_and_vals(self):
         """Extract all message names and values for processing."""

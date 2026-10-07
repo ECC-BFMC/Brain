@@ -32,9 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
       <img src="/assets/Track.svg" id="map-track-image" #imageElement (load)="onLoadTrack(imageElement)" alt="BFMC Track" />
     </div>
 
-    <div class="map-semaphores" *ngFor="let entry of semaphores | keyvalue">
-      <app-map-semaphore [id]="'map-semaphore' + entry.key" [state]="entry.value.state" (semaphoreLoaded)="onLoadSemaphore(entry.key)"/>
-    </div>
   </div>
   <app-map-cursor id="map-cursor" (cursorLoaded)="onLoadCursor()" [cursorRotation]="cursorRotation" />
 </div>

@@ -60,7 +60,6 @@ from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
 from src.hardware.camera.processCamera import processCamera
 from src.hardware.serialhandler.processSerialHandler import processSerialHandler
-from src.data.Semaphores.processSemaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.allMessages import StateChange
@@ -150,10 +149,6 @@ if __name__ == "__main__":
     camera_ready = Event()
     processCamera = processCamera(queueList, camera_ready, debugging=False, dev_mode=args.dev)
 
-    # Initializing semaphores
-    semaphore_ready = Event()
-    processSemaphore = processSemaphores(queueList, semaphore_ready, debugging = False)
-
     # Initializing GPS
     traffic_com_ready = Event()
     processTrafficCom = processTrafficCommunication(queueList, 3, traffic_com_ready, debugging = False)
@@ -163,8 +158,8 @@ if __name__ == "__main__":
     processSerialHandler = processSerialHandler(queueList, serial_handler_ready, dashboard_ready, debugging=False, dev_mode=args.dev)
 
     # Adding all processes to the list
-    allProcesses.extend([processCamera, processSemaphore, processTrafficCom, processSerialHandler, processDashboard])
-    allEvents.extend([camera_ready, semaphore_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
+    allProcesses.extend([processCamera, processTrafficCom, processSerialHandler, processDashboard])
+    allEvents.extend([camera_ready, traffic_com_ready, serial_handler_ready, dashboard_ready])
 
     # ------ New component initialize starts here ------#
 
@@ -194,10 +189,8 @@ if __name__ == "__main__":
         while True:
             message = stateChangeSubscriber.receive()
             if message is not None:
-                modeDictSemaphore = SystemMode[message].value["semaphore"]["process"]
                 modeDictTrafficCom = SystemMode[message].value["traffic_com"]["process"]
 
-                processSemaphore = manage_process_life(processSemaphores, processSemaphore, [queueList, semaphore_ready, False], modeDictSemaphore["enabled"], allProcesses)
                 processTrafficCom = manage_process_life(processTrafficCommunication, processTrafficCom, [queueList, 3, traffic_com_ready, False], modeDictTrafficCom["enabled"], allProcesses)
 
             blocker.wait(0.1)

@@ -47,8 +47,6 @@ export class WebSocketService {
     'disk_channel',
     'webCamera',
     'Location',
-    'Cars',
-    'Semaphores',
     'after connect',
     'InstantConsumption',
     'loadBack',
@@ -176,11 +174,6 @@ export class WebSocketService {
     return this.webSocket.fromEvent('EnableButton');
   }
 
-  // Method to receive cars location updates
-  receiveCars(): Observable<any> {
-    return this.webSocket.fromEvent('Cars');
-  }
-
   // Method to receive instant consumption updates
   receiveInstantConsumption(): Observable<any> {
     return this.webSocket.fromEvent('InstantConsumption');
@@ -189,11 +182,6 @@ export class WebSocketService {
   // Method to receive battery level updates
   receiveBatteryLevel(): Observable<any> {
     return this.webSocket.fromEvent('BatteryLvl');
-  }
-
-  // Method to receive semaphores state updates
-  receiveSemaphores(): Observable<any> {
-    return this.webSocket.fromEvent('Semaphores');
   }
 
   // Method to receive current speed state updates

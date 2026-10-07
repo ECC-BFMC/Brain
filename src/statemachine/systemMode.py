@@ -46,11 +46,6 @@ class SystemMode(Enum):
                 "enabled": True,
             }
         },
-        "semaphore": {
-            "process": {
-                "enabled": False,
-            }
-        },
         "traffic_com": {
             "process": {
                 "enabled": False,
@@ -71,11 +66,6 @@ class SystemMode(Enum):
         "serial_handler": {
             "process": {
                 "enabled": True,
-            }
-        },
-        "semaphore": {
-            "process": {
-                "enabled": False,
             }
         },
         "traffic_com": {
@@ -100,11 +90,6 @@ class SystemMode(Enum):
                 "enabled": True,
             }
         },
-        "semaphore": {
-            "process": {
-                "enabled": False,
-            }
-        },
         "traffic_com": {
             "process": {
                 "enabled": False,
@@ -123,11 +108,6 @@ class SystemMode(Enum):
             }
         },
         "serial_handler": {
-            "process": {
-                "enabled": True,
-            }
-        },
-        "semaphore": {
             "process": {
                 "enabled": True,
             }
@@ -152,11 +132,6 @@ class SystemMode(Enum):
         "serial_handler": {
             "process": {
                 "enabled": True,
-            }
-        },
-        "semaphore": {
-            "process": {
-                "enabled": False,
             }
         },
         "traffic_com": {

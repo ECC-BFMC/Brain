@@ -59,19 +59,6 @@ class LaneKeeping(Enum):
     msgID = 5
     msgType = "int"
 
-################################# processCarsAndSemaphores ##################################
-class Cars(Enum):
-    Queue = "General"
-    Owner = "threadCarsAndSemaphores"
-    msgID = 1
-    msgType = "dict"
-
-class Semaphores(Enum):
-    Queue = "General"
-    Owner = "threadCarsAndSemaphores"
-    msgID = 2
-    msgType = "dict"
-
 ################################# From Dashboard ##################################
 class SpeedMotor(Enum):
     Queue = "General"
