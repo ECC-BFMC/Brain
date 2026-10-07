@@ -19,4 +19,4 @@ COPY . .
 
 EXPOSE 5005
 
-CMD ["python", "main.py"]
+CMD ["python", "main.py", "--dev"]
