@@ -4,6 +4,15 @@
 # --- BASH CODE SECTION (Linux, macOS, and Windows under Git Bash) ---
 set -e
 
+# --- Environment configuration (Cross-platform) ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -e "$SCRIPT_DIR/.env" ] || [ -L "$SCRIPT_DIR/.env" ]; then
+  echo "Existing .env found, keeping it..."
+else
+  echo "Creating .env from .env.example..."
+  cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
+fi
+
 # Detect operating system
 OS_TYPE="linux"
 if [[ "${OSTYPE:-}" == "msys" || "${OSTYPE:-}" == "cygwin" || "${OSTYPE:-}" == "win32" ]]; then

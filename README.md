@@ -8,7 +8,8 @@ The project contains all the provided code for the RPi, more precisely:
 
 ## LocSys API key
 
-Copy `.env.example` to `.env`:
+`setup.cmd` automatically copies `.env.example` to `.env` if `.env` does not
+already exist, preserving any existing configuration. To create it manually:
 
 ```sh
 cp .env.example .env
